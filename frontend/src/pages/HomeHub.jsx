@@ -15,7 +15,6 @@ export default function HomeHub() {
   }
 
   const isAdmin = userRoles.includes('Administrator');
-  const isExecutive = userRoles.includes('Executive Dashboard');
   const canAccessSurat = isAdmin || userRoles.includes('Petugas Entry Surat');
 
   const handleLogout = () => {
@@ -446,7 +445,7 @@ export default function HomeHub() {
           )}
 
           {/* Card 3: Admin Panel & Pengguna (Gabungan) */}
-          {(isAdmin || isExecutive) && (
+          {isAdmin && (
             <div
               className="hub-card"
               onClick={() => navigate('/admin')}
@@ -463,42 +462,31 @@ export default function HomeHub() {
                   <Shield size={28} />
                 </div>
                 <div className="hub-card-badge">
-                  <Shield size={12} /> {isAdmin ? 'Khusus Administrator' : 'Executive Dashboard'}
+                  <Shield size={12} /> Khusus Administrator
                 </div>
-                <h2 className="hub-card-title">{isAdmin ? 'Admin Panel & Pengguna' : 'Executive Panel'}</h2>
+                <h2 className="hub-card-title">Admin Panel & Pengguna</h2>
                 <p className="hub-card-desc">
-                  {isAdmin
-                    ? 'Kelola seluruh berkas sistem, ekspor laporan Excel, penutupan berkas, serta manajemen akun dan hak akses petugas secara terpusat.'
-                    : 'Pantau seluruh berkas sistem, status SLA, dan unduh laporan eksekutif dalam format Excel.'}
+                  Kelola seluruh berkas sistem, ekspor laporan Excel, penutupan berkas, serta manajemen akun dan hak akses petugas secara terpusat.
                 </p>
               </div>
-              {isAdmin ? (
-                <div className="hub-admin-actions" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    className="hub-admin-btn"
-                    onClick={() => navigate('/admin')}
-                  >
-                    <LayoutDashboard size={15} />
-                    Admin Panel
-                  </button>
-                  <button
-                    type="button"
-                    className="hub-admin-btn"
-                    onClick={() => navigate('/admin/users')}
-                  >
-                    <Users size={15} />
-                    Kelola Akun
-                  </button>
-                </div>
-              ) : (
-                <div className="hub-card-footer">
-                  <span>Buka Executive Panel</span>
-                  <span className="hub-card-arrow">
-                    <ArrowRight size={16} />
-                  </span>
-                </div>
-              )}
+              <div className="hub-admin-actions" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="hub-admin-btn"
+                  onClick={() => navigate('/admin')}
+                >
+                  <LayoutDashboard size={15} />
+                  Admin Panel
+                </button>
+                <button
+                  type="button"
+                  className="hub-admin-btn"
+                  onClick={() => navigate('/admin/users')}
+                >
+                  <Users size={15} />
+                  Kelola Akun
+                </button>
+              </div>
             </div>
           )}
         </div>

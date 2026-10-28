@@ -156,7 +156,6 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
         if (!err && row.count === 0) {
           const users = [
             ['admin', 'admin123', 'Administrator', 'Sistem Administrator'],
-            ['executive', 'exec123', 'Executive Dashboard', 'Bapak Executive'],
             ['entry', 'entry123', 'Petugas Entry Berkas', 'Petugas Loket Pendaftaran'],
             ['ukur', 'ukur123', 'Petugas Ukur', 'Budi Pengukur'],
             ['pemetaan', 'pemetaan123', 'Petugas Pemetaan', 'Andi Pemetaan'],
@@ -275,9 +274,9 @@ const requireAdmin = (req, res, next) => {
   }
 };
 
-// Middleware for Admin, Kepala Seksi, Koordinator, or Executive
+// Middleware for Admin, Kepala Seksi, or Koordinator
 const requireAdminOrKasi = (req, res, next) => {
-  if (req.user && (req.user.role.includes('Administrator') || req.user.role.includes('Kepala Seksi') || req.user.role.includes('Koordinator') || req.user.role.includes('Executive Dashboard'))) {
+  if (req.user && (req.user.role.includes('Administrator') || req.user.role.includes('Kepala Seksi') || req.user.role.includes('Koordinator'))) {
     next();
   } else {
     res.status(403).json({ error: 'Akses ditolak. Memerlukan hak akses pimpinan.' });

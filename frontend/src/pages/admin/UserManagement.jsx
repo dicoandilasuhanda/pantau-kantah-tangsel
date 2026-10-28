@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 
 const AVAILABLE_ROLES = [
   'Administrator',
-  'Executive Dashboard',
   'Petugas Entry Surat',
   'Petugas Entry Berkas',
   'Petugas Entry Berkas PHP',

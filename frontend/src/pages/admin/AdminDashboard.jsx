@@ -157,23 +157,17 @@ export default function AdminDashboard() {
     );
   });
 
-  const roleStr = localStorage.getItem('role') || '';
-  const isAdmin = roleStr.includes('Administrator');
-  const isExecutive = roleStr.includes('Executive');
-
   return (
     <div className="container animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ margin: 0 }}>{isAdmin ? 'Admin Dashboard' : 'Executive Dashboard'}</h1>
+        <h1 style={{ margin: 0 }}>Admin Dashboard</h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button onClick={handleExport} style={{ width: 'auto', background: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Download size={18} /> Unduh Laporan
           </button>
-          {isAdmin && (
-            <button onClick={() => navigate('/admin/users')} style={{ width: 'auto', background: 'var(--accent-color)' }}>
-              Manajemen Pengguna
-            </button>
-          )}
+          <button onClick={() => navigate('/admin/users')} style={{ width: 'auto', background: 'var(--accent-color)' }}>
+            Manajemen Pengguna
+          </button>
         </div>
       </div>
 

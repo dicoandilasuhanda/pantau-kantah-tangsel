@@ -20,7 +20,7 @@ Dibangun dan dikembangkan oleh **[@dicoandila](https://x.com/dicoandila)**.
 Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism* yang memisahkan akses modul berdasarkan peran pengguna:
 - **Modul Monitoring Berkas** (Layanan Rutin PNBP — Seksi Survei & Pemetaan dan Seksi PHP).
 - **Modul Monitoring Surat** (Administrasi Persuratan & Arsip PDF Digital).
-- **Modul Admin Panel / Executive Panel & Manajemen Pengguna**.
+- **Modul Admin Panel & Manajemen Pengguna**.
 
 ### 2. 📱 Pelacakan Berkas *Real-Time* dengan QR Code Berbasis JWT
 - **Entri Berkas Tervalidasi:** Pembuatan berkas baru dengan validasi anti-duplikasi (`Nomor Berkas` + `Tahun`), pengelompokan otomatis jenis kegiatan (**Kelompok 1 / Seksi SP** dan **Kelompok 2 / Seksi PHP**), serta *modal* konfirmasi sebelum cetak.
@@ -64,7 +64,7 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 - **Pembatasan Sesi Perangkat (*Max 2 Devices*):** Setiap akun dibatasi maksimal aktif pada 2 perangkat secara bersamaan. Login pada perangkat ke-3 otomatis mengeluarkan sesi perangkat paling lama.
 - **Proteksi API Berlapis:** Menggunakan `helmet` (HTTP Security Headers), `express-rate-limit` (perlindungan *brute-force* pada endpoint login), `bcryptjs` untuk *hashing* kata sandi, dan pencatatan IP Address pada setiap riwayat pemindaian.
 
-### 9. ⚙️ Admin & Executive Panel
+### 9. ⚙️ Admin Panel
 - **Aksi Administratif Berkas:** Administrator dapat menyelesaikan berkas secara manual (*Force Complete*), menutup berkas bermasalah disertai alasan penutupan (*Close File with Reason*), atau menghapus berkas secara permanen.
 - **Ekspor Laporan Excel (`.xlsx`):** Unduh laporan komprehensif seluruh berkas beserta status SLA dan posisi terakhir dalam satu klik.
 - **Manajemen Pengguna (*CRUD*):** Tambah, ubah, reset sandi, dan atur multi-jabatan petugas dengan sinkronisasi otomatis nama lengkap pada histori berkas.
@@ -73,24 +73,23 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 
 ## 👥 Daftar Peran (*Roles*) dalam Sistem
 
-Sistem mendukung 17 peran spesifik yang dapat dikombinasikan pada satu akun:
+Sistem mendukung 16 peran spesifik yang dapat dikombinasikan pada satu akun:
 1. `Administrator`
-2. `Executive Dashboard`
-3. `Kepala Seksi Survei dan Pemetaan`
-4. `Koordinator Kelompok Substansi Pengukuran dan Pemetaan Kadastral`
-5. `Petugas Entry Surat`
-6. `Petugas Entry Berkas` *(Kelompok 1)*
-7. `Petugas Entry Berkas PHP` *(Kelompok 2)*
-8. `Petugas Cetak Surat Tugas`
-9. `Petugas Distribusi Surat Tugas`
-10. `Petugas Ukur`
-11. `Asisten Surveyor Kadastral`
-12. `Petugas Pemetaan`
-13. `Petugas Alih Media`
-14. `Petugas Penyelesaian Berkas`
-15. `Petugas Distribusi Berkas Ke Seksi PHP`
-16. `Petugas Seksi PHP`
-17. `Petugas Loket Penyerahan Produk`
+2. `Kepala Seksi Survei dan Pemetaan`
+3. `Koordinator Kelompok Substansi Pengukuran dan Pemetaan Kadastral`
+4. `Petugas Entry Surat`
+5. `Petugas Entry Berkas` *(Kelompok 1)*
+6. `Petugas Entry Berkas PHP` *(Kelompok 2)*
+7. `Petugas Cetak Surat Tugas`
+8. `Petugas Distribusi Surat Tugas`
+9. `Petugas Ukur`
+10. `Asisten Surveyor Kadastral`
+11. `Petugas Pemetaan`
+12. `Petugas Alih Media`
+13. `Petugas Penyelesaian Berkas`
+14. `Petugas Distribusi Berkas Ke Seksi PHP`
+15. `Petugas Seksi PHP`
+16. `Petugas Loket Penyerahan Produk`
 
 ---
 
@@ -132,7 +131,7 @@ pantau-kantah-tangsel/
 │   ├── public/                     # Aset statis publik (Logo Kantah, Favicon)
 │   ├── src/
 │   │   ├── components/             # Komponen modular:
-│   │   │   ├── AdminRoute.jsx      # Guard rute khusus Admin & Executive
+│   │   │   ├── AdminRoute.jsx      # Guard rute khusus Administrator
 │   │   │   ├── CariBerkasPetugas.jsx
 │   │   │   ├── KPIDashboard.jsx    # Analitik kinerja petugas & grafik Recharts
 │   │   │   ├── Navbar.jsx          # Navigasi adaptif & modal ubah kata sandi
@@ -230,7 +229,7 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
 - **Tahap 7 — Sistem *Strict Transit* (Kirim & Terima Berkas):**
   Penerapan aturan pengiriman berkas antar meja secara ketat (*Strict Transit Rule*) di mana berkas wajib dikirim terlebih dahulu oleh pemegang saat ini ke petugas tujuan sebelum dapat dipindai, dilengkapi fitur pencarian petugas tujuan dan pembatalan transit.
 - **Tahap 8 — Ekspansi ke *Portal Aplikasi Pantau.Kantah Tangsel* & Modul Persuratan:**
-  Pengembangan halaman gerbang utama **Home Hub (`HomeHub.jsx`)** yang menyatukan seluruh layanan Kantor Pertanahan dalam satu portal. Penambahan modul baru **Monitoring Surat Masuk (`SuratDashboard` & `SuratEntryForm`)** lengkap dengan penomoran agenda 5 digit otomatis, unggah arsip PDF, serta penambahan peran **Executive Dashboard** dan **Petugas Entry Surat**.
+  Pengembangan halaman gerbang utama **Home Hub (`HomeHub.jsx`)** yang menyatukan seluruh layanan Kantor Pertanahan dalam satu portal. Penambahan modul baru **Monitoring Surat Masuk (`SuratDashboard` & `SuratEntryForm`)** lengkap dengan penomoran agenda 5 digit otomatis, unggah arsip PDF, serta penambahan peran **Petugas Entry Surat**.
 
 ---
 

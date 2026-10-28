@@ -10,7 +10,7 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!userRoles.includes('Administrator') && !userRoles.includes('Executive Dashboard')) {
+  if (!userRoles.includes('Administrator')) {
     toast.error('Akses Ditolak. Anda tidak memiliki izin untuk mengakses halaman ini.');
     return <Navigate to="/" replace />;
   }
