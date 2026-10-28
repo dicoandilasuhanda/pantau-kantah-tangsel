@@ -7,3 +7,6 @@ backups/
 *.log
 .DS_Store
 Thumbs.db
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
