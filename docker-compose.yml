@@ -1,0 +1,14 @@
+services:
+  pantau-sp:
+    build: .
+    container_name: pantau-sp-app
+    restart: always
+    ports:
+      - "3001:3001"
+      - "3002:3002"
+    volumes:
+      # PENTING: Me-mapping database.sqlite dari dalam container ke luar (host QNAP)
+      # agar data tidak hilang ketika container di-restart atau di-update!
+      - ./backend/database.sqlite:/app/backend/database.sqlite
+    environment:
+      - NODE_ENV=production
