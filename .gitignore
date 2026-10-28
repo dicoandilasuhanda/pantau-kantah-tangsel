@@ -7,6 +7,10 @@ backups/
 *.log
 .DS_Store
 Thumbs.db
+*.sqlite
 *.sqlite-journal
 *.sqlite-wal
 *.sqlite-shm
+*.db
+*.pem
+backend/uploads/

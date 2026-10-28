@@ -128,9 +128,6 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
-      // One-time patch for Syahrul's orphaned history (flexible matching)
-      db.run(`UPDATE file_history SET scanned_by_username = 'syahrul' WHERE scanned_by_username LIKE '%yahrul%' AND scanned_by_username != 'syahrul'`, (err) => {});
-
       // Auto-repair file_history records where full_name was missing (only role was saved)
       db.run(`
         UPDATE file_history
