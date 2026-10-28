@@ -43,7 +43,7 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
   - *Pelepasan Sebagian Hak / Pemberian Hak / Permohonan SK*: 38 Hari Kerja
   - *Sertipikat Pengganti Hilang/Lelang Eksekusi*: 40 Hari Kerja
   - *Pengakuan/Penegasan Hak & Penegasan Tanah Wakaf*: 98 Hari Kerja
-- **Fitur *Pause* & *Resume* SOP:** Petugas Cetak Surat Tugas (atau Admin) dapat menghentikan sementara (*pause*) perhitungan argometer SOP apabila berkas menunggu pembayaran Surat Perintah Setor (SPS) dan melanjutkannya kembali (*resume*) tanpa merugikan perhitungan SLA.
+- **Fitur *Pause* & *Resume* SOP:** Administrator dapat menghentikan sementara (*pause*) perhitungan argometer SOP apabila berkas menunggu pembayaran Surat Perintah Setor (SPS) dan melanjutkannya kembali (*resume*) tanpa merugikan perhitungan SLA.
 - **Indikator Warna & Peringatan Stagnasi:** Berkas yang mengendap di satu meja &ge; 2 hari kerja diberi warna kuning, dan &ge; 3 hari kerja diberi peringatan merah (*Stalled Files Alert*).
 
 ### 5. 📝 Catatan Berkas & Disposisi Pimpinan
@@ -73,23 +73,21 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 
 ## 👥 Daftar Peran (*Roles*) dalam Sistem
 
-Sistem mendukung 16 peran spesifik yang dapat dikombinasikan pada satu akun:
+Sistem mendukung 14 peran spesifik yang dapat dikombinasikan pada satu akun:
 1. `Administrator`
 2. `Kepala Seksi Survei dan Pemetaan`
 3. `Koordinator Kelompok Substansi Pengukuran dan Pemetaan Kadastral`
 4. `Petugas Entry Surat`
 5. `Petugas Entry Berkas` *(Kelompok 1)*
 6. `Petugas Entry Berkas PHP` *(Kelompok 2)*
-7. `Petugas Cetak Surat Tugas`
-8. `Petugas Distribusi Surat Tugas`
-9. `Petugas Ukur`
-10. `Asisten Surveyor Kadastral`
-11. `Petugas Pemetaan`
-12. `Petugas Alih Media`
-13. `Petugas Penyelesaian Berkas`
-14. `Petugas Distribusi Berkas Ke Seksi PHP`
-15. `Petugas Seksi PHP`
-16. `Petugas Loket Penyerahan Produk`
+7. `Petugas Ukur`
+8. `Asisten Surveyor Kadastral`
+9. `Petugas Pemetaan`
+10. `Petugas Alih Media`
+11. `Petugas Penyelesaian Berkas`
+12. `Petugas Distribusi Berkas Ke Seksi PHP`
+13. `Petugas Seksi PHP`
+14. `Petugas Loket Penyerahan Produk`
 
 ---
 
@@ -225,7 +223,7 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
 - **Tahap 5 — *Rebranding* & Penyesuaian Alur Kerja Nyata (K1 & K2):**
   Transformasi identitas aplikasi menjadi **Pantau.SP Tangsel**, pemisahan hak entri dan alur penyelesaian berkas antara **Kelompok 1 (Seksi Survei & Pemetaan)** dan **Kelompok 2 (Seksi PHP)**, penambahan fitur *Multi-Role* dengan konfirmasi jabatan pintar saat *scan*, serta penambahan fitur **Catatan Berkas** & **Disposisi Pimpinan**.
 - **Tahap 6 — Fitur Kontrol SOP (*Pause/Resume*), Penutupan Berkas, & Keamanan Sesi:**
-  Penambahan fitur *Pause/Resume* argometer SOP di meja Petugas Cetak Surat Tugas (menunggu pembayaran SPS), fitur **Tutup Berkas Manual** beserta alasan penutupan dan **Selesaikan Berkas Manual** oleh Admin, pembatasan login maksimal 2 perangkat per akun, serta integrasi kalender Hari Libur Nasional & Cuti Bersama 2026.
+  Penambahan fitur *Pause/Resume* argometer SOP (menunggu pembayaran SPS), fitur **Tutup Berkas Manual** beserta alasan penutupan dan **Selesaikan Berkas Manual** oleh Admin, pembatasan login maksimal 2 perangkat per akun, serta integrasi kalender Hari Libur Nasional & Cuti Bersama 2026.
 - **Tahap 7 — Sistem *Strict Transit* (Kirim & Terima Berkas):**
   Penerapan aturan pengiriman berkas antar meja secara ketat (*Strict Transit Rule*) di mana berkas wajib dikirim terlebih dahulu oleh pemegang saat ini ke petugas tujuan sebelum dapat dipindai, dilengkapi fitur pencarian petugas tujuan dan pembatalan transit.
 - **Tahap 8 — Ekspansi ke *Portal Aplikasi Pantau.Kantah Tangsel* & Modul Persuratan:**

@@ -15,8 +15,6 @@ const AVAILABLE_ROLES = [
   'Koordinator Kelompok Substansi Pengukuran dan Pemetaan Kadastral',
   'Asisten Surveyor Kadastral',
   'Kepala Seksi Survei dan Pemetaan',
-  'Petugas Cetak Surat Tugas',
-  'Petugas Distribusi Surat Tugas',
   'Petugas Distribusi Berkas Ke Seksi PHP',
   'Petugas Seksi PHP',
   'Petugas Penyelesaian Berkas',

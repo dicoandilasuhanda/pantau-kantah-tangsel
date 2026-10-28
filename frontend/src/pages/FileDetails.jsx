@@ -195,7 +195,7 @@ export default function FileDetails() {
             </div>
           )}
 
-          {(file.current_location === 'Petugas Cetak Surat Tugas' && !isFileCompleted && (userRoles.includes('Petugas Cetak Surat Tugas') || userRoles.includes('Administrator'))) && (
+          {(!isFileCompleted && userRoles.includes('Administrator')) && (
             <button 
               className="no-print"
               onClick={handleTogglePause} 

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Pastikan PATH menyertakan binary Docker bawaan QNAP Container Station saat dijalankan via cron
+export PATH="/share/CACHEDEV1_DATA/.qpkg/container-station/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
 # Arahkan script ke direktori tempat script ini berada (folder file-tracker)
 cd "$(dirname "$0")"
 

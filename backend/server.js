@@ -162,8 +162,6 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
             ['koordinator', 'koor123', 'Koordinator Kelompok Substansi Pengukuran dan Pemetaan Kadastral', 'Bapak Koordinator'],
             ['asisten_surveyor', 'asisten123', 'Asisten Surveyor Kadastral', 'Asisten Surveyor'],
             ['kasi', 'kasi123', 'Kepala Seksi Survei dan Pemetaan', 'Bapak Kepala Seksi'],
-            ['cetak', 'cetak123', 'Petugas Cetak Surat Tugas', 'Petugas Percetakan'],
-            ['distribusi', 'distribusi123', 'Petugas Distribusi Surat Tugas', 'Petugas Distribusi'],
             ['penyelesaian', 'selesai123', 'Petugas Penyelesaian Berkas', 'Petugas Finalisasi'],
             ['entry_php', 'entryphp123', 'Petugas Entry Berkas PHP', 'Petugas Loket PHP'],
             ['alih_media', 'alih123', 'Petugas Alih Media', 'Petugas Digitalisasi'],
@@ -691,8 +689,6 @@ app.put('/api/files/:qr_code/note', authenticateJWT, (req, res) => {
 const FLOWS = {
   K1: [
     'Loket Pendaftaran (Entry)',
-    'Petugas Cetak Surat Tugas',
-    'Petugas Distribusi Surat Tugas',
     'Petugas Ukur',
     'Asisten Surveyor Kadastral',
     'Petugas Pemetaan',
@@ -854,8 +850,8 @@ app.post('/api/files/:qr_code/cancel-transit', authenticateJWT, (req, res) => {
 
 // Pause SOP
 app.post('/api/files/:qr_code/pause', authenticateJWT, (req, res) => {
-  if (!req.user.role.includes('Petugas Cetak Surat Tugas') && !req.user.role.includes('Administrator')) {
-    return res.status(403).json({ error: 'Hanya Petugas Cetak Surat Tugas yang dapat mem-pause berkas.' });
+  if (!req.user.role.includes('Administrator')) {
+    return res.status(403).json({ error: 'Hanya Administrator yang dapat mem-pause berkas.' });
   }
 
   const { qr_code } = req.params;
@@ -863,9 +859,6 @@ app.post('/api/files/:qr_code/pause', authenticateJWT, (req, res) => {
   db.get(`SELECT * FROM files WHERE qr_code = ?`, [qr_code], (err, file) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!file) return res.status(404).json({ error: 'Berkas tidak ditemukan' });
-    if (!file.current_location.includes('Petugas Cetak Surat Tugas')) {
-      return res.status(400).json({ error: 'Berkas hanya dapat di-pause jika berada di posisi Petugas Cetak Surat Tugas.' });
-    }
     if (file.is_paused) {
       return res.status(400).json({ error: 'Berkas sudah dalam status pause.' });
     }
@@ -883,8 +876,8 @@ app.post('/api/files/:qr_code/pause', authenticateJWT, (req, res) => {
 
 // Resume SOP
 app.post('/api/files/:qr_code/resume', authenticateJWT, (req, res) => {
-  if (!req.user.role.includes('Petugas Cetak Surat Tugas') && !req.user.role.includes('Administrator')) {
-    return res.status(403).json({ error: 'Hanya Petugas Cetak Surat Tugas yang dapat melanjutkan berkas.' });
+  if (!req.user.role.includes('Administrator')) {
+    return res.status(403).json({ error: 'Hanya Administrator yang dapat melanjutkan berkas.' });
   }
 
   const { qr_code } = req.params;
@@ -892,9 +885,6 @@ app.post('/api/files/:qr_code/resume', authenticateJWT, (req, res) => {
   db.get(`SELECT * FROM files WHERE qr_code = ?`, [qr_code], (err, file) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!file) return res.status(404).json({ error: 'Berkas tidak ditemukan' });
-    if (!file.current_location.includes('Petugas Cetak Surat Tugas')) {
-      return res.status(400).json({ error: 'Berkas hanya dapat dilanjutkan jika berada di posisi Petugas Cetak Surat Tugas.' });
-    }
     if (!file.is_paused) {
       return res.status(400).json({ error: 'Berkas tidak dalam status pause.' });
     }
