@@ -1,16 +1,13 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Volume2, VolumeX, Scan, ExternalLink, Send, Clock, RefreshCw } from 'lucide-react';
+import { Bell, Scan, ExternalLink, Send, Clock, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { parseSQLiteDate } from '../utils/dateUtils';
 
 // Fungsi Web Audio API untuk membunyikan nada lonceng pengumuman kantor yang nyaring, jernih, dan berdurasi ~3.2 detik
-export function playNotificationChime(forcePlay = false) {
+export function playNotificationChime() {
   try {
-    const isMuted = localStorage.getItem('notif_sound_muted') === 'true';
-    if (isMuted && !forcePlay) return false;
-
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return false;
 
@@ -89,7 +86,6 @@ export default function NotificationBell() {
   const navigate = useNavigate();
   const [transitFiles, setTransitFiles] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [isMuted, setIsMuted] = useState(() => localStorage.getItem('notif_sound_muted') === 'true');
   const [isRinging, setIsRinging] = useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef(null);
@@ -103,6 +99,9 @@ export default function NotificationBell() {
   const fetchNotifications = useCallback(async (isManual = false) => {
     const token = localStorage.getItem('token');
     if (!token) return;
+
+    // Pastikan tidak ada sisa pengaturan mute lama di browser
+    localStorage.removeItem('notif_sound_muted');
 
     if (isManual) setLoading(true);
     try {
@@ -134,31 +133,19 @@ export default function NotificationBell() {
 
         triggerRingAnimation();
         const played = playNotificationChime();
-        if (!played && localStorage.getItem('notif_sound_muted') !== 'true') {
+        if (!played) {
           pendingSoundRef.current = true;
         }
 
         if (isInitialSessionCheck && newItems.length > 1) {
-          toast(`ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Anda memiliki ${items.length} berkas kiriman (Transit) yang menunggu di-scan terima!`, {
-            duration: 6000,
-            style: {
-              background: 'rgba(15, 23, 42, 0.95)',
-              color: '#f8fafc',
-              border: '1px solid rgba(59, 130, 246, 0.5)',
-              fontWeight: 500
-            }
+          toast.success(`Anda memiliki ${items.length} berkas kiriman (Transit) yang menunggu di-scan terima!`, {
+            duration: 6000
           });
         } else {
           const latest = newItems[0];
           const sender = latest.transit_by_fullname || latest.transit_by_username || 'Petugas';
-          toast(`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Berkas Kiriman Masuk: ${latest.nomor_berkas}/${latest.tahun_berkas} dari ${sender}`, {
-            duration: 6000,
-            style: {
-              background: 'rgba(15, 23, 42, 0.95)',
-              color: '#f8fafc',
-              border: '1px solid rgba(16, 185, 129, 0.5)',
-              fontWeight: 500
-            }
+          toast.success(`Berkas Kiriman Masuk: ${latest.nomor_berkas}/${latest.tahun_berkas} dari ${sender}`, {
+            duration: 6000
           });
         }
       } else if (isInitialSessionCheck) {
@@ -218,19 +205,6 @@ export default function NotificationBell() {
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [isOpen]);
-
-  const toggleMute = (e) => {
-    e.stopPropagation();
-    const nextMuted = !isMuted;
-    setIsMuted(nextMuted);
-    localStorage.setItem('notif_sound_muted', String(nextMuted));
-    if (!nextMuted) {
-      playNotificationChime();
-      toast.success('Suara notifikasi diaktifkan');
-    } else {
-      toast('Suara notifikasi dibisukan', { icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â¡' });
-    }
-  };
 
   const formatTransitTime = (dateStr) => {
     if (!dateStr) return 'Baru saja';
@@ -358,78 +332,29 @@ export default function NotificationBell() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Send size={15} color="#60a5fa" />
-              <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f8fafc' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f8fafc' }}>
                 Kiriman Berkas ({count})
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  triggerRingAnimation();
-                  playNotificationChime(true);
-                }}
-                title="Tes Bunyi Lonceng Notifikasi"
-                style={{
-                  width: 'auto',
-                  padding: '0.3rem 0.55rem',
-                  background: 'rgba(59, 130, 246, 0.15)',
-                  border: '1px solid rgba(59, 130, 246, 0.35)',
-                  borderRadius: '8px',
-                  color: '#60a5fa',
-                  fontSize: '0.73rem',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.25rem'
-                }}
-              >
-                <Bell size={12} /> Tes Bunyi
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fetchNotifications(true)}
-                title="Perbarui Notifikasi"
-                style={{
-                  width: 'auto',
-                  padding: '0.3rem 0.5rem',
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '8px',
-                  color: '#cbd5e1',
-                  fontSize: '0.75rem',
-                  display: 'inline-flex',
-                  alignItems: 'center'
-                }}
-              >
-                <RefreshCw size={13} className={loading ? 'spin' : ''} />
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleMute}
-                title={isMuted ? 'Aktifkan Suara Notifikasi' : 'Bisukan Suara Notifikasi'}
-                style={{
-                  width: 'auto',
-                  padding: '0.3rem 0.6rem',
-                  background: isMuted ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                  border: `1px solid ${isMuted ? 'rgba(239, 68, 68, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
-                  borderRadius: '8px',
-                  color: isMuted ? '#f87171' : '#34d399',
-                  fontSize: '0.74rem',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.3rem'
-                }}
-              >
-                {isMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
-                {isMuted ? 'Bisu' : 'Suara Aktif'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => fetchNotifications(true)}
+              title="Perbarui Notifikasi"
+              style={{
+                width: 'auto',
+                padding: '0.35rem 0.55rem',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
+                color: '#cbd5e1',
+                fontSize: '0.75rem',
+                display: 'inline-flex',
+                alignItems: 'center'
+              }}
+            >
+              <RefreshCw size={13} className={loading ? 'spin' : ''} />
+            </button>
           </div>
 
           {/* Daftar Berkas Kiriman */}
