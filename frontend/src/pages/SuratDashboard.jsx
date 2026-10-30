@@ -35,11 +35,13 @@ export default function SuratDashboard() {
     return import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
   };
 
-  // Convert /api to base URL for static files
-  const getStaticUrl = (path) => {
-    if (!path) return '#';
-    const baseUrl = getApiBaseUrl().replace('/api', '');
-    return `${baseUrl}${path}`;
+  // Generate secure URL with token for authenticated PDF access
+  const getSecureFileUrl = (filePath) => {
+    if (!filePath) return '#';
+    const baseUrl = getApiBaseUrl();
+    const token = localStorage.getItem('token') || '';
+    const filename = filePath.split('/').pop();
+    return `${baseUrl}/surat/file/${encodeURIComponent(filename)}?token=${encodeURIComponent(token)}`;
   };
 
   const roleStr = localStorage.getItem('role') || '';
@@ -109,7 +111,7 @@ export default function SuratDashboard() {
                   <td style={{ padding: '1rem' }}>
                     {surat.file_path ? (
                       <a 
-                        href={getStaticUrl(surat.file_path)} 
+                        href={getSecureFileUrl(surat.file_path)} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-color)', textDecoration: 'none', fontSize: '0.9rem' }}

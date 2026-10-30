@@ -13,8 +13,20 @@ const fs = require('fs');
 const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev'; 
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-file-tracker'; 
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+
+// Helper verifikasi QR Code: mendukung JWT_SECRET aktif maupun legacy secret
+function verifyQRCodeToken(token) {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    if (JWT_SECRET !== 'super-secret-key-for-file-tracker') {
+      return jwt.verify(token, 'super-secret-key-for-file-tracker');
+    }
+    throw err;
+  }
+}
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -44,7 +56,8 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Proteksi folder uploads: Tidak lagi disajikan secara publik via express.static
+// Dokumen hanya dapat diunduh lewat endpoint terotentikasi /api/surat/file/:filename
 
 // --- Database Setup ---
 const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) => {
@@ -328,6 +341,31 @@ app.get('/api/surat/:id', authenticateJWT, (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(404).json({ error: 'Surat tidak ditemukan' });
     res.json(row);
+  });
+});
+
+// Endpoint aman untuk streaming/download dokumen surat (hanya untuk pengguna yang login)
+app.get('/api/surat/file/:filename', (req, res) => {
+  const token = req.query.token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+  if (!token) {
+    return res.status(401).send('Akses Ditolak: Anda harus login untuk mengakses dokumen surat ini.');
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).send('Akses Ditolak: Sesi token tidak valid atau telah berakhir.');
+    }
+
+    const filename = path.basename(req.params.filename); // sanitasi path traversal
+    const safeFilePath = path.join(uploadDir, filename);
+
+    if (!fs.existsSync(safeFilePath)) {
+      return res.status(404).send('File dokumen tidak ditemukan.');
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.sendFile(safeFilePath);
   });
 });
 
@@ -653,7 +691,7 @@ app.get('/api/files/:qr_code', authenticateJWT, (req, res) => {
   const qr_code = req.params.qr_code;
   
   try {
-    jwt.verify(qr_code, JWT_SECRET);
+    verifyQRCodeToken(qr_code);
   } catch (err) {
     return res.status(400).json({ error: 'QR Code tidak valid atau palsu.' });
   }
@@ -1158,7 +1196,7 @@ app.post('/api/files/scan', authenticateJWT, (req, res) => {
   const { qr_code, fullName, isFinishing, selected_role } = req.body;
   
   try {
-    jwt.verify(qr_code, JWT_SECRET);
+    verifyQRCodeToken(qr_code);
   } catch (err) {
     return res.status(400).json({ error: 'QR Code tidak valid atau palsu.' });
   }
