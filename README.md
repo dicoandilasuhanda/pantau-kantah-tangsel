@@ -17,20 +17,24 @@ Dibangun dan dikembangkan oleh **[@dicoandila](https://x.com/dicoandila)**.
 ## ✨ Fitur Utama Sistem
 
 ### 1. 🧭 Portal Terpadu (Home Hub)
-Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism* yang memisahkan akses modul berdasarkan peran pengguna:
+Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism* dengan *sticky topbar* responsif (Desktop & Mobile) yang memisahkan akses modul berdasarkan peran pengguna:
 - **Modul Monitoring Berkas** (Layanan Rutin PNBP — Seksi Survei & Pemetaan dan Seksi PHP).
 - **Modul Monitoring Surat** (Administrasi Persuratan & Arsip PDF Digital).
-- **Modul Admin Panel & Manajemen Pengguna**.
+- **Modul Admin Panel & Pengguna Terpadu** (Dilengkapi tombol akses cepat langsung ke **Admin Panel** dan **Kelola Akun** dalam satu kartu khusus Administrator).
 
 ### 2. 📱 Pelacakan Berkas *Real-Time* dengan QR Code Berbasis JWT
-- **Entri Berkas Tervalidasi:** Pembuatan berkas baru dengan validasi anti-duplikasi (`Nomor Berkas` + `Tahun`), pengelompokan otomatis jenis kegiatan (**Kelompok 1 / Seksi SP** dan **Kelompok 2 / Seksi PHP**), serta *modal* konfirmasi sebelum cetak.
+- **Entri Berkas Tervalidasi:** Pembuatan berkas baru dengan validasi anti-duplikasi (`Nomor Berkas` + `Tahun`), pengelompokan otomatis seluruh **14 jenis kegiatan** (**5 Kegiatan Kelompok 1 / Seksi SP** dan **9 Kegiatan Kelompok 2 / Seksi PHP**), serta *modal* konfirmasi sebelum cetak.
 - **QR Code Anti-Palsu:** Setiap QR Code dienkripsi dan ditandatangani menggunakan *JSON Web Token* (`JWT_SECRET`), sehingga QR Code dari luar sistem otomatis ditolak.
 - **Pemindaian Fleksibel:** Mendukung pemindaian langsung melalui kamera perangkat (*smartphone*/PC) maupun unggah gambar QR Code dari galeri/dokumen.
 
-### 3. 🔄 Sistem *Strict Transit* (Kirim & Terima Berkas Antar Meja)
+### 3. 🔄 Sistem *Strict Transit* & 🔔 Lonceng Notifikasi Suara *Real-Time*
 - **Pengiriman Terarah (*Transit*):** Petugas tidak dapat memindai berkas secara sembarangan sebelum pemegang berkas sebelumnya menekan tombol **Kirim Berkas (Transit)** dan memilih nama petugas tujuan.
 - **Batal Kirim:** Pengirim atau Administrator dapat membatalkan status transit jika terjadi kesalahan pemilihan petugas tujuan.
-- **Filter Meja Saya & Transit:** Memudahkan setiap petugas melihat berkas yang sedang berada di mejanya atau sedang dikirim menuju mejanya.
+- **Lonceng Notifikasi & Peringatan Suara Otomatis (`NotificationBell`):**
+  - Terpasang di *Topbar HomeHub* dan *Navbar* seluruh halaman (Desktop & Mobile) lengkap dengan *badge* angka merah jumlah berkas kiriman yang menuju meja pengguna aktif.
+  - **Nada Panggilan *Web Audio Chime* (~3,2 Detik):** Membunyikan nada *chime* pengumuman 2 putaran yang nyaring dan jernih menggunakan *Web Audio API* bawaan browser (100% berjalan di jaringan lokal tanpa internet maupun file audio eksternal).
+  - **Deteksi Saat Login & *Auto-Polling* (Tiap 20 Detik):** Memberikan notifikasi suara dan *popup* otomatis baik saat petugas baru saja login (jika ada berkas kiriman yang menunggu) maupun saat ada petugas lain yang baru mengirimkan berkas secara *real-time*.
+  - **Dropdown Kiriman Berkas:** Menampilkan Nomor Berkas, Waktu Kirim, Jenis Kegiatan, Nama Pemohon, dan Nama Pengirim beserta tombol pintas **Detail Berkas** dan **Scan Terima**.
 
 ### 4. ⏱️ Mesin Perhitungan Hari Kerja SOP/SLA & *Pause/Resume*
 - **Kalender Hari Kerja Cerdas:** Perhitungan umur berkas dan jatuh tempo SOP secara otomatis **mengabaikan hari Sabtu, Minggu, serta Hari Libur Nasional & Cuti Bersama (SKB 3 Menteri)**.
@@ -43,7 +47,7 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
   - *Pelepasan Sebagian Hak / Pemberian Hak / Permohonan SK*: 38 Hari Kerja
   - *Sertipikat Pengganti Hilang/Lelang Eksekusi*: 40 Hari Kerja
   - *Pengakuan/Penegasan Hak & Penegasan Tanah Wakaf*: 98 Hari Kerja
-- **Fitur *Pause* & *Resume* SOP:** Administrator dapat menghentikan sementara (*pause*) perhitungan argometer SOP apabila berkas menunggu pembayaran Surat Perintah Setor (SPS) dan melanjutkannya kembali (*resume*) tanpa merugikan perhitungan SLA.
+- **Fitur *Pause* & *Resume* SOP (Khusus Administrator):** Administrator dapat menghentikan sementara (*pause*) perhitungan argometer SOP apabila berkas menunggu pembayaran Surat Perintah Setor (SPS) dan melanjutkannya kembali (*resume*) tanpa merugikan perhitungan SLA.
 - **Indikator Warna & Peringatan Stagnasi:** Berkas yang mengendap di satu meja &ge; 2 hari kerja diberi warna kuning, dan &ge; 3 hari kerja diberi peringatan merah (*Stalled Files Alert*).
 
 ### 5. 📝 Catatan Berkas & Disposisi Pimpinan
@@ -53,7 +57,7 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 ### 6. 📊 Mesin Analitik KPI Petugas & Top 50 Berkas Terlama
 - **Analitik Kinerja Individu:** Menghitung rata-rata waktu pemrosesan berkas per petugas (mengecualikan jam akhir pekan Sabtu/Minggu dan menghentikan *timer* saat berkas sudah berstatus *Transit*, *Selesai*, atau *Ditutup*).
 - **Filter Ganda & Grafik Interaktif:** Visualisasi *Bar Chart* (`Recharts`) dengan filter per nama petugas dan per jenis kegiatan permohonan.
-- **Top 50 Berkas Terlama:** Daftar peringkat 50 berkas aktif dengan durasi pemrosesan terlama untuk menjadi prioritas penyelesaian pimpinan.
+- **Top 50 Berkas Terlama (Khusus Berkas Aktif):** Daftar peringkat 50 berkas yang masih sedang berjalan (*in-progress*) dengan durasi pemrosesan terlama untuk menjadi prioritas penyelesaian pimpinan.
 
 ### 7. ✉️ Modul Monitoring Surat Masuk & Arsip PDF
 - **Penomoran Agenda Otomatis:** Setiap surat masuk yang dientri oleh *Petugas Entry Surat* otomatis mendapatkan Nomor Agenda 5 digit berurutan (`00001`, `00002`, dst.).
@@ -62,12 +66,19 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 ### 8. 🛡️ Keamanan, Multi-Role, & Manajemen Sesi
 - **Multi-Role & Konfirmasi Pintar (*Smart Role Selection*):** Satu akun pengguna dapat memiliki lebih dari satu jabatan/peran. Saat melakukan *scan*, sistem otomatis mendeteksi riwayat scan dan menyarankan peran berikutnya atau menampilkan pilihan jabatan aktif.
 - **Pembatasan Sesi Perangkat (*Max 2 Devices*):** Setiap akun dibatasi maksimal aktif pada 2 perangkat secara bersamaan. Login pada perangkat ke-3 otomatis mengeluarkan sesi perangkat paling lama.
+- **Anti-Stale Cache pada Perangkat Mobile:** Dilengkapi pengaturan header HTTP `Cache-Control: no-store, no-cache, must-revalidate` pada `index.html` agar browser smartphone (Safari iOS / Chrome Android) selalu memuat pembaruan antarmuka secara instan.
 - **Proteksi API Berlapis:** Menggunakan `helmet` (HTTP Security Headers), `express-rate-limit` (perlindungan *brute-force* pada endpoint login), `bcryptjs` untuk *hashing* kata sandi, dan pencatatan IP Address pada setiap riwayat pemindaian.
 
-### 9. ⚙️ Admin Panel
-- **Aksi Administratif Berkas:** Administrator dapat menyelesaikan berkas secara manual (*Force Complete*), menutup berkas bermasalah disertai alasan penutupan (*Close File with Reason*), atau menghapus berkas secara permanen.
-- **Ekspor Laporan Excel (`.xlsx`):** Unduh laporan komprehensif seluruh berkas beserta status SLA dan posisi terakhir dalam satu klik.
-- **Manajemen Pengguna (*CRUD*):** Tambah, ubah, reset sandi, dan atur multi-jabatan petugas dengan sinkronisasi otomatis nama lengkap pada histori berkas.
+### 9. ⚙️ Admin Panel, Filter Multi-Dimensi, & Ekspor Excel 2-Sheet
+- **Panel Filter Laporan Lengkap:**
+  - Filter berdasarkan **Bulan Masuk** (Januari–Desember) & **Tahun Masuk** (otomatis mendeteksi tahun yang tersedia di database).
+  - Filter **Rentang Tanggal Masuk Spesifik** (*Dari Tanggal* – *Sampai Tanggal*).
+  - Filter **Jenis Permohonan / Kegiatan**, **Status Berkas** (`Semua`, `Sedang Diproses`, `Dalam Transit`, `Selesai`, `Ditutup`), dan **Status SLA** (`Semua`, `Aman / Tepat Waktu`, `Terlambat / Overdue`) beserta tombol **Reset Semua Filter**.
+- **Kartu Metrik Dinamis & Tautan Cepat:** Keempat kartu ringkasan di bagian atas otomatis menyesuaikan angka berdasarkan filter aktif, dan setiap **Nomor Berkas** di tabel dapat diklik langsung menuju halaman riwayat detail berkas.
+- **Ekspor Laporan Excel (`.xlsx`) 2 Sheet Otomatis:**
+  - **Sheet 1 (`Daftar Berkas`):** Berisi daftar detail berkas sesuai filter yang sedang aktif (termasuk posisi transit, tanggal masuk, jatuh tempo, dan status pause SOP).
+  - **Sheet 2 (`Rekap Bulanan Kegiatan`):** Tabel rekapitulasi otomatis per **Jenis Kegiatan** lengkap dengan baris **TOTAL KESELURUHAN** (*Total Masuk, Sedang Diproses, Selesai, Ditutup, Aman SLA, Terlambat/Overdue, dan % Kepatuhan SLA*).
+- **Aksi Administratif & Manajemen Pengguna (*CRUD*):** Administrator dapat menyelesaikan berkas manual (*Force Complete*), menutup berkas disertai alasan (*Close File with Reason*), menghapus berkas, serta mengelola akun dan multi-jabatan petugas.
 
 ---
 
@@ -96,9 +107,10 @@ Sistem mendukung 14 peran spesifik yang dapat dikombinasikan pada satu akun:
 ### Frontend
 - **Framework:** React 19 + Vite 8
 - **Routing:** React Router DOM v7
-- **UI & Styling:** Custom Modern CSS (*Dark Mode*, *Glassmorphism*, *Responsive Grid*) + Lucide React Icons + React Hot Toast
+- **UI & Styling:** Custom Modern CSS (*Dark Mode*, *Glassmorphism*, *Responsive Mobile & Desktop*) + Lucide React Icons + React Hot Toast
+- **Audio & Notifikasi:** Web Audio API Synthesizer (*Dual-Oscillator Harmonic Chime* + *Dynamics Compressor*)
 - **QR Code Engine:** `qrcode.react` (Generator) & `html5-qrcode` (Camera/Image Scanner)
-- **Visualisasi & Pelaporan:** `recharts` (Grafik KPI) & `xlsx` (Ekspor Microsoft Excel)
+- **Visualisasi & Pelaporan:** `recharts` (Grafik KPI) & `xlsx` (Ekspor Microsoft Excel Multi-Sheet)
 - **HTTP Client:** Axios (dengan *interceptor* token JWT otomatis)
 
 ### Backend
@@ -122,7 +134,7 @@ pantau-kantah-tangsel/
 ├── backend/                        # Server API Node.js & Express
 │   ├── uploads/surat/              # Direktori penyimpanan PDF surat masuk
 │   ├── server.js                   # Entry point utama backend, skema DB, & seluruh endpoint API
-│   ├── database.sqlite             # File database utama SQLite
+│   ├── database.sqlite             # File database utama SQLite (diabaikan oleh Git demi keamanan)
 │   └── package.json                # Dependensi backend
 │
 ├── frontend/                       # Aplikasi Single Page Application (React + Vite)
@@ -132,12 +144,13 @@ pantau-kantah-tangsel/
 │   │   │   ├── AdminRoute.jsx      # Guard rute khusus Administrator
 │   │   │   ├── CariBerkasPetugas.jsx
 │   │   │   ├── KPIDashboard.jsx    # Analitik kinerja petugas & grafik Recharts
-│   │   │   ├── Navbar.jsx          # Navigasi adaptif & modal ubah kata sandi
+│   │   │   ├── Navbar.jsx          # Navigasi adaptif, lonceng notifikasi, & modal ubah sandi
+│   │   │   ├── NotificationBell.jsx# Lonceng notifikasi kiriman berkas (Transit) & Web Audio Chime
 │   │   │   ├── Top10Petugas.jsx
 │   │   │   └── Top50Berkas.jsx     # Tabel 50 berkas aktif terlama
 │   │   ├── pages/                  # Halaman aplikasi:
 │   │   │   ├── admin/
-│   │   │   │   ├── AdminDashboard.jsx  # Dasbor eksekutif, kontrol berkas, & ekspor Excel
+│   │   │   │   ├── AdminDashboard.jsx  # Dasbor eksekutif, filter periode/kegiatan, & ekspor Excel 2-Sheet
 │   │   │   │   └── UserManagement.jsx  # CRUD pengguna & pengaturan multi-role
 │   │   │   ├── Dashboard.jsx       # Monitoring berkas utama, kartu metrik, & filter
 │   │   │   ├── EntryForm.jsx       # Formulir registrasi berkas & cetak QR Code
@@ -154,6 +167,7 @@ pantau-kantah-tangsel/
 │   │   └── index.css               # Sistem desain global (Dark Glassmorphism)
 │   └── package.json                # Dependensi frontend
 │
+├── AGENTS.md                       # Aturan otomatisasi kerja lintas perangkat (PC & Mac) & Tim Subagent
 ├── Dockerfile                      # Konfigurasi image Docker (Build Frontend + Run Backend)
 ├── docker-compose.yml              # Orkestrasi container & persistent volume database
 ├── auto_backup.sh                  # Script bash backup database otomatis & retensi 30 hari
@@ -228,6 +242,10 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   Penerapan aturan pengiriman berkas antar meja secara ketat (*Strict Transit Rule*) di mana berkas wajib dikirim terlebih dahulu oleh pemegang saat ini ke petugas tujuan sebelum dapat dipindai, dilengkapi fitur pencarian petugas tujuan dan pembatalan transit.
 - **Tahap 8 — Ekspansi ke *Portal Aplikasi Pantau.Kantah Tangsel* & Modul Persuratan:**
   Pengembangan halaman gerbang utama **Home Hub (`HomeHub.jsx`)** yang menyatukan seluruh layanan Kantor Pertanahan dalam satu portal. Penambahan modul baru **Monitoring Surat Masuk (`SuratDashboard` & `SuratEntryForm`)** lengkap dengan penomoran agenda 5 digit otomatis, unggah arsip PDF, serta penambahan peran **Petugas Entry Surat**.
+- **Tahap 9 — Filter Laporan Multi-Dimensi, Rekap Bulanan Excel 2-Sheet, & Lonceng Notifikasi Suara *Real-Time*:**
+  - Penambahan panel filter komprehensif di `AdminDashboard` (Bulan & Tahun Masuk, Rentang Tanggal, Jenis Kegiatan, Status Berkas, Status SLA) dengan kartu statistik dinamis dan ekspor Excel 2 Sheet otomatis (`Daftar Berkas` & `Rekap Bulanan Kegiatan`).
+  - Pembuatan komponen **Lonceng Notifikasi (`NotificationBell.jsx`)** di *HomeHub* dan *Navbar* (Desktop & Mobile) dengan peringatan suara *Web Audio Chime* 2 putaran (~3,2 detik) serta *auto-polling* kiriman berkas *Transit* setiap 20 detik.
+  - Penyempurnaan tata letak responsif Mobile (*sticky topbar* & anti-cache `index.html`), penyatuan kartu *Admin Panel & Pengguna* di *HomeHub*, pemfokusan *Top 50 Berkas Terlama* khusus berkas aktif, pembatasan hak *Pause/Resume* SOP khusus Administrator, serta sinkronisasi penuh 9 kegiatan Kelompok 2 (PHP) di sisi Backend.
 
 ---
 
