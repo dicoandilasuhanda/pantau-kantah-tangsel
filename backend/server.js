@@ -790,7 +790,7 @@ const TELEGRAM_BOT_USERNAME = 'pantaukantahtangsel_bot';
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || Buffer.from('ODU3MzQyNDM0MjpBQUhoZlkwZnZ5VFc0d2lEenpsQXhOV1VhSkpXU0Q1RjF4OA==', 'base64').toString('utf8');
 
 async function sendTelegramMessage(chatId, text) {
-  if (!TELEGRAM_BOT_TOKEN || !chatId) return false;
+  if (!TELEGRAM_BOT_TOKEN || !chatId) return { ok: false, description: 'Chat ID kosong' };
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
@@ -803,10 +803,10 @@ async function sendTelegramMessage(chatId, text) {
       })
     });
     const data = await res.json();
-    return Boolean(data && data.ok);
+    return { ok: Boolean(data && data.ok), description: data?.description || '' };
   } catch (err) {
     console.error('Telegram sendMessage error:', err.message);
-    return false;
+    return { ok: false, description: err.message };
   }
 }
 
@@ -945,14 +945,30 @@ app.post('/api/notifications/telegram-test', authenticateJWT, (req, res) => {
     if (!row || !row.telegram_chat_id) {
       return res.status(400).json({ error: 'Akun Anda belum terhubung dengan Bot Telegram.' });
     }
-    const ok = await sendTelegramMessage(
-      row.telegram_chat_id,
+    const chatStr = String(row.telegram_chat_id).trim();
+    if (chatStr.startsWith('08') || chatStr.startsWith('+62') || chatStr.startsWith('628')) {
+      return res.status(400).json({
+        error: `Telegram tidak menggunakan Nomor HP (${chatStr}). Silakan buka @pantaukantahtangsel_bot di aplikasi Telegram lalu ketik: /daftar ${row.username}`
+      });
+    }
+    const result = await sendTelegramMessage(
+      chatStr,
       `<b>Tes Notifikasi Pantau.Kantah Tangsel</b>\n\nHalo <b>${row.full_name}</b>, koneksi notifikasi Telegram Anda sudah aktif dan berjalan normal!`
     );
-    if (!ok) {
-      return res.status(500).json({ error: 'Gagal mengirim pesan ke Telegram. Pastikan server terhubung internet.' });
+    if (!result.ok) {
+      return res.status(500).json({
+        error: `Gagal mengirim ke Chat ID (${chatStr}). Pastikan Anda sudah membuka @pantaukantahtangsel_bot di aplikasi Telegram dan mengetik /daftar ${row.username}`
+      });
     }
     res.json({ message: 'Pesan tes berhasil dikirim ke Telegram Anda!' });
+  });
+});
+
+// Putuskan / reset koneksi Telegram user yang sedang login
+app.post('/api/notifications/telegram-unlink', authenticateJWT, (req, res) => {
+  db.run('UPDATE users SET telegram_chat_id = NULL WHERE id = ?', [req.user.id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Koneksi Telegram berhasil direset. Silakan hubungkan ulang melalui @pantaukantahtangsel_bot.' });
   });
 });
 

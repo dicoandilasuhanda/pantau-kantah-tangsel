@@ -114,9 +114,19 @@ export default function NotificationBell() {
       const res = await api.post('/notifications/telegram-test');
       toast.success(res.data?.message || 'Pesan tes dikirim ke Telegram!');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Gagal mengirim pesan tes Telegram');
+      toast.error(err.response?.data?.error || 'Gagal mengirim pesan tes Telegram', { duration: 6000 });
     } finally {
       setSendingTgTest(false);
+    }
+  };
+
+  const handleUnlinkTelegram = async () => {
+    try {
+      await api.post('/notifications/telegram-unlink');
+      setTgStatus(prev => ({ ...prev, connected: false, telegram_chat_id: null }));
+      toast.success('Koneksi Telegram direset. Silakan klik Hubungkan Notifikasi Telegram HP.');
+    } catch (err) {
+      toast.error('Gagal mereset koneksi Telegram');
     }
   };
 
@@ -506,28 +516,48 @@ export default function NotificationBell() {
             }}
           >
             {tgStatus.connected ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.76rem', color: '#34d399', fontWeight: 600 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-                  Telegram Terhubung
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', color: '#34d399', fontWeight: 600 }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+                    Telegram Terhubung ({tgStatus.telegram_chat_id})
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                    <button
+                      type="button"
+                      disabled={sendingTgTest}
+                      onClick={handleTestTelegram}
+                      style={{
+                        width: 'auto',
+                        padding: '0.3rem 0.6rem',
+                        fontSize: '0.72rem',
+                        background: 'rgba(59, 130, 246, 0.16)',
+                        border: '1px solid rgba(59, 130, 246, 0.35)',
+                        borderRadius: '7px',
+                        color: '#60a5fa',
+                        fontWeight: 600
+                      }}
+                    >
+                      {sendingTgTest ? 'Mengirim...' : 'Tes Kirim'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUnlinkTelegram}
+                      style={{
+                        width: 'auto',
+                        padding: '0.3rem 0.55rem',
+                        fontSize: '0.72rem',
+                        background: 'rgba(239, 68, 68, 0.14)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        borderRadius: '7px',
+                        color: '#f87171',
+                        fontWeight: 600
+                      }}
+                    >
+                      Reset
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  disabled={sendingTgTest}
-                  onClick={handleTestTelegram}
-                  style={{
-                    width: 'auto',
-                    padding: '0.32rem 0.65rem',
-                    fontSize: '0.73rem',
-                    background: 'rgba(59, 130, 246, 0.16)',
-                    border: '1px solid rgba(59, 130, 246, 0.35)',
-                    borderRadius: '7px',
-                    color: '#60a5fa',
-                    fontWeight: 600
-                  }}
-                >
-                  {sendingTgTest ? 'Mengirim...' : 'Tes Kirim ke HP'}
-                </button>
               </div>
             ) : (
               <>
