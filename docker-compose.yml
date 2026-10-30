@@ -12,11 +12,3 @@ services:
       - ./backend/database.sqlite:/app/backend/database.sqlite
     environment:
       - NODE_ENV=production
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: pantau-sp-tunnel
-    restart: always
-    command: tunnel --no-autoupdate run --token ${CF_TOKEN_PART1:-eyJhIjoiNTE0YjlhMWEwMTA4YzhhNWY1NGI3NGRjMDYyNThhMjUiLCJ0IjoiZjc2MjdkMzYtYzI0Yi00NWRmLWIxNTAtMGY5NjZmZDc2MzE4IiwicyI6}${CF_TOKEN_PART2:-Ik9EVTJPRGt3WVRFdFpUTTRaUzAwTkdVM0xXRTJOVGt0TTJFeVptVXhaamt6TkdWaCJ9}
-    depends_on:
-      - pantau-sp
