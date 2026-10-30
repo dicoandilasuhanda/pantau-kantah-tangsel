@@ -88,8 +88,37 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [isRinging, setIsRinging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [tgStatus, setTgStatus] = useState({
+    connected: false,
+    bot_username: 'pantaukantahtangsel_bot',
+    username: localStorage.getItem('username') || ''
+  });
+  const [sendingTgTest, setSendingTgTest] = useState(false);
   const dropdownRef = useRef(null);
   const pendingSoundRef = useRef(false);
+
+  const fetchTelegramStatus = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await api.get('/notifications/telegram-status');
+      if (res.data) setTgStatus(res.data);
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  const handleTestTelegram = async () => {
+    setSendingTgTest(true);
+    try {
+      const res = await api.post('/notifications/telegram-test');
+      toast.success(res.data?.message || 'Pesan tes dikirim ke Telegram!');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal mengirim pesan tes Telegram');
+    } finally {
+      setSendingTgTest(false);
+    }
+  };
 
   const triggerRingAnimation = () => {
     setIsRinging(true);
@@ -197,6 +226,7 @@ export default function NotificationBell() {
       }
     };
     if (isOpen) {
+      fetchTelegramStatus();
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('touchstart', handleClickOutside);
     }
@@ -461,6 +491,71 @@ export default function NotificationBell() {
                   </div>
                 </div>
               ))
+            )}
+          </div>
+
+          {/* Footer Integrasi Bot Telegram */}
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(15, 23, 42, 0.85)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.45rem'
+            }}
+          >
+            {tgStatus.connected ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.76rem', color: '#34d399', fontWeight: 600 }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+                  Telegram Terhubung
+                </div>
+                <button
+                  type="button"
+                  disabled={sendingTgTest}
+                  onClick={handleTestTelegram}
+                  style={{
+                    width: 'auto',
+                    padding: '0.32rem 0.65rem',
+                    fontSize: '0.73rem',
+                    background: 'rgba(59, 130, 246, 0.16)',
+                    border: '1px solid rgba(59, 130, 246, 0.35)',
+                    borderRadius: '7px',
+                    color: '#60a5fa',
+                    fontWeight: 600
+                  }}
+                >
+                  {sendingTgTest ? 'Mengirim...' : 'Tes Kirim ke HP'}
+                </button>
+              </div>
+            ) : (
+              <>
+                <a
+                  href={`https://t.me/${tgStatus.bot_username || 'pantaukantahtangsel_bot'}?start=link_${encodeURIComponent(tgStatus.username || localStorage.getItem('username') || '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.45rem',
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '9px',
+                    background: 'rgba(56, 189, 248, 0.14)',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    color: '#38bdf8',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    textDecoration: 'none'
+                  }}
+                >
+                  <Send size={13} /> Hubungkan Notifikasi Telegram HP
+                </a>
+                <span style={{ fontSize: '0.69rem', color: '#64748b', textAlign: 'center' }}>
+                  Atau buka <strong>@pantaukantahtangsel_bot</strong> lalu ketik <code>/daftar {tgStatus.username || localStorage.getItem('username') || 'username'}</code>
+                </span>
+              </>
             )}
           </div>
         </div>

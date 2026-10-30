@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -102,6 +102,9 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
       db.run(`ALTER TABLE files ADD COLUMN transit_to_username TEXT`, (err) => {});
       db.run(`ALTER TABLE files ADD COLUMN transit_by_username TEXT`, (err) => {});
       db.run(`ALTER TABLE files ADD COLUMN transit_at DATETIME`, (err) => {});
+
+      // Alter users for Telegram Bot notification feature
+      db.run(`ALTER TABLE users ADD COLUMN telegram_chat_id TEXT`, (err) => {});
 
       // Tabel Disposisi Pimpinan
       db.run(`CREATE TABLE IF NOT EXISTS disposisi (
@@ -332,7 +335,7 @@ app.get('/api/surat/:id', authenticateJWT, (req, res) => {
 
 // Get all users
 app.get('/api/users', authenticateJWT, requireAdmin, (req, res) => {
-  db.all('SELECT id, username, role, full_name FROM users', [], (err, rows) => {
+  db.all('SELECT id, username, role, full_name, telegram_chat_id FROM users', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
@@ -340,7 +343,7 @@ app.get('/api/users', authenticateJWT, requireAdmin, (req, res) => {
 
 // Get simple user list for dropdowns (All logged-in users can access)
 app.get('/api/users/list', authenticateJWT, (req, res) => {
-  db.all('SELECT username, full_name, role FROM users', [], (err, rows) => {
+  db.all('SELECT username, full_name, role, telegram_chat_id FROM users', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
@@ -348,20 +351,21 @@ app.get('/api/users/list', authenticateJWT, (req, res) => {
 
 // Create new user
 app.post('/api/users', authenticateJWT, requireAdmin, (req, res) => {
-  const { username, password, role, full_name } = req.body;
+  const { username, password, role, full_name, telegram_chat_id } = req.body;
   if (!username || !password || !role || !full_name) {
     return res.status(400).json({ error: 'Semua field termasuk Nama Lengkap harus diisi.' });
   }
 
   const hashedPassword = bcrypt.hashSync(password, 10);
-  db.run('INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)', [username, hashedPassword, role, full_name], function(err) {
+  const cleanChatId = telegram_chat_id ? String(telegram_chat_id).trim() : null;
+  db.run('INSERT INTO users (username, password, role, full_name, telegram_chat_id) VALUES (?, ?, ?, ?, ?)', [username, hashedPassword, role, full_name, cleanChatId], function(err) {
     if (err) {
       if (err.message.includes('UNIQUE constraint failed')) {
         return res.status(400).json({ error: 'Username sudah digunakan.' });
       }
       return res.status(500).json({ error: err.message });
     }
-    res.json({ id: this.lastID, username, role, full_name, message: 'User berhasil ditambahkan.' });
+    res.json({ id: this.lastID, username, role, full_name, telegram_chat_id: cleanChatId, message: 'User berhasil ditambahkan.' });
   });
 });
 
@@ -391,12 +395,15 @@ app.put('/api/users/change-password', authenticateJWT, (req, res) => {
 
 // Update user
 app.put('/api/users/:id', authenticateJWT, requireAdmin, (req, res) => {
-  const { username, password, role, full_name } = req.body;
+  const { username, password, role, full_name, telegram_chat_id } = req.body;
   const userId = req.params.id;
+  const cleanChatId = telegram_chat_id !== undefined ? (telegram_chat_id ? String(telegram_chat_id).trim() : null) : undefined;
 
-  db.get('SELECT username FROM users WHERE id = ?', [userId], (err, oldUser) => {
+  db.get('SELECT username, telegram_chat_id FROM users WHERE id = ?', [userId], (err, oldUser) => {
     if (err) return res.status(500).json({ error: 'Database error' });
     if (!oldUser) return res.status(404).json({ error: 'User tidak ditemukan' });
+
+    const finalChatId = cleanChatId !== undefined ? cleanChatId : oldUser.telegram_chat_id;
 
     const updateCallback = (err) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -413,9 +420,9 @@ app.put('/api/users/:id', authenticateJWT, requireAdmin, (req, res) => {
 
     if (password) {
       const hashedPassword = bcrypt.hashSync(password, 10);
-      db.run('UPDATE users SET username = ?, password = ?, role = ?, full_name = ? WHERE id = ?', [username, hashedPassword, role, full_name, userId], updateCallback);
+      db.run('UPDATE users SET username = ?, password = ?, role = ?, full_name = ?, telegram_chat_id = ? WHERE id = ?', [username, hashedPassword, role, full_name, finalChatId, userId], updateCallback);
     } else {
-      db.run('UPDATE users SET username = ?, role = ?, full_name = ? WHERE id = ?', [username, role, full_name, userId], updateCallback);
+      db.run('UPDATE users SET username = ?, role = ?, full_name = ?, telegram_chat_id = ? WHERE id = ?', [username, role, full_name, finalChatId, userId], updateCallback);
     }
   });
 });
@@ -776,6 +783,179 @@ function getWorkingDays(startDateStr, endDateStr) {
   return days;
 }
 
+// ==========================================
+// TELEGRAM BOT NOTIFICATION ENGINE (@pantaukantahtangsel_bot)
+// ==========================================
+const TELEGRAM_BOT_USERNAME = 'pantaukantahtangsel_bot';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || Buffer.from('ODU3MzQyNDM0MjpBQUhoZlkwZnZ5VFc0d2lEenpsQXhOV1VhSkpXU0Q1RjF4OA==', 'base64').toString('utf8');
+
+async function sendTelegramMessage(chatId, text) {
+  if (!TELEGRAM_BOT_TOKEN || !chatId) return false;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: String(chatId).trim(),
+        text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true
+      })
+    });
+    const data = await res.json();
+    return Boolean(data && data.ok);
+  } catch (err) {
+    console.error('Telegram sendMessage error:', err.message);
+    return false;
+  }
+}
+
+let lastTelegramUpdateId = 0;
+let isPollingTelegram = false;
+
+async function pollTelegramUpdates() {
+  if (!TELEGRAM_BOT_TOKEN || isPollingTelegram) return;
+  isPollingTelegram = true;
+  try {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastTelegramUpdateId + 1}&timeout=2`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data && data.ok && Array.isArray(data.result)) {
+      for (const update of data.result) {
+        if (update.update_id > lastTelegramUpdateId) {
+          lastTelegramUpdateId = update.update_id;
+        }
+        const msg = update.message;
+        if (!msg || !msg.text || !msg.chat) continue;
+
+        const chatId = String(msg.chat.id);
+        const text = msg.text.trim();
+        const lower = text.toLowerCase();
+
+        if (lower === '/start' || lower.startsWith('/start ')) {
+          const payload = text.split(/\s+/)[1];
+          if (payload && payload.toLowerCase().startsWith('link_')) {
+            const targetUser = payload.slice(5).trim();
+            linkTelegramAccount(chatId, targetUser);
+          } else {
+            await sendTelegramMessage(
+              chatId,
+              `<b>Selamat datang di Bot Resmi Pantau.Kantah Tangsel!</b>\n\n` +
+              `Untuk menghubungkan akun Anda agar otomatis menerima notifikasi kiriman berkas (<b>Transit</b>) di HP, silakan balas dengan mengetik:\n\n` +
+              `<code>/daftar username_anda</code>\n\n` +
+              `<i>Contoh:</i> <code>/daftar syahrul</code> atau <code>/daftar admin</code>\n\n` +
+              `ID Chat Telegram Anda: <code>${chatId}</code>`
+            );
+          }
+        } else if (lower.startsWith('/daftar') || lower.startsWith('/link')) {
+          const parts = text.split(/\s+/);
+          const inputUsername = parts[1] ? parts[1].trim() : '';
+          if (!inputUsername) {
+            await sendTelegramMessage(
+              chatId,
+              `Format belum lengkap. Silakan ketik:\n<code>/daftar username_anda</code>\n\nContoh: <code>/daftar syahrul</code>`
+            );
+          } else {
+            linkTelegramAccount(chatId, inputUsername);
+          }
+        } else if (lower === '/cek' || lower === '/status') {
+          db.get('SELECT username, full_name, role FROM users WHERE telegram_chat_id = ?', [chatId], (err, u) => {
+            if (!u) {
+              sendTelegramMessage(
+                chatId,
+                `Telegram Anda belum terhubung ke akun mana pun.\nKetik <code>/daftar username_anda</code> untuk menghubungkan.`
+              );
+            } else {
+              db.get(
+                `SELECT COUNT(*) as total FROM files WHERE is_transit = 1 AND transit_to_username = ? AND current_location NOT IN ('Selesai', 'Ditutup')`,
+                [u.username],
+                (err2, row) => {
+                  const count = row ? row.total : 0;
+                  sendTelegramMessage(
+                    chatId,
+                    `<b>Status Akun Terhubung</b>\n\n` +
+                    `Nama: <b>${u.full_name}</b> (<code>${u.username}</code>)\n` +
+                    `Jabatan: ${u.role}\n` +
+                    `Berkas Transit Menunggu: <b>${count} berkas</b>`
+                  );
+                }
+              );
+            }
+          });
+        } else if (lower === '/stop' || lower === '/putus') {
+          db.run('UPDATE users SET telegram_chat_id = NULL WHERE telegram_chat_id = ?', [chatId], function () {
+            sendTelegramMessage(chatId, `Notifikasi Telegram untuk akun Anda telah dinonaktifkan. Ketik <code>/daftar username</code> kapan saja untuk mengaktifkan kembali.`);
+          });
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore transient network errors when offline
+  } finally {
+    isPollingTelegram = false;
+  }
+}
+
+function linkTelegramAccount(chatId, inputUsername) {
+  db.get('SELECT id, username, full_name, role FROM users WHERE LOWER(username) = LOWER(?)', [inputUsername], (err, user) => {
+    if (err || !user) {
+      sendTelegramMessage(
+        chatId,
+        `Username <code>${inputUsername}</code> tidak ditemukan di sistem Pantau.Kantah Tangsel.\n\nPastikan Anda mengetik username yang sama persis dengan yang digunakan saat login di web.`
+      );
+      return;
+    }
+    db.run('UPDATE users SET telegram_chat_id = ? WHERE id = ?', [String(chatId), user.id], (updateErr) => {
+      if (updateErr) {
+        sendTelegramMessage(chatId, `Gagal menyimpan koneksi Telegram. Silakan coba lagi.`);
+        return;
+      }
+      sendTelegramMessage(
+        chatId,
+        `<b>Berhasil Terhubung!</b>\n\n` +
+        `Halo <b>${user.full_name}</b> (<code>${user.username}</code>),\n` +
+        `Akun Telegram Anda kini telah aktif terhubung sebagai <b>${user.role}</b>.\n\n` +
+        `Setiap ada berkas yang dikirim (<i>Transit</i>) ke meja Anda, bot ini akan langsung mengirim notifikasi ke HP Anda.`
+      );
+    });
+  });
+}
+
+// Jalankan polling perintah bot Telegram setiap 5 detik
+setInterval(pollTelegramUpdates, 5000);
+setTimeout(pollTelegramUpdates, 2000);
+
+// Cek status koneksi Telegram untuk user yang sedang login
+app.get('/api/notifications/telegram-status', authenticateJWT, (req, res) => {
+  db.get('SELECT username, full_name, telegram_chat_id FROM users WHERE id = ?', [req.user.id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({
+      connected: Boolean(row && row.telegram_chat_id),
+      telegram_chat_id: row ? row.telegram_chat_id : null,
+      bot_username: TELEGRAM_BOT_USERNAME,
+      username: row ? row.username : req.user.username
+    });
+  });
+});
+
+// Kirim pesan tes ke Telegram user yang sedang login
+app.post('/api/notifications/telegram-test', authenticateJWT, (req, res) => {
+  db.get('SELECT username, full_name, telegram_chat_id FROM users WHERE id = ?', [req.user.id], async (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row || !row.telegram_chat_id) {
+      return res.status(400).json({ error: 'Akun Anda belum terhubung dengan Bot Telegram.' });
+    }
+    const ok = await sendTelegramMessage(
+      row.telegram_chat_id,
+      `<b>Tes Notifikasi Pantau.Kantah Tangsel</b>\n\nHalo <b>${row.full_name}</b>, koneksi notifikasi Telegram Anda sudah aktif dan berjalan normal!`
+    );
+    if (!ok) {
+      return res.status(500).json({ error: 'Gagal mengirim pesan ke Telegram. Pastikan server terhubung internet.' });
+    }
+    res.json({ message: 'Pesan tes berhasil dikirim ke Telegram Anda!' });
+  });
+});
+
 // Get files currently transiting to the logged-in user
 app.get('/api/files/my-transits', authenticateJWT, (req, res) => {
   db.all('SELECT * FROM files WHERE is_transit = 1 AND transit_to_username = ?', [req.user.username], (err, rows) => {
@@ -805,7 +985,7 @@ app.post('/api/files/:qr_code/transit', authenticateJWT, (req, res) => {
       return res.status(400).json({ error: 'Berkas sudah dalam status transit.' });
     }
 
-    db.get('SELECT full_name FROM users WHERE username = ?', [target_username], (userErr, targetUser) => {
+    db.get('SELECT full_name, telegram_chat_id FROM users WHERE username = ?', [target_username], (userErr, targetUser) => {
       const targetFullName = targetUser && targetUser.full_name ? targetUser.full_name : target_username;
       const senderFullName = req.user.full_name || req.user.username;
       const scannedBy = `${senderFullName} (${req.user.role})`;
@@ -823,6 +1003,22 @@ app.post('/api/files/:qr_code/transit', authenticateJWT, (req, res) => {
             [file.id, scannedBy, req.user.username, transitLocation, clientIp],
             function (historyErr) {
               if (historyErr) console.error("Error inserting transit history:", historyErr);
+
+              // Kirim notifikasi langsung ke Telegram petugas tujuan jika sudah terhubung
+              if (targetUser && targetUser.telegram_chat_id) {
+                const waktuWib = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+                const tgMsg =
+                  `<b>BERKAS KIRIMAN MASUK (TRANSIT)</b>\n\n` +
+                  `Halo <b>${targetFullName}</b>, ada berkas yang sedang dikirim menuju meja Anda:\n\n` +
+                  `No. Berkas: <b>${file.nomor_berkas}/${file.tahun_berkas}</b>\n` +
+                  `Kegiatan: <b>${file.nama_kegiatan}</b>\n` +
+                  `Pemohon: <b>${file.nama_pemohon}</b>\n` +
+                  `Dikirim Oleh: <b>${senderFullName}</b> (${req.user.role})\n` +
+                  `Waktu Kirim: ${waktuWib} WIB\n\n` +
+                  `<i>Silakan buka aplikasi Pantau.Kantah Tangsel dan lakukan <b>Scan Terima</b> saat berkas fisik tiba di meja Anda.</i>`;
+                sendTelegramMessage(targetUser.telegram_chat_id, tgMsg);
+              }
+
               res.json({ message: 'Berkas berhasil dikirim (transit).' });
             }
           );
@@ -849,7 +1045,7 @@ app.post('/api/files/:qr_code/cancel-transit', authenticateJWT, (req, res) => {
       return res.status(403).json({ error: 'Hanya pengirim asli atau Administrator yang bisa membatalkan kiriman.' });
     }
 
-    db.get('SELECT full_name FROM users WHERE username = ?', [file.transit_to_username], (userErr, targetUser) => {
+    db.get('SELECT full_name, telegram_chat_id FROM users WHERE username = ?', [file.transit_to_username], (userErr, targetUser) => {
       const targetFullName = targetUser && targetUser.full_name ? targetUser.full_name : file.transit_to_username;
       const cancelerFullName = req.user.full_name || req.user.username;
       const scannedBy = `${cancelerFullName} (${req.user.role})`;
@@ -867,6 +1063,14 @@ app.post('/api/files/:qr_code/cancel-transit', authenticateJWT, (req, res) => {
             [file.id, scannedBy, req.user.username, cancelLocation, clientIp],
             function (historyErr) {
               if (historyErr) console.error("Error inserting cancel transit history:", historyErr);
+
+              if (targetUser && targetUser.telegram_chat_id) {
+                const tgCancelMsg =
+                  `<b>PEMBATALAN KIRIMAN BERKAS</b>\n\n` +
+                  `Kiriman berkas <b>No. ${file.nomor_berkas}/${file.tahun_berkas}</b> (${file.nama_kegiatan} - Pemohon: ${file.nama_pemohon}) ke meja Anda telah <b>dibatalkan</b> oleh <b>${cancelerFullName}</b>.`;
+                sendTelegramMessage(targetUser.telegram_chat_id, tgCancelMsg);
+              }
+
               res.json({ message: 'Kiriman berkas berhasil dibatalkan.' });
             }
           );

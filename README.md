@@ -27,7 +27,7 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 - **QR Code Anti-Palsu:** Setiap QR Code dienkripsi dan ditandatangani menggunakan *JSON Web Token* (`JWT_SECRET`), sehingga QR Code dari luar sistem otomatis ditolak.
 - **Pemindaian Fleksibel:** Mendukung pemindaian langsung melalui kamera perangkat (*smartphone*/PC) maupun unggah gambar QR Code dari galeri/dokumen.
 
-### 3. 🔄 Sistem *Strict Transit* & 🔔 Lonceng Notifikasi Suara *Real-Time*
+### 3. 🔄 Sistem *Strict Transit*, 🔔 Lonceng Notifikasi Suara, & 🤖 Bot Telegram Resmi
 - **Pengiriman Terarah (*Transit*):** Petugas tidak dapat memindai berkas secara sembarangan sebelum pemegang berkas sebelumnya menekan tombol **Kirim Berkas (Transit)** dan memilih nama petugas tujuan.
 - **Batal Kirim:** Pengirim atau Administrator dapat membatalkan status transit jika terjadi kesalahan pemilihan petugas tujuan.
 - **Lonceng Notifikasi & Peringatan Suara Otomatis (`NotificationBell`):**
@@ -35,6 +35,9 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
   - **Nada Panggilan *Web Audio Chime* (~3,2 Detik):** Membunyikan nada *chime* pengumuman 2 putaran yang nyaring dan jernih menggunakan *Web Audio API* bawaan browser (100% berjalan di jaringan lokal tanpa internet maupun file audio eksternal).
   - **Deteksi Saat Login & *Auto-Polling* (Tiap 20 Detik):** Memberikan notifikasi suara dan *popup* otomatis baik saat petugas baru saja login (jika ada berkas kiriman yang menunggu) maupun saat ada petugas lain yang baru mengirimkan berkas secara *real-time*.
   - **Dropdown Kiriman Berkas:** Menampilkan Nomor Berkas, Waktu Kirim, Jenis Kegiatan, Nama Pemohon, dan Nama Pengirim beserta tombol pintas **Detail Berkas** dan **Scan Terima**.
+- **Integrasi Bot Telegram Resmi (`@pantaukantahtangsel_bot`):**
+  - Setiap petugas dapat menghubungkan akunnya secara mandiri dalam 1 klik melalui tautan **Hubungkan Notifikasi Telegram HP** di menu lonceng (atau mengetik `/daftar username` di bot `@pantaukantahtangsel_bot`).
+  - Saat ada berkas dikirim (*Transit*) atau dibatalkan, server otomatis mengirim pesan notifikasi *real-time* langsung ke Telegram HP petugas tujuan meskipun petugas sedang tidak membuka browser/aplikasi web.
 
 ### 4. ⏱️ Mesin Perhitungan Hari Kerja SOP/SLA & *Pause/Resume*
 - **Kalender Hari Kerja Cerdas:** Perhitungan umur berkas dan jatuh tempo SOP secara otomatis **mengabaikan hari Sabtu, Minggu, serta Hari Libur Nasional & Cuti Bersama (SKB 3 Menteri)**.

@@ -67,7 +67,7 @@ function UserManagement() {
     (u.full_name && u.full_name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
   
-  const [formData, setFormData] = useState({ username: '', full_name: '', password: '', role: 'Petugas Entry Berkas' });
+  const [formData, setFormData] = useState({ username: '', full_name: '', password: '', role: 'Petugas Entry Berkas', telegram_chat_id: '' });
   const [editUserId, setEditUserId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -103,7 +103,7 @@ function UserManagement() {
         await api.post('/users', formData);
         toast.success('Pengguna berhasil ditambahkan!');
       }
-      setFormData({ username: '', full_name: '', password: '', role: 'Petugas Entry Berkas' });
+      setFormData({ username: '', full_name: '', password: '', role: 'Petugas Entry Berkas', telegram_chat_id: '' });
       fetchUsers();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Gagal menyimpan pengguna');
@@ -116,13 +116,14 @@ function UserManagement() {
       username: user.username,
       full_name: user.full_name || '',
       password: '', // Kosongkan agar tidak tertimpa kecuali diisi
-      role: user.role
+      role: user.role,
+      telegram_chat_id: user.telegram_chat_id || ''
     });
   };
 
   const cancelEdit = () => {
     setEditUserId(null);
-    setFormData({ username: '', full_name: '', password: '', role: 'Petugas Entry Berkas' });
+    setFormData({ username: '', full_name: '', password: '', role: 'Petugas Entry Berkas', telegram_chat_id: '' });
   };
 
   const handleDeleteUser = async (id, username) => {
@@ -207,6 +208,17 @@ function UserManagement() {
               </div>
             </div>
             <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+                Telegram Chat ID <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>(Opsional / Otomatis saat user klik Start di Bot)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Contoh: 123456789 (atau ketik /daftar di @pantaukantahtangsel_bot)"
+                value={formData.telegram_chat_id || ''}
+                onChange={(e) => setFormData({ ...formData, telegram_chat_id: e.target.value })}
+              />
+            </div>
+            <div>
               <label style={{ display: 'block', marginBottom: '0.5rem' }}>Role / Jabatan (Bisa pilih lebih dari satu)</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                 {AVAILABLE_ROLES.map(roleOption => {
@@ -276,6 +288,7 @@ function UserManagement() {
                   <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <th style={{ padding: '1rem' }}>Username</th>
                     <th style={{ padding: '1rem' }}>Nama Lengkap</th>
+                    <th style={{ padding: '1rem' }}>Telegram</th>
                     <th style={{ padding: '1rem' }}>Role</th>
                     <th style={{ padding: '1rem', textAlign: 'right' }}>Aksi</th>
                   </tr>
@@ -283,7 +296,7 @@ function UserManagement() {
                 <tbody>
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                         Tidak ada pengguna yang sesuai pencarian.
                       </td>
                     </tr>
@@ -291,6 +304,17 @@ function UserManagement() {
                     <tr key={u.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                       <td style={{ padding: '1rem' }}><strong>{u.username}</strong></td>
                       <td style={{ padding: '1rem' }}>{u.full_name}</td>
+                      <td style={{ padding: '1rem' }}>
+                        {u.telegram_chat_id ? (
+                          <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.18)', color: '#34d399', fontSize: '0.75rem' }}>
+                            Terhubung ({u.telegram_chat_id})
+                          </span>
+                        ) : (
+                          <span className="badge" style={{ background: 'rgba(255, 255, 255, 0.06)', color: '#64748b', fontSize: '0.75rem' }}>
+                            Belum Terhubung
+                          </span>
+                        )}
+                      </td>
                       <td style={{ padding: '1rem' }}>
                         <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                           {u.role ? u.role.split(',').map(r => r.trim()).map(role => (
