@@ -344,6 +344,25 @@ export default function HomeHub() {
           border-color: rgba(245, 158, 11, 0.5);
           transform: translateY(-1px);
         }
+
+        @media (max-width: 640px) {
+          .hub-topbar {
+            padding: 0.65rem 0.9rem;
+          }
+          .hub-topbar-inner {
+            flex-wrap: nowrap;
+            gap: 0.5rem;
+          }
+          .hub-user-badge {
+            flex: 1;
+            min-width: 0;
+            padding: 0.45rem 0.75rem;
+          }
+          .hub-logout-btn {
+            padding: 0.5rem 0.85rem;
+            font-size: 0.8rem;
+          }
+        }
       `}</style>
 
       <div className="hub-bg-grid" />
@@ -354,18 +373,18 @@ export default function HomeHub() {
       <header className="hub-topbar">
         <div className="hub-topbar-inner">
           <div className="hub-user-badge">
-            <span className="hub-user-dot" />
-            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f8fafc', lineHeight: 1.2 }}>
+            <span className="hub-user-dot" style={{ flexShrink: 0 }} />
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f8fafc', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {fullName}
               </span>
-              <span style={{ fontSize: '0.73rem', color: '#94a3b8', marginTop: '2px' }}>
+              <span style={{ fontSize: '0.73rem', color: '#94a3b8', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {roleStr || 'Petugas'}
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', flexShrink: 0 }}>
             <NotificationBell />
             <button onClick={handleLogout} className="hub-logout-btn">
               <LogOut size={16} />

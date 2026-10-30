@@ -139,7 +139,7 @@ export default function NotificationBell() {
         }
 
         if (isInitialSessionCheck && newItems.length > 1) {
-          toast(`Ã°Å¸â€â€ Anda memiliki ${items.length} berkas kiriman (Transit) yang menunggu di-scan terima!`, {
+          toast(`ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Anda memiliki ${items.length} berkas kiriman (Transit) yang menunggu di-scan terima!`, {
             duration: 6000,
             style: {
               background: 'rgba(15, 23, 42, 0.95)',
@@ -151,7 +151,7 @@ export default function NotificationBell() {
         } else {
           const latest = newItems[0];
           const sender = latest.transit_by_fullname || latest.transit_by_username || 'Petugas';
-          toast(`Ã°Å¸â€œÂ¦ Berkas Kiriman Masuk: ${latest.nomor_berkas}/${latest.tahun_berkas} dari ${sender}`, {
+          toast(`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Berkas Kiriman Masuk: ${latest.nomor_berkas}/${latest.tahun_berkas} dari ${sender}`, {
             duration: 6000,
             style: {
               background: 'rgba(15, 23, 42, 0.95)',
@@ -186,7 +186,7 @@ export default function NotificationBell() {
     };
   }, [fetchNotifications]);
 
-  // Jika browser sempat menahan autoplay audio saat halaman baru dibuka, bunyikan saat klik pertama
+  // Jika browser sempat menahan autoplay audio saat halaman baru dibuka, bunyikan saat klik/sentuhan pertama
   useEffect(() => {
     const unlockAudio = () => {
       if (pendingSoundRef.current) {
@@ -195,10 +195,14 @@ export default function NotificationBell() {
       }
     };
     window.addEventListener('click', unlockAudio, { once: true });
-    return () => window.removeEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
   }, []);
 
-  // Tutup dropdown jika klik di luar
+  // Tutup dropdown jika klik/sentuh di luar
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -207,8 +211,12 @@ export default function NotificationBell() {
     };
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, [isOpen]);
 
   const toggleMute = (e) => {
@@ -220,7 +228,7 @@ export default function NotificationBell() {
       playNotificationChime();
       toast.success('Suara notifikasi diaktifkan');
     } else {
-      toast('Suara notifikasi dibisukan', { icon: 'Ã°Å¸â€â€¡' });
+      toast('Suara notifikasi dibisukan', { icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â¡' });
     }
   };
 
@@ -293,6 +301,32 @@ export default function NotificationBell() {
           justify-content: center;
           box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
         }
+        .notif-dropdown-panel {
+          position: absolute;
+          top: calc(100% + 10px);
+          right: 0;
+          width: 360px;
+          max-width: 92vw;
+          background: rgba(15, 23, 42, 0.97);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 16px;
+          box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          z-index: 2000;
+          overflow: hidden;
+          text-align: left;
+        }
+        @media (max-width: 768px) {
+          .notif-dropdown-panel {
+            position: fixed;
+            top: 72px;
+            left: 12px;
+            right: 12px;
+            width: auto;
+            max-width: none;
+          }
+        }
       `}</style>
 
       <button
@@ -310,24 +344,7 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 10px)',
-            right: 0,
-            width: '360px',
-            maxWidth: '92vw',
-            background: 'rgba(15, 23, 42, 0.97)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '16px',
-            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.65)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            zIndex: 2000,
-            overflow: 'hidden',
-            textAlign: 'left'
-          }}
-        >
+        <div className="notif-dropdown-panel">
           {/* Header Dropdown */}
           <div
             style={{
