@@ -10,6 +10,10 @@ services:
       # PENTING: Me-mapping database.sqlite dari dalam container ke luar (host QNAP)
       # agar data tidak hilang ketika container di-restart atau di-update!
       - ./backend/database.sqlite:/app/backend/database.sqlite
+      - ./backend/server.js:/app/backend/server.js
+      - ./backend/cert.pem:/app/backend/cert.pem
+      - ./backend/key.pem:/app/backend/key.pem
+      - ./frontend/dist:/app/frontend/dist
     environment:
       - NODE_ENV=production
 
