@@ -1,6 +1,9 @@
 ﻿# Aturan Kerja Otomatis & Tim Subagent (PC Kantor & Mac Pribadi)
 
-Setiap kali melakukan perubahan kode pada proyek **Pantau SP Tangsel (`file-tracker`)**, Agent **WAJIB** langsung menjalankan langkah-langkah berikut secara otomatis tanpa menunggu perintah dari pengguna:
+Setiap kali bekerja pada proyek **Pantau SP Tangsel (`file-tracker`)**, Agent **WAJIB** langsung menjalankan langkah-langkah berikut secara otomatis tanpa menunggu perintah dari pengguna:
+
+0. **Tarik Perubahan Terbaru di Awal Sesi (`git pull`)**:
+   - Sebelum mulai mengedit kode di awal sesi (baik di **Mac Pribadi** maupun di **PC Kantor**), jalankan `git pull origin main` terlebih dahulu pada workspace lokal agar perubahan dari perangkat lain langsung tersinkronisasi.
 
 1. **Uji Build Lokal (Sesuai Perangkat yang Sedang Digunakan)**:
    - **Di Windows (PC Kantor)**: Jalankan `npm.cmd run build` di dalam folder `frontend`.
