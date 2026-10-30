@@ -608,6 +608,17 @@ export default function Login() {
         .p-input-raw::placeholder {
           color: #475569;
         }
+        .p-input-raw:-webkit-autofill,
+        .p-input-raw:-webkit-autofill:hover,
+        .p-input-raw:-webkit-autofill:focus,
+        .p-input-raw:-webkit-autofill:active {
+          -webkit-text-fill-color: #f8fafc !important;
+          caret-color: #f8fafc !important;
+          -webkit-box-shadow: 0 0 0 1000px #0d1526 inset !important;
+          box-shadow: 0 0 0 1000px #0d1526 inset !important;
+          transition: background-color 9999s ease-in-out 0s;
+          border-radius: 6px;
+        }
 
         .p-eye-btn {
           width: 24px;

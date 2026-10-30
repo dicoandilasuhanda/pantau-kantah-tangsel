@@ -97,6 +97,17 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-main) !important;
+  caret-color: var(--text-main) !important;
+  -webkit-box-shadow: 0 0 0 1000px #0d1526 inset !important;
+  box-shadow: 0 0 0 1000px #0d1526 inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 button {
   background: var(--primary-color);
   color: white;
