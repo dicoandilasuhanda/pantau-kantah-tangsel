@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import api from '../../utils/api';
-import { Activity, CheckCircle, Clock, Download, Trash2, Lock, Filter, RotateCcw, Calendar, Users } from 'lucide-react';
+import { Activity, CheckCircle, Clock, Download, Trash2, Lock, Filter, RotateCcw, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
@@ -365,12 +365,6 @@ export default function AdminDashboard() {
             style={{ width: 'auto', background: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
           >
             <Download size={18} /> Unduh Laporan Excel ({filteredFiles.length})
-          </button>
-          <button
-            onClick={() => navigate('/admin/users')}
-            style={{ width: 'auto', background: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            <Users size={18} /> Manajemen Pengguna
           </button>
         </div>
       </div>
