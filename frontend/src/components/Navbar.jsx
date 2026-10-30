@@ -1,8 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, Scan, PlusSquare, Key, X, BarChart2, Home, Mail, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -33,6 +34,8 @@ export default function Navbar() {
     localStorage.removeItem('full_name');
     localStorage.removeItem('fullName');
     sessionStorage.removeItem('session_active');
+    sessionStorage.removeItem('notified_transit_map');
+    sessionStorage.removeItem('notif_initial_checked');
     navigate('/login');
   };
 
@@ -170,6 +173,8 @@ export default function Navbar() {
               <BarChart2 size={20} /> Dashboard
             </Link>
           )}
+
+          <NotificationBell />
 
           <button className="secondary" onClick={() => setShowPasswordModal(true)} style={{ padding: '0.5rem 1rem', width: 'auto' }} title="Ubah Kata Sandi">
             <Key size={16} /> Ubah Sandi

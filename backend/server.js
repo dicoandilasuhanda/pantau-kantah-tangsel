@@ -602,17 +602,40 @@ app.get('/api/files', authenticateJWT, (req, res) => {
   const query = `
     SELECT f.*, 
            u_to.full_name as transit_to_fullname,
+           u_by.full_name as transit_by_fullname,
            (SELECT scanned_at FROM file_history fh WHERE fh.file_id = f.id ORDER BY scanned_at DESC LIMIT 1) as updated_at,
            (SELECT scanned_by_username FROM file_history fh WHERE fh.file_id = f.id ORDER BY scanned_at DESC LIMIT 1) as latest_scanned_by_username,
            (SELECT scanned_by_role FROM file_history fh WHERE fh.file_id = f.id ORDER BY scanned_at DESC LIMIT 1) as latest_scan_info,
            (SELECT COUNT(*) FROM file_history fh WHERE fh.file_id = f.id AND fh.location = 'Loket Pendaftaran (Entry)') as loket_entry_count
     FROM files f 
     LEFT JOIN users u_to ON f.transit_to_username = u_to.username
+    LEFT JOIN users u_by ON f.transit_by_username = u_by.username
     ORDER BY f.created_at DESC
   `;
   db.all(query, [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
+  });
+});
+
+// Get active transit notifications for the logged-in user
+app.get('/api/notifications/transit', authenticateJWT, (req, res) => {
+  const username = req.user.username;
+  const query = `
+    SELECT f.id, f.qr_code, f.nomor_berkas, f.tahun_berkas, f.nama_kegiatan, f.nama_pemohon,
+           f.current_location, f.is_transit, f.transit_to_username, f.transit_by_username, f.transit_at,
+           u_by.full_name as transit_by_fullname,
+           u_by.role as transit_by_role
+    FROM files f
+    LEFT JOIN users u_by ON f.transit_by_username = u_by.username
+    WHERE f.is_transit = 1
+      AND f.transit_to_username = ?
+      AND f.current_location NOT IN ('Selesai', 'Ditutup')
+    ORDER BY f.transit_at DESC, f.id DESC
+  `;
+  db.all(query, [username], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows || []);
   });
 });
 

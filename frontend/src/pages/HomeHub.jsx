@@ -1,5 +1,6 @@
-import { useNavigate } from 'react-router-dom';
+﻿import { useNavigate } from 'react-router-dom';
 import { FolderKanban, Mail, Users, LogOut, ArrowRight, Shield, LayoutDashboard } from 'lucide-react';
+import NotificationBell from '../components/NotificationBell';
 
 export default function HomeHub() {
   const navigate = useNavigate();
@@ -25,6 +26,8 @@ export default function HomeHub() {
     localStorage.removeItem('full_name');
     localStorage.removeItem('fullName');
     sessionStorage.removeItem('session_active');
+    sessionStorage.removeItem('notified_transit_map');
+    sessionStorage.removeItem('notif_initial_checked');
     navigate('/login');
   };
 
@@ -362,10 +365,13 @@ export default function HomeHub() {
             </div>
           </div>
 
-          <button onClick={handleLogout} className="hub-logout-btn">
-            <LogOut size={16} />
-            Logout
-          </button>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
+            <NotificationBell />
+            <button onClick={handleLogout} className="hub-logout-btn">
+              <LogOut size={16} />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
