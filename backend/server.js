@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -127,6 +127,9 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
         file_path TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
+
+      // One-time patch for Syahrul's orphaned history (flexible matching)
+      db.run(`UPDATE file_history SET scanned_by_username = 'syahrul' WHERE scanned_by_username LIKE '%yahrul%' AND scanned_by_username != 'syahrul'`, (err) => {});
 
       // Auto-repair file_history records where full_name was missing (only role was saved)
       db.run(`
@@ -548,8 +551,10 @@ app.post('/api/files', authenticateJWT, (req, res) => {
     'Pendaftaran Tanah Pertama Kali Pemberian Hak', 
     'Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak', 
     'Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)', 
-    'Permohonan SK',
-    'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf'
+    'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf',
+    'Sertipikat Pengganti Karena Hilang/Lelang Eksekusi',
+    'Sertipikat Pengganti Karena Rusak/Lama',
+    'Permohonan SK'
   ];
   const isK2 = K2_Kegiatan.includes(nama_kegiatan);
 
@@ -711,6 +716,9 @@ const KELOMPOK_MAPPING = {
   'Pendaftaran Tanah Pertama Kali Pemberian Hak': 'K2',
   'Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak': 'K2',
   'Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)': 'K2',
+  'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf': 'K2',
+  'Sertipikat Pengganti Karena Hilang/Lelang Eksekusi': 'K2',
+  'Sertipikat Pengganti Karena Rusak/Lama': 'K2',
   'Permohonan SK': 'K2'
 };
 
@@ -981,7 +989,7 @@ app.post('/api/files/scan', authenticateJWT, (req, res) => {
     let custom_message = null;
     if (activeRole === 'Petugas Penyelesaian Berkas') {
       const kegiatanKelompok1 = ['Pengukuran dan Pemetaan Kadastral', 'Pemecahan Bidang', 'Penggabungan Bidang', 'Pemisahan Bidang', 'Penataan Batas'];
-      const kegiatanK2 = ['Pelepasan Sebagian Hak', 'Wakaf dari Tanah Yang Sudah Bersertipikat', 'Pendaftaran Tanah Pertama Kali Pemberian Hak', 'Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak', 'Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)', 'Permohonan SK', 'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf'];
+      const kegiatanK2 = ['Pelepasan Sebagian Hak', 'Wakaf dari Tanah Yang Sudah Bersertipikat', 'Pendaftaran Tanah Pertama Kali Pemberian Hak', 'Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak', 'Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)', 'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf', 'Sertipikat Pengganti Karena Hilang/Lelang Eksekusi', 'Sertipikat Pengganti Karena Rusak/Lama', 'Permohonan SK'];
       
       if (!kegiatanKelompok1.includes(file.nama_kegiatan) && !kegiatanK2.includes(file.nama_kegiatan)) {
          return res.status(400).json({ error: 'Berkas ini bukan kegiatan Kelompok 1 atau Kelompok 2, Anda tidak dapat memprosesnya sebagai Petugas Penyelesaian.' });
@@ -1000,7 +1008,7 @@ app.post('/api/files/scan', authenticateJWT, (req, res) => {
       }
     } else if (activeRole === 'Petugas Seksi PHP') {
       const kegiatanKhususPHP = ['Pemecahan Bidang', 'Penggabungan Bidang', 'Pemisahan Bidang', 'Penataan Batas'];
-      const kegiatanK2 = ['Pelepasan Sebagian Hak', 'Wakaf dari Tanah Yang Sudah Bersertipikat', 'Pendaftaran Tanah Pertama Kali Pemberian Hak', 'Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak', 'Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)', 'Permohonan SK', 'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf'];
+      const kegiatanK2 = ['Pelepasan Sebagian Hak', 'Wakaf dari Tanah Yang Sudah Bersertipikat', 'Pendaftaran Tanah Pertama Kali Pemberian Hak', 'Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak', 'Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)', 'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf', 'Sertipikat Pengganti Karena Hilang/Lelang Eksekusi', 'Sertipikat Pengganti Karena Rusak/Lama', 'Permohonan SK'];
       
       if (file.nama_kegiatan === 'Pengukuran dan Pemetaan Kadastral') {
         return res.status(400).json({ error: 'Mekanisme ini tidak berlaku untuk kegiatan Pengukuran dan Pemetaan Kadastral.' });
