@@ -5,47 +5,80 @@ import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { parseSQLiteDate } from '../utils/dateUtils';
 
-// Fungsi Web Audio API untuk membunyikan nada lonceng notifikasi lembut (tanpa butuh file mp3 eksternal)
-export function playNotificationChime() {
+// Fungsi Web Audio API untuk membunyikan nada lonceng pengumuman kantor yang nyaring, jernih, dan berdurasi ~3.2 detik
+export function playNotificationChime(forcePlay = false) {
   try {
     const isMuted = localStorage.getItem('notif_sound_muted') === 'true';
-    if (isMuted) return false;
+    if (isMuted && !forcePlay) return false;
 
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return false;
 
     const ctx = new AudioCtx();
-    const now = ctx.currentTime;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
 
-    // Nada 1 (Ding - E5)
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(659.25, now);
-    gain1.gain.setValueAtTime(0.001, now);
-    gain1.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
-    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.46);
+    // Compressor agar suara nyaring dan tegas di speaker PC/laptop tanpa pecah
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-18, ctx.currentTime);
+    compressor.knee.setValueAtTime(12, ctx.currentTime);
+    compressor.ratio.setValueAtTime(4, ctx.currentTime);
+    compressor.attack.setValueAtTime(0.003, ctx.currentTime);
+    compressor.release.setValueAtTime(0.15, ctx.currentTime);
 
-    // Nada 2 (Dong tinggi - B5)
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(987.77, now + 0.16);
-    gain2.gain.setValueAtTime(0.001, now + 0.16);
-    gain2.gain.exponentialRampToValueAtTime(0.25, now + 0.18);
-    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + 0.16);
-    osc2.stop(now + 0.86);
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.95, ctx.currentTime);
+    compressor.connect(masterGain);
+    masterGain.connect(ctx.destination);
+
+    // Fungsi pembentuk 1 ketukan lonceng (gabungan gelombang triangle + harmonik sine agar nyaring)
+    const playBellNote = (freq, startOffset, duration, volume = 0.75) => {
+      const start = ctx.currentTime + startOffset;
+      const stop = start + duration;
+
+      // Osilator utama (Triangle - suara tebal & nyaring)
+      const oscMain = ctx.createOscillator();
+      const gainMain = ctx.createGain();
+      oscMain.type = 'triangle';
+      oscMain.frequency.setValueAtTime(freq, start);
+      gainMain.gain.setValueAtTime(0.001, start);
+      gainMain.gain.linearRampToValueAtTime(volume, start + 0.015);
+      gainMain.gain.exponentialRampToValueAtTime(0.0008, stop);
+      oscMain.connect(gainMain);
+      gainMain.connect(compressor);
+      oscMain.start(start);
+      oscMain.stop(stop + 0.02);
+
+      // Osilator harmonik (Sine 2x frekuensi - denting lonceng jernih)
+      const oscHarm = ctx.createOscillator();
+      const gainHarm = ctx.createGain();
+      oscHarm.type = 'sine';
+      oscHarm.frequency.setValueAtTime(freq * 2, start);
+      gainHarm.gain.setValueAtTime(0.001, start);
+      gainHarm.gain.linearRampToValueAtTime(volume * 0.45, start + 0.01);
+      gainHarm.gain.exponentialRampToValueAtTime(0.0005, start + duration * 0.7);
+      oscHarm.connect(gainHarm);
+      gainHarm.connect(compressor);
+      oscHarm.start(start);
+      oscHarm.stop(stop);
+    };
+
+    // Putaran 1: Nada Chime Pengumuman 4-Nada Naik (C5 - E5 - G5 - C6)
+    playBellNote(523.25, 0.00, 0.45, 0.80); // C5
+    playBellNote(659.25, 0.24, 0.45, 0.85); // E5
+    playBellNote(783.99, 0.48, 0.45, 0.85); // G5
+    playBellNote(1046.50, 0.72, 0.90, 0.95); // C6 (Tahan panjang)
+
+    // Putaran 2 (Jeda 0.45 detik lalu ulangi agar benar-benar terdengar oleh petugas)
+    playBellNote(523.25, 1.65, 0.45, 0.80); // C5
+    playBellNote(659.25, 1.89, 0.45, 0.85); // E5
+    playBellNote(783.99, 2.13, 0.45, 0.85); // G5
+    playBellNote(1046.50, 2.37, 1.05, 0.95); // C6 (Penutup panjang)
 
     setTimeout(() => {
       if (ctx.state !== 'closed') ctx.close().catch(() => {});
-    }, 1000);
+    }, 3600);
     return true;
   } catch (e) {
     return false;
@@ -106,7 +139,7 @@ export default function NotificationBell() {
         }
 
         if (isInitialSessionCheck && newItems.length > 1) {
-          toast(`ðŸ”” Anda memiliki ${items.length} berkas kiriman (Transit) yang menunggu di-scan terima!`, {
+          toast(`Ã°Å¸â€â€ Anda memiliki ${items.length} berkas kiriman (Transit) yang menunggu di-scan terima!`, {
             duration: 6000,
             style: {
               background: 'rgba(15, 23, 42, 0.95)',
@@ -118,7 +151,7 @@ export default function NotificationBell() {
         } else {
           const latest = newItems[0];
           const sender = latest.transit_by_fullname || latest.transit_by_username || 'Petugas';
-          toast(`ðŸ“¦ Berkas Kiriman Masuk: ${latest.nomor_berkas}/${latest.tahun_berkas} dari ${sender}`, {
+          toast(`Ã°Å¸â€œÂ¦ Berkas Kiriman Masuk: ${latest.nomor_berkas}/${latest.tahun_berkas} dari ${sender}`, {
             duration: 6000,
             style: {
               background: 'rgba(15, 23, 42, 0.95)',
@@ -187,7 +220,7 @@ export default function NotificationBell() {
       playNotificationChime();
       toast.success('Suara notifikasi diaktifkan');
     } else {
-      toast('Suara notifikasi dibisukan', { icon: 'ðŸ”‡' });
+      toast('Suara notifikasi dibisukan', { icon: 'Ã°Å¸â€â€¡' });
     }
   };
 
@@ -314,6 +347,31 @@ export default function NotificationBell() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  triggerRingAnimation();
+                  playNotificationChime(true);
+                }}
+                title="Tes Bunyi Lonceng Notifikasi"
+                style={{
+                  width: 'auto',
+                  padding: '0.3rem 0.55rem',
+                  background: 'rgba(59, 130, 246, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.35)',
+                  borderRadius: '8px',
+                  color: '#60a5fa',
+                  fontSize: '0.73rem',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}
+              >
+                <Bell size={12} /> Tes Bunyi
+              </button>
+
               <button
                 type="button"
                 onClick={() => fetchNotifications(true)}
