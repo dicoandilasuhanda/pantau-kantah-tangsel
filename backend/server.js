@@ -11,6 +11,7 @@ const multer = require('multer');
 const fs = require('fs');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev'; 
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
@@ -190,6 +191,7 @@ const loginLimiter = rateLimit({
   message: { error: 'Terlalu banyak percobaan login dari IP ini, silakan coba lagi setelah 15 menit.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 // --- API Routes ---
