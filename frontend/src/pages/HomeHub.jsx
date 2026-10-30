@@ -42,8 +42,8 @@ export default function HomeHub() {
           overflow-x: hidden;
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
-          padding: 6.5rem 1.5rem 5rem;
+          justify-content: flex-start;
+          padding: 0 0 5rem 0;
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
@@ -88,17 +88,19 @@ export default function HomeHub() {
           max-width: 1100px;
           width: 100%;
           margin: 0 auto;
+          padding: 2.5rem 1.5rem 1rem;
           position: relative;
           z-index: 1;
         }
 
         .hub-topbar {
-          position: fixed;
+          position: sticky;
           top: 0;
           left: 0;
           right: 0;
+          width: 100%;
           z-index: 100;
-          background: rgba(6, 9, 19, 0.78);
+          background: rgba(6, 9, 19, 0.82);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -347,20 +349,16 @@ export default function HomeHub() {
 
         @media (max-width: 640px) {
           .hub-topbar {
-            padding: 0.65rem 0.9rem;
+            padding: 0.75rem 1rem;
           }
           .hub-topbar-inner {
-            flex-wrap: nowrap;
-            gap: 0.5rem;
+            gap: 0.65rem;
           }
-          .hub-user-badge {
-            flex: 1;
-            min-width: 0;
-            padding: 0.45rem 0.75rem;
+          .hub-container {
+            padding: 1.75rem 1rem 1.5rem;
           }
-          .hub-logout-btn {
-            padding: 0.5rem 0.85rem;
-            font-size: 0.8rem;
+          .hub-hero {
+            margin-bottom: 2rem;
           }
         }
       `}</style>
