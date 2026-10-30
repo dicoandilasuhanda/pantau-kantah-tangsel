@@ -39,7 +39,7 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
   - **Koneksi Mandiri 1-Klik (*Deep-Link*):** Setiap petugas dapat menghubungkan akunnya secara mandiri melalui tombol **Hubungkan Notifikasi Telegram HP** di dalam menu lonceng (otomatis mengarahkan ke `https://t.me/pantaukantahtangsel_bot?start=link_<username>`) atau dengan mengetik `/daftar <username>` langsung di bot `@pantaukantahtangsel_bot`.
   - **Perintah Interaktif Bot:** Mendukung perintah `/start` (panduan & info Chat ID), `/daftar <username>` (menautkan akun), `/cek` atau `/status` (melihat status akun & jumlah berkas transit yang menunggu), serta `/stop` (memutuskan tautan).
   - **Notifikasi *Real-Time* Kirim & Batal Kirim:** Saat berkas dikirim (*Transit*) atau dibatalkan (*Batal Kirim*), server otomatis mengirim pesan rincian berkas langsung ke Telegram HP petugas tujuan meskipun petugas sedang tidak membuka browser/aplikasi web.
-  - **Fitur Tes Kirim, Reset, & Pantauan Admin:** Dilengkapi tombol **Tes Kirim** dan **Reset** di dalam menu lonceng serta indikator status koneksi Telegram (`Terhubung` / `Belum Terhubung`) di halaman **Manajemen Pengguna**.
+  - **Fitur Reset & Pantauan Admin:** Dilengkapi tombol **Reset** di dalam menu lonceng serta indikator status koneksi Telegram (`Terhubung` / `Belum Terhubung`) di halaman **Manajemen Pengguna**.
 
 ### 4. ⏱️ Mesin Perhitungan Hari Kerja SOP/SLA & *Pause/Resume*
 - **Kalender Hari Kerja Cerdas:** Perhitungan umur berkas dan jatuh tempo SOP secara otomatis **mengabaikan hari Sabtu, Minggu, serta Hari Libur Nasional & Cuti Bersama (SKB 3 Menteri)**.
@@ -250,7 +250,7 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
 - **Tahap 9 — Filter Laporan Multi-Dimensi, Rekap Bulanan Excel 2-Sheet, Lonceng Notifikasi Suara, & Bot Telegram Resmi:**
   - Penambahan panel filter komprehensif di `AdminDashboard` (Bulan & Tahun Masuk, Rentang Tanggal, Jenis Kegiatan, Status Berkas, Status SLA) dengan kartu statistik dinamis dan ekspor Excel 2 Sheet otomatis (`Daftar Berkas` & `Rekap Bulanan Kegiatan`).
   - Pembuatan komponen **Lonceng Notifikasi (`NotificationBell.jsx`)** di *HomeHub* dan *Navbar* (Desktop & Mobile) dengan peringatan suara *Web Audio Chime* 2 putaran (~3,2 detik) serta *auto-polling* kiriman berkas *Transit* setiap 20 detik.
-  - Integrasi penuh **Bot Telegram Resmi (`@pantaukantahtangsel_bot`)** untuk pengiriman notifikasi *Transit* dan *Batal Kirim* secara *real-time* ke HP petugas, dilengkapi fitur *1-click deep-linking*, perintah `/daftar` & `/cek`, tombol *Tes Kirim* & *Reset*, serta kolom status Telegram pada `UserManagement`.
+  - Integrasi penuh **Bot Telegram Resmi (`@pantaukantahtangsel_bot`)** untuk pengiriman notifikasi *Transit* dan *Batal Kirim* secara *real-time* ke HP petugas, dilengkapi fitur *1-click deep-linking*, perintah `/daftar` & `/cek`, tombol *Reset*, serta kolom status Telegram pada `UserManagement`.
   - Penyempurnaan tata letak responsif Mobile (*sticky topbar* & anti-cache `index.html`), penyatuan kartu *Admin Panel & Pengguna* di *HomeHub*, pemfokusan *Top 50 Berkas Terlama* khusus berkas aktif, pembatasan hak *Pause/Resume* SOP khusus Administrator, serta sinkronisasi penuh 9 kegiatan Kelompok 2 (PHP) di sisi Backend.
 
 ---

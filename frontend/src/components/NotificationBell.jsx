@@ -93,7 +93,6 @@ export default function NotificationBell() {
     bot_username: 'pantaukantahtangsel_bot',
     username: localStorage.getItem('username') || ''
   });
-  const [sendingTgTest, setSendingTgTest] = useState(false);
   const dropdownRef = useRef(null);
   const pendingSoundRef = useRef(false);
 
@@ -107,18 +106,6 @@ export default function NotificationBell() {
       // ignore
     }
   }, []);
-
-  const handleTestTelegram = async () => {
-    setSendingTgTest(true);
-    try {
-      const res = await api.post('/notifications/telegram-test');
-      toast.success(res.data?.message || 'Pesan tes dikirim ke Telegram!');
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Gagal mengirim pesan tes Telegram', { duration: 6000 });
-    } finally {
-      setSendingTgTest(false);
-    }
-  };
 
   const handleUnlinkTelegram = async () => {
     try {
@@ -522,41 +509,22 @@ export default function NotificationBell() {
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
                     Telegram Terhubung ({tgStatus.telegram_chat_id})
                   </div>
-                  <div style={{ display: 'flex', gap: '0.35rem' }}>
-                    <button
-                      type="button"
-                      disabled={sendingTgTest}
-                      onClick={handleTestTelegram}
-                      style={{
-                        width: 'auto',
-                        padding: '0.3rem 0.6rem',
-                        fontSize: '0.72rem',
-                        background: 'rgba(59, 130, 246, 0.16)',
-                        border: '1px solid rgba(59, 130, 246, 0.35)',
-                        borderRadius: '7px',
-                        color: '#60a5fa',
-                        fontWeight: 600
-                      }}
-                    >
-                      {sendingTgTest ? 'Mengirim...' : 'Tes Kirim'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleUnlinkTelegram}
-                      style={{
-                        width: 'auto',
-                        padding: '0.3rem 0.55rem',
-                        fontSize: '0.72rem',
-                        background: 'rgba(239, 68, 68, 0.14)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        borderRadius: '7px',
-                        color: '#f87171',
-                        fontWeight: 600
-                      }}
-                    >
-                      Reset
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUnlinkTelegram}
+                    style={{
+                      width: 'auto',
+                      padding: '0.3rem 0.55rem',
+                      fontSize: '0.72rem',
+                      background: 'rgba(239, 68, 68, 0.14)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '7px',
+                      color: '#f87171',
+                      fontWeight: 600
+                    }}
+                  >
+                    Reset
+                  </button>
                 </div>
               </div>
             ) : (
