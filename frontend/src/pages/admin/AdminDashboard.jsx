@@ -718,7 +718,7 @@ export default function AdminDashboard() {
               value={closeReason}
               onChange={(e) => setCloseReason(e.target.value)}
               placeholder="Contoh: Pemohon membatalkan pengajuan, berkas ditarik..."
-              style={{ width: '100%', minHeight: '100px', padding: '0.75rem', marginBottom: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)', resize: 'vertical' }}
+              style={{ width: '100%', minHeight: '100px', padding: '0.75rem', marginBottom: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-main)', resize: 'vertical' }}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
               <button className="secondary" onClick={() => { setCloseModalOpen(false); setCloseReason(''); setSelectedFileToClose(null); }} style={{ width: 'auto', padding: '0.5rem 1rem' }}>Batal</button>

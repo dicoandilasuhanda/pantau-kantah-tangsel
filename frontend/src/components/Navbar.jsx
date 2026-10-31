@@ -1,6 +1,6 @@
-﻿import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Scan, PlusSquare, Key, X, BarChart2, Home, Mail, FileText } from 'lucide-react';
+import { LogOut, Scan, PlusSquare, Key, X, BarChart2, Home, Mail, FileText, Sun, Moon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import NotificationBell from './NotificationBell';
@@ -25,6 +25,24 @@ export default function Navbar() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('theme', nextTheme);
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    window.dispatchEvent(new Event('theme-change'));
+  };
+
+  useEffect(() => {
+    const handleThemeSync = () => {
+      setTheme(localStorage.getItem('theme') || 'dark');
+    };
+    window.addEventListener('theme-change', handleThemeSync);
+    return () => window.removeEventListener('theme-change', handleThemeSync);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -104,8 +122,8 @@ export default function Navbar() {
               alignItems: 'center',
               gap: '0.75rem',
               padding: '0.5rem 1rem',
-              background: 'rgba(15, 23, 42, 0.65)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'var(--surface-badge)',
+              border: '1px solid var(--border-color)',
               borderRadius: '999px',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
@@ -124,10 +142,10 @@ export default function Navbar() {
               }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f8fafc', lineHeight: 1.2 }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2 }}>
                 {fullName}
               </span>
-              <span style={{ fontSize: '0.73rem', color: '#94a3b8', marginTop: '2px' }}>
+              <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                 {role || 'Petugas'}
               </span>
             </div>
@@ -175,6 +193,16 @@ export default function Navbar() {
           )}
 
           <NotificationBell />
+
+          <button 
+            className="secondary" 
+            onClick={toggleTheme} 
+            style={{ padding: '0.5rem 0.75rem', width: 'auto' }} 
+            title={theme === 'dark' ? 'Ganti ke Mode Terang (Office Slate)' : 'Ganti ke Mode Gelap (Dark Mode)'}
+            aria-label="Ganti Tema"
+          >
+            {theme === 'dark' ? <Sun size={17} color="#fbbf24" /> : <Moon size={17} color="#0284c7" />}
+          </button>
 
           <button className="secondary" onClick={() => setShowPasswordModal(true)} style={{ padding: '0.5rem 1rem', width: 'auto' }} title="Ubah Kata Sandi">
             <Key size={16} /> Ubah Sandi

@@ -1,8 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-:root {
+:root, [data-theme="dark"] {
   --bg-color: #060913;
+  --bg-pattern: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 45%);
   --surface-color: rgba(15, 23, 42, 0.75);
+  --surface-card: rgba(15, 23, 42, 0.7);
+  --surface-hover: rgba(30, 41, 59, 0.85);
+  --surface-badge: rgba(15, 23, 42, 0.65);
+  --surface-subtle: rgba(255, 255, 255, 0.05);
+  --surface-dropdown: rgba(15, 23, 42, 0.97);
   --primary-color: #3b82f6;
   --primary-hover: #60a5fa;
   --accent-color: #10b981;
@@ -14,6 +24,50 @@
   --success-color: #10b981;
   --glass-bg: rgba(10, 15, 29, 0.82);
   --glass-border: rgba(255, 255, 255, 0.09);
+  --table-sticky-bg: #0b1329;
+  --input-bg: rgba(15, 23, 42, 0.75);
+  --input-autofill-bg: #0d1526;
+  --card-shadow: rgba(0, 0, 0, 0.35);
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --skeleton-start: rgba(255, 255, 255, 0.04);
+  --skeleton-mid: rgba(255, 255, 255, 0.12);
+  --hub-card-bg: rgba(15, 23, 42, 0.65);
+  --hub-card-hover-bg: rgba(15, 23, 42, 0.85);
+}
+
+[data-theme="light"] {
+  --bg-color: #f1f5f9;
+  --bg-pattern: 
+    linear-gradient(to right, rgba(148, 163, 184, 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.16) 1px, transparent 1px),
+    radial-gradient(circle at 80% 20%, rgba(2, 132, 199, 0.1) 0%, transparent 45%),
+    radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.07) 0%, transparent 45%);
+  --surface-color: rgba(255, 255, 255, 0.92);
+  --surface-card: #ffffff;
+  --surface-hover: #f8fafc;
+  --surface-badge: rgba(255, 255, 255, 0.95);
+  --surface-subtle: rgba(15, 23, 42, 0.04);
+  --surface-dropdown: #ffffff;
+  --primary-color: #0284c7;
+  --primary-hover: #0369a1;
+  --accent-color: #059669;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --border-color: rgba(148, 163, 184, 0.32);
+  --error-color: #dc2626;
+  --warning-color: #d97706;
+  --success-color: #059669;
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(148, 163, 184, 0.28);
+  --table-sticky-bg: #f8fafc;
+  --input-bg: #ffffff;
+  --input-autofill-bg: #f8fafc;
+  --card-shadow: rgba(15, 23, 42, 0.08);
+  --grid-line: rgba(148, 163, 184, 0.15);
+  --skeleton-start: rgba(15, 23, 42, 0.04);
+  --skeleton-mid: rgba(15, 23, 42, 0.09);
+  --hub-card-bg: rgba(255, 255, 255, 0.88);
+  --hub-card-hover-bg: #ffffff;
 }
 
 * {
@@ -24,12 +78,8 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #060913;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 45%),
-    radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 45%);
+  background-color: var(--bg-color);
+  background-image: var(--bg-pattern);
   background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%;
   background-attachment: fixed;
   color: var(--text-main);
@@ -39,6 +89,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 #root {
@@ -69,13 +120,13 @@ p {
   border: 1px solid var(--glass-border);
   border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 10px 30px var(--card-shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.25s ease;
 }
 
 .glass-panel:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 12px 40px var(--card-shadow);
 }
 
 /* Form Elements */
@@ -83,12 +134,12 @@ input, select, textarea {
   width: 100%;
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
-  background: var(--surface-color);
+  background: var(--input-bg, var(--surface-color));
   border: 1px solid var(--border-color);
   border-radius: 8px;
   color: var(--text-main);
   font-family: 'Inter', sans-serif;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
 input:focus, select:focus, textarea:focus {
@@ -103,8 +154,8 @@ input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-text-fill-color: var(--text-main) !important;
   caret-color: var(--text-main) !important;
-  -webkit-box-shadow: 0 0 0 1000px #0d1526 inset !important;
-  box-shadow: 0 0 0 1000px #0d1526 inset !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--input-autofill-bg) inset !important;
+  box-shadow: 0 0 0 1000px var(--input-autofill-bg) inset !important;
   transition: background-color 9999s ease-in-out 0s;
 }
 
@@ -315,7 +366,7 @@ button.secondary:hover {
 }
 
 .skeleton-box {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.04) 75%);
+  background: linear-gradient(90deg, var(--skeleton-start) 25%, var(--skeleton-mid) 50%, var(--skeleton-start) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite ease-in-out;
   border-radius: 8px;
@@ -328,14 +379,14 @@ button.secondary:hover {
   border-radius: 12px;
   position: relative;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-color: var(--border-color) transparent;
 }
 
 .table-sticky-col {
   position: sticky !important;
   left: 0 !important;
-  background: #0b1329 !important;
-  box-shadow: 3px 0 8px rgba(0, 0, 0, 0.45);
+  background: var(--table-sticky-bg) !important;
+  box-shadow: 3px 0 8px var(--card-shadow);
   z-index: 2 !important;
 }
 

@@ -266,9 +266,9 @@ export default function NotificationBell() {
           justify-content: center;
           gap: 0.45rem;
           padding: 0.55rem 0.9rem;
-          background: rgba(15, 23, 42, 0.72) !important;
-          color: #f8fafc !important;
-          border: 1px solid rgba(255, 255, 255, 0.12) !important;
+          background: var(--surface-badge) !important;
+          color: var(--text-main) !important;
+          border: 1px solid var(--border-color) !important;
           border-radius: 999px !important;
           cursor: pointer;
           transition: all 0.25s ease;
@@ -276,8 +276,8 @@ export default function NotificationBell() {
           -webkit-backdrop-filter: blur(12px);
         }
         .notif-bell-btn:hover {
-          background: rgba(30, 41, 59, 0.9) !important;
-          border-color: rgba(59, 130, 246, 0.45) !important;
+          background: var(--surface-hover) !important;
+          border-color: var(--primary-color) !important;
           transform: translateY(-1px);
         }
         .notif-bell-btn.has-unread {
@@ -308,10 +308,10 @@ export default function NotificationBell() {
           right: 0;
           width: 360px;
           max-width: 92vw;
-          background: rgba(15, 23, 42, 0.97);
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: var(--surface-dropdown);
+          border: 1px solid var(--border-color);
           border-radius: 16px;
-          box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+          box-shadow: 0 20px 45px var(--card-shadow);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           z-index: 2000;
@@ -350,16 +350,16 @@ export default function NotificationBell() {
           <div
             style={{
               padding: '0.9rem 1.1rem',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              borderBottom: '1px solid var(--border-color)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              background: 'rgba(30, 41, 59, 0.5)'
+              background: 'var(--surface-subtle)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Send size={15} color="#60a5fa" />
-              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f8fafc' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
                 Kiriman Berkas ({count})
               </span>
             </div>
@@ -371,10 +371,10 @@ export default function NotificationBell() {
               style={{
                 width: 'auto',
                 padding: '0.35rem 0.55rem',
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'var(--surface-badge)',
+                border: '1px solid var(--border-color)',
                 borderRadius: '8px',
-                color: '#cbd5e1',
+                color: 'var(--text-main)',
                 fontSize: '0.75rem',
                 display: 'inline-flex',
                 alignItems: 'center'
@@ -387,10 +387,10 @@ export default function NotificationBell() {
           {/* Daftar Berkas Kiriman */}
           <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '0.6rem' }}>
             {count === 0 ? (
-              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 <Bell size={28} color="#475569" style={{ marginBottom: '0.5rem', opacity: 0.7 }} />
-                <p style={{ margin: 0, fontWeight: 500, color: '#cbd5e1' }}>Tidak ada kiriman berkas</p>
-                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.78rem', color: '#64748b' }}>
+                <p style={{ margin: 0, fontWeight: 500, color: 'var(--text-main)' }}>Tidak ada kiriman berkas</p>
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                   Berkas yang dikirim (Transit) ke meja Anda akan muncul di sini beserta peringatan suara.
                 </p>
               </div>
@@ -402,8 +402,8 @@ export default function NotificationBell() {
                     padding: '0.85rem',
                     marginBottom: '0.5rem',
                     borderRadius: '12px',
-                    background: 'rgba(30, 41, 59, 0.65)',
-                    border: '1px solid rgba(59, 130, 246, 0.22)',
+                    background: 'var(--surface-subtle)',
+                    border: '1px solid var(--border-color)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.45rem'
@@ -413,17 +413,17 @@ export default function NotificationBell() {
                     <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#60a5fa' }}>
                       No. {item.nomor_berkas}/{item.tahun_berkas}
                     </span>
-                    <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                       <Clock size={11} /> {formatTransitTime(item.transit_at)}
                     </span>
                   </div>
 
-                  <div style={{ fontSize: '0.8rem', color: '#f8fafc', fontWeight: 500, lineHeight: 1.35 }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: 500, lineHeight: 1.35 }}>
                     {item.nama_kegiatan}
                   </div>
 
-                  <div style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
-                    Pemohon: <strong style={{ color: '#cbd5e1' }}>{item.nama_pemohon}</strong>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                    Pemohon: <strong style={{ color: 'var(--text-main)' }}>{item.nama_pemohon}</strong>
                   </div>
 
                   <div
@@ -450,10 +450,10 @@ export default function NotificationBell() {
                         flex: 1,
                         padding: '0.42rem 0.6rem',
                         fontSize: '0.76rem',
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        border: '1px solid rgba(255, 255, 255, 0.14)',
+                        background: 'var(--surface-badge)',
+                        border: '1px solid var(--border-color)',
                         borderRadius: '8px',
-                        color: '#f8fafc',
+                        color: 'var(--text-main)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -495,8 +495,8 @@ export default function NotificationBell() {
           <div
             style={{
               padding: '0.75rem 1rem',
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              background: 'rgba(15, 23, 42, 0.85)',
+              borderTop: '1px solid var(--border-color)',
+              background: 'var(--surface-dropdown)',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.45rem'

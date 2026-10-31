@@ -557,7 +557,7 @@ export default function FileDetails() {
                       <MapPin size={18} /> {hist.location}
                     </strong>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.3)', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', background: 'var(--surface-subtle)', border: '1px solid var(--border-color)', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
                         {hist.id === 'virtual-transit' && hist.scanned_at ? new Date(hist.scanned_at.replace(' ', 'T') + 'Z').toLocaleString('id-ID') : parseSQLiteDate(hist.scanned_at).toLocaleString('id-ID')}
                       </span>
                     </div>

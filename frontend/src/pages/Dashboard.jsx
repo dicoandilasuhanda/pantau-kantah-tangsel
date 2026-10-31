@@ -124,12 +124,8 @@ export default function Dashboard() {
       {/* Inject Global Grid Background seperti di Login.jsx */}
       <style>{`
         body, #root, .app-container {
-          background-color: #060913 !important;
-          background-image: 
-            linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-            radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.16) 0%, transparent 45%),
-            radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 45%) !important;
+          background-color: var(--bg-color) !important;
+          background-image: var(--bg-pattern) !important;
           background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100% !important;
           background-attachment: fixed !important;
         }
@@ -154,7 +150,7 @@ export default function Dashboard() {
             }}>
               <BarChart2 size={24} />
             </div>
-            <h1 style={{ margin: 0, fontSize: '1.85rem', fontWeight: '700', letterSpacing: '-0.02em', color: '#ffffff' }}>
+            <h1 style={{ margin: 0, fontSize: '1.85rem', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
               Monitoring Berkas
             </h1>
           </div>
@@ -164,53 +160,53 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
           {/* Card 1: Total Berkas Aktif */}
           <div style={{
-            background: 'rgba(15, 23, 42, 0.7)',
+            background: 'var(--surface-card)',
             backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            border: '1px solid var(--border-color)',
             borderLeft: '4px solid #3b82f6',
             borderRadius: '16px',
             padding: '1.35rem 1.5rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.4rem',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.35)'
+            boxShadow: '0 10px 25px -5px var(--card-shadow)'
           }}>
-            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '500' }}>Total Berkas Aktif</span>
-            <strong style={{ fontSize: '2rem', color: '#ffffff', lineHeight: 1.1 }}>{metrics.activeFiles}</strong>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>Total Berkas Aktif</span>
+            <strong style={{ fontSize: '2rem', color: 'var(--text-main)', lineHeight: 1.1 }}>{metrics.activeFiles}</strong>
           </div>
 
           {/* Card 2: Melewati SOP (Terlambat) */}
           <div style={{
-            background: 'rgba(15, 23, 42, 0.7)',
+            background: 'var(--surface-card)',
             backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            border: '1px solid var(--border-color)',
             borderLeft: '4px solid #ef4444',
             borderRadius: '16px',
             padding: '1.35rem 1.5rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.4rem',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.35)'
+            boxShadow: '0 10px 25px -5px var(--card-shadow)'
           }}>
-            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '500' }}>Melewati SOP (Terlambat)</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>Melewati SOP (Terlambat)</span>
             <strong style={{ fontSize: '2rem', color: '#ef4444', lineHeight: 1.1 }}>{metrics.overdueFiles}</strong>
           </div>
 
           {/* Card 3: Menunggu di Meja Saya */}
           <div style={{
-            background: 'rgba(15, 23, 42, 0.7)',
+            background: 'var(--surface-card)',
             backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            border: '1px solid var(--border-color)',
             borderLeft: '4px solid #10b981',
             borderRadius: '16px',
             padding: '1.35rem 1.5rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.4rem',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.35)'
+            boxShadow: '0 10px 25px -5px var(--card-shadow)'
           }}>
-            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '500' }}>Menunggu di Meja Saya</span>
-            <strong style={{ fontSize: '2rem', color: '#ffffff', lineHeight: 1.1 }}>{metrics.myFiles}</strong>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>Menunggu di Meja Saya</span>
+            <strong style={{ fontSize: '2rem', color: 'var(--text-main)', lineHeight: 1.1 }}>{metrics.myFiles}</strong>
           </div>
         </div>
 
@@ -228,12 +224,12 @@ export default function Dashboard() {
                     width: 'auto',
                     padding: '0.5rem 1.4rem',
                     borderRadius: '9999px',
-                    border: isActive ? '1px solid rgba(59, 130, 246, 0.6)' : '1px solid rgba(255, 255, 255, 0.09)',
+                    border: isActive ? '1px solid rgba(59, 130, 246, 0.6)' : '1px solid var(--border-color)',
                     background: isActive 
                       ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' 
-                      : 'rgba(15, 23, 42, 0.7)',
+                      : 'var(--surface-card)',
                     backdropFilter: 'blur(12px)',
-                    color: isActive ? '#ffffff' : '#94a3b8',
+                    color: isActive ? '#ffffff' : 'var(--text-muted)',
                     fontWeight: isActive ? '600' : '500',
                     cursor: 'pointer',
                     fontSize: '0.85rem',
@@ -271,11 +267,11 @@ export default function Dashboard() {
                 paddingLeft: '2.85rem',
                 marginBottom: 0,
                 width: '100%',
-                background: 'rgba(15, 23, 42, 0.7)',
+                background: 'var(--surface-card)',
                 backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(255, 255, 255, 0.09)',
+                border: '1px solid var(--border-color)',
                 borderRadius: '12px',
-                color: '#f8fafc',
+                color: 'var(--text-main)',
                 height: '46px',
                 fontSize: '0.9rem'
               }}
@@ -299,7 +295,7 @@ export default function Dashboard() {
             <AlertTriangle size={24} color="#34d399" />
             <div>
               <h4 style={{ color: '#34d399', margin: '0 0 0.2rem 0', fontSize: '0.95rem' }}>Pemberitahuan: Berkas Dikirim ke Anda</h4>
-              <p style={{ color: '#e2e8f0', fontSize: '0.9rem', margin: 0 }}>
+              <p style={{ color: 'var(--text-main)', fontSize: '0.9rem', margin: 0 }}>
                 Ada <strong>{transitFiles.length} berkas</strong> yang sedang dikirim ke meja Anda dan menunggu untuk di-scan penerimaan.
               </p>
             </div>
@@ -322,7 +318,7 @@ export default function Dashboard() {
             <AlertTriangle size={24} color="#f87171" />
             <div>
               <h4 style={{ color: '#f87171', margin: '0 0 0.2rem 0', fontSize: '0.95rem' }}>Peringatan: Berkas Proses Tertahan</h4>
-              <p style={{ color: '#e2e8f0', fontSize: '0.9rem', margin: 0 }}>
+              <p style={{ color: 'var(--text-main)', fontSize: '0.9rem', margin: 0 }}>
                 Anda memiliki <strong>{stalledFiles.length} berkas</strong> yang sudah berada di posisi Anda (<strong>{roleStr}</strong>) selama 3 hari kerja atau lebih. Mohon segera ditindaklanjuti.
               </p>
             </div>
@@ -336,9 +332,9 @@ export default function Dashboard() {
               <div 
                 key={n} 
                 style={{
-                  background: 'rgba(15, 23, 42, 0.7)',
+                  background: 'var(--surface-card)',
                   backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  border: '1px solid var(--border-color)',
                   borderRadius: '14px',
                   padding: '1.25rem 1.5rem',
                   display: 'flex',
@@ -362,7 +358,7 @@ export default function Dashboard() {
         ) : files.length === 0 ? (
           <div className="empty-state-card">
             <FileText size={48} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
-            <h3 style={{ margin: '0 0 0.5rem 0', color: '#f8fafc' }}>Belum ada berkas yang terdaftar</h3>
+            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>Belum ada berkas yang terdaftar</h3>
             <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Berkas baru akan muncul di sini setelah dientri oleh Petugas Entry.</p>
           </div>
         ) : filteredFiles.length === 0 ? (
@@ -370,7 +366,7 @@ export default function Dashboard() {
             {filterType === 'Tugas Saya' && !searchQuery ? (
               <>
                 <CheckCircle2 size={48} color="#10b981" style={{ marginBottom: '1rem' }} />
-                <h3 style={{ margin: '0 0 0.4rem 0', color: '#f8fafc' }}>Semua Berkas Beres! 🎉</h3>
+                <h3 style={{ margin: '0 0 0.4rem 0', color: 'var(--text-main)' }}>Semua Berkas Beres! 🎉</h3>
                 <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.92rem' }}>
                   Tidak ada berkas yang sedang menunggu tindakan di meja Anda saat ini.
                 </p>
@@ -378,7 +374,7 @@ export default function Dashboard() {
             ) : (
               <>
                 <Search size={48} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
-                <h3 style={{ margin: '0 0 0.4rem 0', color: '#f8fafc' }}>Berkas tidak ditemukan</h3>
+                <h3 style={{ margin: '0 0 0.4rem 0', color: 'var(--text-main)' }}>Berkas tidak ditemukan</h3>
                 <p style={{ margin: '0 0 1rem 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                   {searchQuery ? `Tidak ada berkas yang cocok dengan pencarian "${searchQuery}".` : `Tidak ada berkas pada kategori "${filterType}".`}
                 </p>
@@ -427,9 +423,9 @@ export default function Dashboard() {
                   onMouseLeave={() => setHoveredFileId(null)}
                   style={{
                     cursor: 'pointer',
-                    background: isHovered ? 'rgba(30, 41, 59, 0.85)' : 'rgba(15, 23, 42, 0.7)',
+                    background: isHovered ? 'var(--surface-hover)' : 'var(--surface-card)',
                     backdropFilter: 'blur(16px)',
-                    border: isHovered ? '1px solid rgba(59, 130, 246, 0.45)' : '1px solid rgba(255, 255, 255, 0.08)',
+                    border: isHovered ? '1px solid var(--primary-color)' : '1px solid var(--border-color)',
                     borderRadius: '16px',
                     padding: '1.25rem 1.5rem',
                     display: 'flex',
@@ -439,18 +435,18 @@ export default function Dashboard() {
                     gap: '1rem',
                     transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                     transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-                    boxShadow: isHovered ? '0 12px 28px -6px rgba(0, 0, 0, 0.45)' : '0 6px 20px -4px rgba(0, 0, 0, 0.3)'
+                    boxShadow: isHovered ? '0 12px 28px -6px var(--card-shadow)' : '0 6px 20px -4px var(--card-shadow)'
                   }}
                 >
                   {/* Left Side: File Info */}
                   <div>
-                    <h3 style={{ margin: '0 0 0.4rem 0', display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '1.1rem', color: '#ffffff' }}>
+                    <h3 style={{ margin: '0 0 0.4rem 0', display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '1.1rem', color: 'var(--text-main)' }}>
                       <FileText size={19} color="#3b82f6" /> {file.nomor_berkas} / {file.tahun_berkas}
                     </h3>
-                    <p style={{ fontSize: '0.9rem', margin: '0 0 0.25rem 0', color: '#e2e8f0', fontWeight: '500' }}>
+                    <p style={{ fontSize: '0.9rem', margin: '0 0 0.25rem 0', color: 'var(--text-main)', fontWeight: '500' }}>
                       {file.nama_kegiatan}
                     </p>
-                    <p style={{ fontSize: '0.84rem', margin: 0, color: '#94a3b8' }}>
+                    <p style={{ fontSize: '0.84rem', margin: 0, color: 'var(--text-muted)' }}>
                       Pemohon: {file.nama_pemohon}
                     </p>
                   </div>

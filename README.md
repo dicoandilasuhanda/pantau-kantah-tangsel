@@ -268,6 +268,11 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Kolom Tabel Lengket (*Sticky Column*) pada Mobile:** Kolom `No. Berkas` (Admin Dashboard) dan `No. Agenda` (Surat Dashboard) tetap terkunci di sisi kiri saat tabel digeser secara horizontal di layar ponsel.
   - **Animasi Skeleton Shimmer Loading:** Menggantikan spinner tradisional dengan balok *skeleton shimmer* di seluruh modul utama untuk mengeliminasi *Cumulative Layout Shift (CLS)* dan memberikan pengalaman transisi yang mulus.
   - **Desain *Empty State* Kontekstual:** Menampilkan kartu ucapan positif (*"Semua Berkas Beres! 🎉"*) saat tidak ada berkas yang tertunda di meja petugas, serta tombol pintas reset saat pencarian tidak menemukan hasil.
+- **Tahap 12 — Implementasi Tema Ganda (Clean Office Slate & Dark Glassmorphism) & Theme Toggle:**
+  - **Dua Tema Visual Terpadu:** Menyediakan opsi tema **Mode Terang (Clean Office Slate)** dengan palet slate netral yang elegan dan nyaman di mata untuk ruangan kantor yang terang benderang, mendampingi tema bawaan **Mode Gelap (Dark Glassmorphism)**.
+  - **Tombol Pintas Ganti Tema (*Theme Toggle Button*):** Terpasang di bilah navigasi utama (`Navbar.jsx`) dan portal gerbang utama (`HomeHub.jsx`) dengan ikon Matahari (*Sun*) dan Bulan (*Moon*).
+  - **Sinkronisasi Otomatis Antar Tab & Anti-Flicker:** Menggunakan event sinkronisasi `theme-change`, penyimpanan persisten `localStorage`, serta skrip inisialisasi anti-flicker (*zero FOUC*) langsung di `<head>` dokumen HTML.
+  - **Desain Bebas Tabrakan Warna (*No White-on-White*):** Seluruh variabel token warna (`--bg-color`, `--surface-card`, `--text-main`, `--text-muted`, `--border-color`, `--card-shadow`, dll.) diintegrasikan ke seluruh dasbor, kartu metrik, modal notifikasi, dan tabel berkas sehingga kontras dan kenyamanan visual tetap tajam dan sempurna di kedua mode.
 
 ---
 

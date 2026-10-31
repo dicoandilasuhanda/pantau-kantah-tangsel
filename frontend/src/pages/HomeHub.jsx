@@ -1,5 +1,6 @@
-﻿import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Mail, Users, LogOut, ArrowRight, Shield, LayoutDashboard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FolderKanban, Mail, Users, LogOut, ArrowRight, Shield, LayoutDashboard, Sun, Moon } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
 
 export default function HomeHub() {
@@ -17,6 +18,24 @@ export default function HomeHub() {
 
   const isAdmin = userRoles.includes('Administrator');
   const canAccessSurat = isAdmin || userRoles.includes('Petugas Entry Surat');
+
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('theme', nextTheme);
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    window.dispatchEvent(new Event('theme-change'));
+  };
+
+  useEffect(() => {
+    const handleThemeSync = () => {
+      setTheme(localStorage.getItem('theme') || 'dark');
+    };
+    window.addEventListener('theme-change', handleThemeSync);
+    return () => window.removeEventListener('theme-change', handleThemeSync);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -51,8 +70,8 @@ export default function HomeHub() {
           position: fixed;
           inset: 0;
           background-image: 
-            linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
           background-size: 40px 40px;
           mask-image: radial-gradient(circle at 50% 45%, black 35%, transparent 85%);
           -webkit-mask-image: radial-gradient(circle at 50% 45%, black 35%, transparent 85%);
@@ -100,11 +119,12 @@ export default function HomeHub() {
           right: 0;
           width: 100%;
           z-index: 100;
-          background: rgba(6, 9, 19, 0.82);
+          background: var(--glass-bg);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          border-bottom: 1px solid var(--glass-border);
           padding: 0.85rem 1.5rem;
+          transition: background-color 0.25s ease;
         }
 
         .hub-topbar-inner {
@@ -123,8 +143,8 @@ export default function HomeHub() {
           align-items: center;
           gap: 0.75rem;
           padding: 0.5rem 1rem;
-          background: rgba(15, 23, 42, 0.65);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--surface-badge);
+          border: 1px solid var(--border-color);
           border-radius: 999px;
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
@@ -171,7 +191,7 @@ export default function HomeHub() {
           font-size: clamp(1.85rem, 3.5vw, 2.65rem);
           font-weight: 800;
           letter-spacing: -0.025em;
-          color: #f8fafc;
+          color: var(--text-main);
           margin-bottom: 0.65rem;
           line-height: 1.2;
         }
@@ -183,7 +203,7 @@ export default function HomeHub() {
         }
 
         .hub-subtitle {
-          color: #94a3b8;
+          color: var(--text-muted);
           font-size: 1rem;
           max-width: 560px;
           margin: 0 auto !important;
@@ -200,10 +220,10 @@ export default function HomeHub() {
 
         .hub-card {
           position: relative;
-          background: rgba(15, 23, 42, 0.65);
+          background: var(--hub-card-bg);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid var(--border-color);
           border-radius: 20px;
           padding: 2rem 1.75rem;
           cursor: pointer;
@@ -212,7 +232,7 @@ export default function HomeHub() {
           flex-direction: column;
           justify-content: space-between;
           overflow: hidden;
-          box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 10px 30px -10px var(--card-shadow);
         }
 
         .hub-card::before {
@@ -231,7 +251,7 @@ export default function HomeHub() {
           transform: translateY(-6px);
           border-color: var(--card-border-hover, rgba(59, 130, 246, 0.45));
           box-shadow: 0 20px 40px -15px var(--card-shadow, rgba(59, 130, 246, 0.25));
-          background: rgba(15, 23, 42, 0.82);
+          background: var(--hub-card-hover-bg);
         }
 
         .hub-card:hover::before {
@@ -278,14 +298,14 @@ export default function HomeHub() {
         .hub-card-title {
           font-size: 1.3rem;
           font-weight: 700;
-          color: #f8fafc;
+          color: var(--text-main);
           margin-bottom: 0.55rem;
           letter-spacing: -0.01em;
         }
 
         .hub-card-desc {
           font-size: 0.92rem;
-          color: #94a3b8;
+          color: var(--text-muted);
           line-height: 1.6;
           margin-bottom: 1.75rem;
         }
@@ -295,7 +315,7 @@ export default function HomeHub() {
           align-items: center;
           justify-content: space-between;
           padding-top: 1rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.06);
+          border-top: 1px solid var(--border-color);
           font-size: 0.88rem;
           font-weight: 600;
           color: var(--card-accent, #60a5fa);
@@ -373,16 +393,35 @@ export default function HomeHub() {
           <div className="hub-user-badge">
             <span className="hub-user-dot" style={{ flexShrink: 0 }} />
             <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f8fafc', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {fullName}
               </span>
-              <span style={{ fontSize: '0.73rem', color: '#94a3b8', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {roleStr || 'Petugas'}
               </span>
             </div>
           </div>
 
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', flexShrink: 0 }}>
+            <button
+              onClick={toggleTheme}
+              style={{
+                width: 'auto',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.55rem',
+                borderRadius: '999px',
+                background: 'var(--surface-badge)',
+                border: '1px solid var(--border-color)',
+                cursor: 'pointer',
+                transition: 'all 0.25s ease'
+              }}
+              title={theme === 'dark' ? 'Ganti ke Mode Terang (Office Slate)' : 'Ganti ke Mode Gelap (Dark Mode)'}
+              aria-label="Ganti Tema"
+            >
+              {theme === 'dark' ? <Sun size={17} color="#fbbf24" /> : <Moon size={17} color="#0284c7" />}
+            </button>
             <NotificationBell />
             <button onClick={handleLogout} className="hub-logout-btn">
               <LogOut size={16} />

@@ -84,7 +84,7 @@ export default function SuratDashboard() {
         ) : filteredSurat.length === 0 ? (
           <div className="empty-state-card" style={{ padding: '3.5rem 1rem' }}>
             <FileText size={44} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
-            <h3 style={{ margin: '0 0 0.4rem 0', color: '#f8fafc' }}>Tidak ada data surat</h3>
+            <h3 style={{ margin: '0 0 0.4rem 0', color: 'var(--text-main)' }}>Tidak ada data surat</h3>
             <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               {searchTerm ? `Tidak ditemukan surat dengan kata kunci "${searchTerm}".` : 'Belum ada surat masuk yang tercatat di sistem.'}
             </p>
@@ -92,7 +92,7 @@ export default function SuratDashboard() {
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
+              <tr style={{ background: 'var(--surface-subtle)', textAlign: 'left' }}>
                 <th className="table-sticky-col" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>No. Agenda</th>
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Asal Surat</th>
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Nomor Surat</th>
@@ -103,7 +103,7 @@ export default function SuratDashboard() {
             </thead>
             <tbody>
               {filteredSurat.map((surat) => (
-                <tr key={surat.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <tr key={surat.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                   <td className="table-sticky-col" style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                     <span className="badge">{surat.nomor_agenda}</span>
                   </td>
