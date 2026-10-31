@@ -168,13 +168,14 @@ function App() {
             textAlign: 'center', 
             padding: '12px 16px', 
             fontSize: '0.8rem', 
-            color: '#64748b', 
-            backgroundColor: '#090d16',
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+            color: 'var(--text-muted)', 
+            backgroundColor: 'var(--surface-color)',
+            borderTop: '1px solid var(--border-color)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
             zIndex: 9999,
             boxSizing: 'border-box'
           }}
-          className="fixed bottom-0 left-0 right-0 w-full py-3 text-center text-xs text-slate-400 bg-[#090d16] border-t border-slate-800/60 z-50"
         >
           <span>
             © 2026 Pantau.Kantah Tangsel. Build by{' '}

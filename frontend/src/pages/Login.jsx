@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Sun, Moon } from 'lucide-react';
 
 // Helper Cookie
 function setCookie(name, value, days) {
@@ -62,6 +63,24 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('theme', nextTheme);
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    window.dispatchEvent(new Event('theme-change'));
+  };
+
+  useEffect(() => {
+    const handleThemeSync = () => {
+      setTheme(localStorage.getItem('theme') || 'dark');
+    };
+    window.addEventListener('theme-change', handleThemeSync);
+    return () => window.removeEventListener('theme-change', handleThemeSync);
+  }, []);
 
   // Matikan scrollbar browser khusus di halaman Login
   useEffect(() => {
@@ -149,6 +168,17 @@ export default function Login() {
 
   return (
     <div className="login-viewport">
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="p-theme-toggle"
+        title={theme === 'dark' ? 'Ganti ke Mode Terang (Office Slate)' : 'Ganti ke Mode Gelap (Dark Mode)'}
+        aria-label="Ganti Tema"
+      >
+        {theme === 'dark' ? <Sun size={17} color="#fbbf24" /> : <Moon size={17} color="#0284c7" />}
+        <span>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>
+      </button>
+
       <div className="ambient-glow glow-top-left" />
       <div className="ambient-glow glow-bottom-right" />
       <div className="cadastral-grid" />
@@ -332,17 +362,46 @@ export default function Login() {
         .login-viewport {
           position: relative;
           width: 100%;
-          height: calc(100vh - 45px);
-          max-height: calc(100vh - 45px);
+          min-height: 100vh;
+          height: 100vh;
           overflow: hidden;
-          background: #090d16;
-          color: #f1f5f9;
+          background: var(--bg-color);
+          color: var(--text-main);
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           display: flex;
           align-items: center;
           justify-content: center;
           padding: 16px 24px;
+          padding-bottom: 52px;
           box-sizing: border-box;
+          transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        .p-theme-toggle {
+          position: absolute;
+          top: 18px;
+          right: 24px;
+          z-index: 50;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 14px;
+          border-radius: 999px;
+          background: var(--surface-card);
+          border: 1px solid var(--border-color);
+          color: var(--text-main);
+          font-size: 0.8rem;
+          font-weight: 500;
+          cursor: pointer;
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 14px var(--card-shadow);
+        }
+        .p-theme-toggle:hover {
+          background: var(--surface-hover);
+          border-color: var(--primary-color);
+          transform: translateY(-1px);
         }
 
         .ambient-glow {
@@ -370,8 +429,8 @@ export default function Login() {
           position: absolute;
           inset: 0;
           background-image: 
-            linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+            linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
           background-size: 38px 38px;
           pointer-events: none;
           z-index: 1;
@@ -441,7 +500,7 @@ export default function Login() {
           font-size: 1.75rem;
           font-weight: 800;
           letter-spacing: -0.025em;
-          color: #ffffff;
+          color: var(--text-main);
           line-height: 1.15;
         }
         .p-brand-accent {
@@ -450,7 +509,7 @@ export default function Login() {
         .p-brand-title p {
           margin: 3px 0 0 0;
           font-size: 0.84rem;
-          color: #94a3b8;
+          color: var(--text-muted);
           font-weight: 400;
         }
 
@@ -465,10 +524,11 @@ export default function Login() {
           align-items: flex-start;
           gap: 12px;
           padding: 10px 13px;
-          background: rgba(15, 23, 42, 0.45);
-          border: 1px solid rgba(255, 255, 255, 0.07);
+          background: var(--surface-card);
+          border: 1px solid var(--border-color);
           border-radius: 10px;
           backdrop-filter: blur(8px);
+          box-shadow: 0 4px 12px var(--card-shadow);
         }
         .p-feature-icon {
           width: 32px;
@@ -485,12 +545,12 @@ export default function Login() {
           margin: 0 0 2px 0;
           font-size: 0.84rem;
           font-weight: 600;
-          color: #e2e8f0;
+          color: var(--text-main);
         }
         .p-feature-info p {
           margin: 0;
           font-size: 0.76rem;
-          color: #94a3b8;
+          color: var(--text-muted);
           line-height: 1.35;
         }
 
@@ -501,11 +561,11 @@ export default function Login() {
 
         .p-card {
           position: relative;
-          background: rgba(15, 23, 42, 0.8);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--surface-card);
+          border: 1px solid var(--border-color);
           border-radius: 16px;
           padding: 24px 26px;
-          box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.55);
+          box-shadow: 0 20px 45px -10px var(--card-shadow);
           backdrop-filter: blur(16px);
           overflow: hidden;
         }
@@ -526,13 +586,13 @@ export default function Login() {
           margin: 0 0 4px 0;
           font-size: 1.35rem;
           font-weight: 700;
-          color: #f8fafc;
+          color: var(--text-main);
           letter-spacing: -0.015em;
         }
         .p-card-header p {
           margin: 0;
           font-size: 0.81rem;
-          color: #94a3b8;
+          color: var(--text-muted);
         }
 
         .p-alert-error {
@@ -566,7 +626,7 @@ export default function Login() {
         .p-field label {
           font-size: 0.81rem;
           font-weight: 600;
-          color: #cbd5e1;
+          color: var(--text-main);
         }
 
         .p-input-box {
@@ -576,8 +636,8 @@ export default function Login() {
           height: 42px;
           padding: 0 12px;
           box-sizing: border-box;
-          background: rgba(15, 23, 42, 0.65);
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: var(--input-bg);
+          border: 1px solid var(--border-color);
           border-radius: 10px;
           gap: 10px;
           transition: border-color 0.2s, box-shadow 0.2s;
@@ -591,7 +651,7 @@ export default function Login() {
           width: 18px;
           height: 18px;
           flex-shrink: 0;
-          color: #94a3b8;
+          color: var(--text-muted);
           display: block;
         }
 
@@ -601,7 +661,7 @@ export default function Login() {
           background: transparent !important;
           border: none !important;
           outline: none !important;
-          color: #f8fafc;
+          color: var(--text-main);
           font-size: 0.9rem;
           padding: 0;
           margin: 0;
@@ -609,16 +669,17 @@ export default function Login() {
           box-shadow: none !important;
         }
         .p-input-raw::placeholder {
-          color: #475569;
+          color: var(--text-muted);
+          opacity: 0.7;
         }
         .p-input-raw:-webkit-autofill,
         .p-input-raw:-webkit-autofill:hover,
         .p-input-raw:-webkit-autofill:focus,
         .p-input-raw:-webkit-autofill:active {
-          -webkit-text-fill-color: #f8fafc !important;
-          caret-color: #f8fafc !important;
-          -webkit-box-shadow: 0 0 0 1000px #0d1526 inset !important;
-          box-shadow: 0 0 0 1000px #0d1526 inset !important;
+          -webkit-text-fill-color: var(--text-main) !important;
+          caret-color: var(--text-main) !important;
+          -webkit-box-shadow: 0 0 0 1000px var(--input-autofill-bg) inset !important;
+          box-shadow: 0 0 0 1000px var(--input-autofill-bg) inset !important;
           transition: background-color 9999s ease-in-out 0s;
           border-radius: 6px;
         }
@@ -634,7 +695,7 @@ export default function Login() {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #94a3b8;
+          color: var(--text-muted);
           flex-shrink: 0;
           transition: color 0.15s;
         }
@@ -658,7 +719,7 @@ export default function Login() {
           align-items: center;
           gap: 8px;
           font-size: 0.79rem;
-          color: #94a3b8;
+          color: var(--text-muted);
           cursor: pointer;
           user-select: none;
         }
@@ -720,13 +781,13 @@ export default function Login() {
         .p-card-footer {
           margin-top: 16px;
           padding-top: 12px;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          border-top: 1px solid var(--border-color);
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 7px;
           font-size: 0.73rem;
-          color: #94a3b8;
+          color: var(--text-muted);
           text-align: center;
         }
         .p-card-footer svg {
@@ -736,13 +797,23 @@ export default function Login() {
 
         @media (max-width: 860px) {
           .login-viewport {
-            height: calc(100vh - 45px);
-            max-height: calc(100vh - 45px);
-            overflow: hidden;
-            padding: 12px 16px;
+            min-height: 100vh;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 56px;
             display: flex;
             align-items: center;
             justify-content: center;
+          }
+          .p-theme-toggle {
+            top: 12px;
+            right: 14px;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+          }
+          .p-theme-toggle span {
+            display: none;
           }
           .login-container {
             grid-template-columns: 1fr;
