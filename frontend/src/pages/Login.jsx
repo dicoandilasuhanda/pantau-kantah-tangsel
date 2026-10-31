@@ -168,16 +168,39 @@ export default function Login() {
 
   return (
     <div className="login-viewport">
-      <button
-        type="button"
-        onClick={toggleTheme}
-        className="p-theme-toggle"
-        title={theme === 'dark' ? 'Ganti ke Mode Terang (Office Slate)' : 'Ganti ke Mode Gelap (Dark Mode)'}
-        aria-label="Ganti Tema"
-      >
-        {theme === 'dark' ? <Sun size={17} color="#fbbf24" /> : <Moon size={17} color="#0284c7" />}
-        <span>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>
-      </button>
+      {/* Tombol Ganti Tema (Top Right Floating Pill) */}
+      <div style={{ position: 'absolute', top: '16px', right: '20px', zIndex: 50 }}>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="p-theme-toggle"
+          style={{
+            width: 'auto',
+            minWidth: 'unset',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            padding: '0.45rem 0.85rem',
+            borderRadius: '9999px',
+            background: 'var(--surface-color)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-main)',
+            fontSize: '0.8rem',
+            fontWeight: 500,
+            cursor: 'pointer',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            boxShadow: '0 4px 14px var(--card-shadow)',
+            transition: 'all 0.2s ease',
+            margin: 0
+          }}
+          title={theme === 'dark' ? 'Ganti ke Mode Terang (Office Slate)' : 'Ganti ke Mode Gelap (Dark Mode)'}
+          aria-label="Ganti Tema"
+        >
+          {theme === 'dark' ? <Sun size={15} color="#fbbf24" /> : <Moon size={15} color="#0284c7" />}
+          <span>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>
+        </button>
+      </div>
 
       <div className="ambient-glow glow-top-left" />
       <div className="ambient-glow glow-bottom-right" />
@@ -378,30 +401,32 @@ export default function Login() {
         }
 
         .p-theme-toggle {
-          position: absolute;
-          top: 18px;
-          right: 24px;
-          z-index: 50;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 7px 14px;
-          border-radius: 999px;
-          background: var(--surface-card);
-          border: 1px solid var(--border-color);
-          color: var(--text-main);
-          font-size: 0.8rem;
-          font-weight: 500;
-          cursor: pointer;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 14px var(--card-shadow);
+          width: auto !important;
+          max-width: fit-content !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          gap: 7px !important;
+          padding: 6px 14px !important;
+          border-radius: 9999px !important;
+          background: var(--surface-color) !important;
+          border: 1px solid var(--border-color) !important;
+          color: var(--text-main) !important;
+          font-size: 0.8rem !important;
+          font-weight: 500 !important;
+          cursor: pointer !important;
+          backdrop-filter: blur(14px) !important;
+          -webkit-backdrop-filter: blur(14px) !important;
+          transition: all 0.2s ease !important;
+          box-shadow: 0 4px 14px var(--card-shadow) !important;
+          margin: 0 !important;
+          text-decoration: none !important;
         }
         .p-theme-toggle:hover {
-          background: var(--surface-hover);
-          border-color: var(--primary-color);
-          transform: translateY(-1px);
+          background: var(--surface-hover) !important;
+          border-color: var(--primary-color) !important;
+          transform: translateY(-1px) !important;
+          box-shadow: 0 6px 18px var(--card-shadow) !important;
         }
 
         .ambient-glow {
@@ -807,13 +832,11 @@ export default function Login() {
             justify-content: center;
           }
           .p-theme-toggle {
-            top: 12px;
-            right: 14px;
-            padding: 6px 10px;
-            font-size: 0.75rem;
+            padding: 5px 9px !important;
+            font-size: 0.73rem !important;
           }
           .p-theme-toggle span {
-            display: none;
+            display: none !important;
           }
           .login-container {
             grid-template-columns: 1fr;
