@@ -74,21 +74,26 @@ export default function SuratDashboard() {
         </div>
       </div>
 
-      <div className="glass-panel" style={{ padding: '0', overflowX: 'auto' }}>
+      <div className="glass-panel table-responsive-wrapper" style={{ padding: '0' }}>
         {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center' }}>
-            <div className="spinner"></div>
-            <p style={{ marginTop: '1rem' }}>Memuat data surat...</p>
+          <div style={{ padding: '1.5rem' }}>
+            {[1, 2, 3, 4].map(n => (
+              <div key={n} className="skeleton-box" style={{ height: '48px', marginBottom: '0.75rem' }}></div>
+            ))}
           </div>
         ) : filteredSurat.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center' }}>
-            <p>Tidak ada data surat yang ditemukan.</p>
+          <div className="empty-state-card" style={{ padding: '3.5rem 1rem' }}>
+            <FileText size={44} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
+            <h3 style={{ margin: '0 0 0.4rem 0', color: '#f8fafc' }}>Tidak ada data surat</h3>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              {searchTerm ? `Tidak ditemukan surat dengan kata kunci "${searchTerm}".` : 'Belum ada surat masuk yang tercatat di sistem.'}
+            </p>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>No. Agenda</th>
+                <th className="table-sticky-col" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>No. Agenda</th>
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Asal Surat</th>
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Nomor Surat</th>
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Tgl Diterima</th>
@@ -99,7 +104,7 @@ export default function SuratDashboard() {
             <tbody>
               {filteredSurat.map((surat) => (
                 <tr key={surat.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '1rem' }}>
+                  <td className="table-sticky-col" style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                     <span className="badge">{surat.nomor_agenda}</span>
                   </td>
                   <td style={{ padding: '1rem' }}>{surat.asal_surat}</td>

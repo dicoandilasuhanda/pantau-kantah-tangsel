@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import api from '../../utils/api';
 import { Activity, CheckCircle, Clock, Download, Trash2, Lock, Filter, RotateCcw, Calendar } from 'lucide-react';
@@ -348,7 +348,27 @@ export default function AdminDashboard() {
     toast.success(`Laporan Excel (${filteredFiles.length} berkas) berhasil diunduh!`);
   };
 
-  if (loading) return <div className="container"><div className="spinner"></div></div>;
+  if (loading) {
+    return (
+      <div className="container animate-fade-in">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div className="skeleton-box" style={{ width: '280px', height: '40px' }}></div>
+          <div className="skeleton-box" style={{ width: '200px', height: '40px' }}></div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+          {[1, 2, 3, 4].map(n => (
+            <div key={n} className="skeleton-box" style={{ height: '95px' }}></div>
+          ))}
+        </div>
+        <div className="glass-panel">
+          <div className="skeleton-box" style={{ height: '42px', marginBottom: '1.5rem' }}></div>
+          {[1, 2, 3, 4, 5].map(n => (
+            <div key={n} className="skeleton-box" style={{ height: '48px', marginBottom: '0.8rem' }}></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container animate-fade-in">
@@ -554,11 +574,11 @@ export default function AdminDashboard() {
           </div>
         </div>
         
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-responsive-wrapper">
           <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ fontSize: '0.8rem' }}>
-              <th style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>No. Berkas</th>
+              <th className="table-sticky-col" style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>No. Berkas</th>
               <th style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)', minWidth: '120px' }}>Pemohon</th>
               <th style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)', minWidth: '150px' }}>Jenis Permohonan</th>
               <th style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)' }}>Posisi Terakhir</th>
@@ -579,6 +599,7 @@ export default function AdminDashboard() {
               return (
                 <tr key={f.id}>
                   <td
+                    className="table-sticky-col"
                     onClick={() => navigate(`/file/${f.qr_code}`)}
                     title="Klik untuk lihat detail berkas"
                     style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)', whiteSpace: 'nowrap', cursor: 'pointer', color: 'var(--primary-hover)', fontWeight: 600 }}

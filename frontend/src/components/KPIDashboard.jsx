@@ -49,7 +49,14 @@ export default function KPIDashboard() {
     );
   }
 
-  if (loading) return <div className="spinner" style={{ margin: '2rem auto' }}></div>;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', margin: '1.5rem 0' }}>
+        <div className="skeleton-box" style={{ height: '44px', width: '320px' }}></div>
+        <div className="skeleton-box" style={{ height: '320px', width: '100%' }}></div>
+      </div>
+    );
+  }
   if (kpiData.length === 0 && activeTab === 'kpi') return <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada data aktivitas untuk dianalisis.</div>;
 
   const selectedUser = selectedUsername ? kpiData.find(u => u.username === selectedUsername) : null;

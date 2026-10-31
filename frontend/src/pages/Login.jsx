@@ -240,6 +240,9 @@ export default function Login() {
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Masukkan username"
                     required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                     autoFocus={!username}
                     autoComplete="username"
                   />
@@ -588,7 +591,7 @@ export default function Login() {
           width: 18px;
           height: 18px;
           flex-shrink: 0;
-          color: #64748b;
+          color: #94a3b8;
           display: block;
         }
 
@@ -723,7 +726,7 @@ export default function Login() {
           justify-content: center;
           gap: 7px;
           font-size: 0.73rem;
-          color: #64748b;
+          color: #94a3b8;
           text-align: center;
         }
         .p-card-footer svg {

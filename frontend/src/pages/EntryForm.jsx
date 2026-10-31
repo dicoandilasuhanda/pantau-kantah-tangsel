@@ -67,6 +67,7 @@ export default function EntryForm() {
                   <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nomor Berkas (Maks. 6 digit angka)</label>
                   <input 
                     type="text" 
+                    inputMode="numeric"
                     value={nomor_berkas} 
                     onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, '');

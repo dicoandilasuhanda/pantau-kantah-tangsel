@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, FileText, AlertTriangle, BarChart2 } from 'lucide-react';
+import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw } from 'lucide-react';
 import { getWorkingDays, calculateTotalElapsedDays, getStatusColor, SOP_DAYS } from '../utils/dateUtils';
 
 export default function Dashboard() {
@@ -331,41 +331,68 @@ export default function Dashboard() {
 
         {/* File List */}
         {loading ? (
-          <div style={{
-            background: 'rgba(15, 23, 42, 0.7)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            textAlign: 'center',
-            padding: '3rem',
-            color: '#94a3b8'
-          }}>
-            <p style={{ margin: 0 }}>Memuat data berkas...</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+            {[1, 2, 3, 4].map(n => (
+              <div 
+                key={n} 
+                style={{
+                  background: 'rgba(15, 23, 42, 0.7)',
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '14px',
+                  padding: '1.25rem 1.5rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '1rem'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1 }}>
+                  <div className="skeleton-box" style={{ width: '180px', height: '22px' }}></div>
+                  <div className="skeleton-box" style={{ width: '280px', height: '16px' }}></div>
+                  <div className="skeleton-box" style={{ width: '140px', height: '14px' }}></div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem', width: '140px' }}>
+                  <div className="skeleton-box" style={{ width: '100px', height: '26px', borderRadius: '999px' }}></div>
+                  <div className="skeleton-box" style={{ width: '80px', height: '14px' }}></div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : files.length === 0 ? (
-          <div style={{
-            background: 'rgba(15, 23, 42, 0.7)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            textAlign: 'center',
-            padding: '3.5rem 2rem'
-          }}>
-            <FileText size={48} color="#64748b" style={{ marginBottom: '1rem' }} />
-            <h3 style={{ margin: 0, color: '#e2e8f0' }}>Belum ada berkas yang terdaftar</h3>
+          <div className="empty-state-card">
+            <FileText size={48} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
+            <h3 style={{ margin: '0 0 0.5rem 0', color: '#f8fafc' }}>Belum ada berkas yang terdaftar</h3>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Berkas baru akan muncul di sini setelah dientri oleh Petugas Entry.</p>
           </div>
         ) : filteredFiles.length === 0 ? (
-          <div style={{
-            background: 'rgba(15, 23, 42, 0.7)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            textAlign: 'center',
-            padding: '3.5rem 2rem'
-          }}>
-            <Search size={48} color="#64748b" style={{ marginBottom: '1rem' }} />
-            <h3 style={{ margin: '0 0 0.4rem 0', color: '#e2e8f0' }}>Berkas tidak ditemukan</h3>
-            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>Coba gunakan kata kunci pencarian atau tab filter yang lain.</p>
+          <div className="empty-state-card">
+            {filterType === 'Tugas Saya' && !searchQuery ? (
+              <>
+                <CheckCircle2 size={48} color="#10b981" style={{ marginBottom: '1rem' }} />
+                <h3 style={{ margin: '0 0 0.4rem 0', color: '#f8fafc' }}>Semua Berkas Beres! 🎉</h3>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.92rem' }}>
+                  Tidak ada berkas yang sedang menunggu tindakan di meja Anda saat ini.
+                </p>
+              </>
+            ) : (
+              <>
+                <Search size={48} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
+                <h3 style={{ margin: '0 0 0.4rem 0', color: '#f8fafc' }}>Berkas tidak ditemukan</h3>
+                <p style={{ margin: '0 0 1rem 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  {searchQuery ? `Tidak ada berkas yang cocok dengan pencarian "${searchQuery}".` : `Tidak ada berkas pada kategori "${filterType}".`}
+                </p>
+                {(searchQuery || filterType !== 'Semua') && (
+                  <button 
+                    onClick={() => { setSearchQuery(''); setFilterType('Semua'); }}
+                    className="secondary"
+                    style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.85rem', gap: '0.4rem' }}
+                  >
+                    <RotateCcw size={14} /> Reset Filter & Pencarian
+                  </button>
+                )}
+              </>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
