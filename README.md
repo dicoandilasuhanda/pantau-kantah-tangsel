@@ -262,6 +262,12 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Mounting Volume Uploads di Docker:** Penambahan bind-mount `./backend/uploads:/app/backend/uploads` pada `docker-compose.yml` agar seluruh dokumen PDF surat masuk tetap aman dan tidak hilang saat container di-*recreate*.
   - **Backup Online Tanpa Downtime:** Pembaruan `auto_backup.sh` menggunakan SQLite Online Backup API (`.backup`) tanpa mematikan container Docker, menjaga ketersediaan layanan 24/7 bagi petugas di lapangan.
   - **Sinkronisasi Hari Libur KPI & Perbaikan Unduh PDF:** Menyelaraskan daftar libur nasional (`INDONESIAN_HOLIDAYS`) dan parsing UTC pada perhitungan KPI backend dengan SLA frontend, serta perbaikan *relative URL* unduhan PDF di domain publik `https://pantaukantahtangsel.web.id`.
+- **Tahap 11 — Modernisasi UI/UX, Aksesibilitas WCAG, Skeleton Shimmer, & Mobile Optimization:**
+  - **Numpad Mobile Otomatis & Auto-Capitalization Guard:** Kolom nomor berkas pada formulir pendaftaran ditambahkan atribut `inputMode="numeric"` agar langsung menampilkan numpad angka di smartphone. Kolom login ditambahkan proteksi `autoCapitalize="none"` untuk mencegah kesalahan kapitalisasi otomatis di HP.
+  - **Peningkatan Kontras Visual (WCAG AA):** Seluruh teks sekunder, label, dan ikon input disesuaikan dari `#64748b` menjadi `#94a3b8` untuk keterbacaan optimal di berbagai kondisi pencahayaan layar.
+  - **Kolom Tabel Lengket (*Sticky Column*) pada Mobile:** Kolom `No. Berkas` (Admin Dashboard) dan `No. Agenda` (Surat Dashboard) tetap terkunci di sisi kiri saat tabel digeser secara horizontal di layar ponsel.
+  - **Animasi Skeleton Shimmer Loading:** Menggantikan spinner tradisional dengan balok *skeleton shimmer* di seluruh modul utama untuk mengeliminasi *Cumulative Layout Shift (CLS)* dan memberikan pengalaman transisi yang mulus.
+  - **Desain *Empty State* Kontekstual:** Menampilkan kartu ucapan positif (*"Semua Berkas Beres! 🎉"*) saat tidak ada berkas yang tertunda di meja petugas, serta tombol pintas reset saat pencarian tidak menemukan hasil.
 
 ---
 
