@@ -10,6 +10,8 @@
 
 **Pantau.Kantah Tangsel** *(bertransformasi dari SILACAK TANGSEL &rarr; Pantau.SP Tangsel &rarr; Portal Pantau.Kantah Tangsel)* adalah platform web internal terintegrasi yang dirancang untuk memonitor pergerakan berkas permohonan pelayanan pertanahan secara *real-time* berbasis **QR Code**, mengelola agenda **Surat Masuk & Arsip Digital**, serta menyajikan **Analitik Kinerja (KPI) Petugas & Pemantauan SLA/SOP** secara transparan dan akuntabel.
 
+🌐 **Domain Akses Resmi Publik:** [https://pantaukantahtangsel.web.id](https://pantaukantahtangsel.web.id) (Didukung oleh Cloudflare Tunnel dengan proteksi SSL/TLS otomatis).
+
 Dibangun dan dikembangkan oleh **[@dicoandila](https://x.com/dicoandila)**.
 
 ---
@@ -36,8 +38,8 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
   - **Deteksi Saat Login & *Auto-Polling* (Tiap 20 Detik):** Memberikan notifikasi suara dan *popup* otomatis baik saat petugas baru saja login (jika ada berkas kiriman yang menunggu) maupun saat ada petugas lain yang baru mengirimkan berkas secara *real-time*.
   - **Dropdown Kiriman Berkas:** Menampilkan Nomor Berkas, Waktu Kirim, Jenis Kegiatan, Nama Pemohon, dan Nama Pengirim beserta tombol pintas **Detail Berkas** dan **Scan Terima**.
 - **Integrasi Bot Telegram Resmi (`@pantaukantahtangsel_bot`):**
-  - **Koneksi Mandiri 1-Klik (*Deep-Link*):** Setiap petugas dapat menghubungkan akunnya secara mandiri melalui tombol **Hubungkan Notifikasi Telegram HP** di dalam menu lonceng (otomatis mengarahkan ke `https://t.me/pantaukantahtangsel_bot?start=link_<username>`) atau dengan mengetik `/daftar <username>` langsung di bot `@pantaukantahtangsel_bot`.
-  - **Perintah Interaktif Bot:** Mendukung perintah `/start` (panduan & info Chat ID), `/daftar <username>` (menautkan akun), `/cek` atau `/status` (melihat status akun & jumlah berkas transit yang menunggu), serta `/stop` (memutuskan tautan).
+  - **Koneksi Mandiri Terverifikasi Sandi:** Setiap petugas dapat menghubungkan notifikasi Telegram secara aman dengan perintah `/daftar <username> <password>` langsung di bot `@pantaukantahtangsel_bot` atau melalui tautan di menu lonceng. Penautan akun wajib menyertakan verifikasi kata sandi akun web untuk mencegah penyadapan data oleh pihak luar.
+  - **Perintah Interaktif Bot:** Mendukung perintah `/start` (panduan & info Chat ID), `/daftar <username> <password>` (verifikasi & menautkan akun), `/cek` atau `/status` (melihat status akun & jumlah berkas transit yang menunggu), serta `/stop` atau `/putus` (memutuskan tautan).
   - **Notifikasi *Real-Time* Kirim & Batal Kirim:** Saat berkas dikirim (*Transit*) atau dibatalkan (*Batal Kirim*), server otomatis mengirim pesan rincian berkas langsung ke Telegram HP petugas tujuan meskipun petugas sedang tidak membuka browser/aplikasi web.
   - **Fitur Reset & Pantauan Admin:** Dilengkapi tombol **Reset** di dalam menu lonceng serta indikator status koneksi Telegram (`Terhubung` / `Belum Terhubung`) di halaman **Manajemen Pengguna**.
 
@@ -120,15 +122,16 @@ Sistem mendukung 14 peran spesifik yang dapat dikombinasikan pada satu akun:
 
 ### Backend
 - **Runtime & Framework:** Node.js + Express.js v5
-- **Database:** SQLite3 (`database.sqlite` dengan *auto-migration* skema tabel saat *startup*)
+- **Database:** SQLite3 (`database.sqlite` dengan *auto-migration* skema tabel, indexing performa pada kolom relasi, dan *foreign key enforcement*)
 - **Keamanan & Middleware:** `jsonwebtoken` (JWT), `bcryptjs`, `helmet`, `express-rate-limit`, `cors`
-- **File Upload:** `multer` (penyimpanan dokumen PDF surat masuk)
+- **File Upload:** `multer` (penyimpanan dokumen PDF surat masuk dengan batas 15 MB dan validasi tipe berkas)
 - **Protokol Server:** Mendukung HTTP (`Port 3001`) dan HTTPS otomatis (`Port 3002`) jika sertifikat SSL (`key.pem` & `cert.pem`) tersedia untuk kebutuhan akses kamera di jaringan lokal.
 
 ### DevOps & Deployment
 - **Containerization:** Docker (`node:20-alpine` multi-step build) & Docker Compose
-- **Persistent Storage:** *Volume mounting* untuk menjaga keutuhan `database.sqlite` saat *container* diperbarui di server/NAS (QNAP)
-- **Automated Backup:** Script `auto_backup.sh` untuk pencadangan berkala dan rotasi otomatis (menghapus *backup* > 30 hari).
+- **Cloudflare Tunnel:** Integrasi `cloudflared` untuk publikasi aman ke domain resmi `https://pantaukantahtangsel.web.id` tanpa membuka port router kantor.
+- **Persistent Storage:** *Volume mounting* untuk menjaga keutuhan `database.sqlite` dan arsip berkas fisik `backend/uploads/` saat *container* diperbarui di server/NAS (QNAP).
+- **Zero-Downtime Backup:** Script `auto_backup.sh` untuk pencadangan *online* berkala berbasis SQLite backup API (tanpa mematikan container) dan rotasi otomatis cadangan > 30 hari.
 
 ---
 
@@ -215,15 +218,15 @@ Proyek ini telah dikonfigurasi agar *Backend* sekaligus menyajikan hasil *build*
 # Build dan jalankan container di background
 docker compose up -d --build
 ```
-- Aplikasi dapat diakses langsung melalui port `3001` (HTTP) atau `3002` (HTTPS).
-- File `backend/database.sqlite` terhubung melalui *volume* Docker sehingga seluruh data berkas, histori, dan pengguna tetap aman meskipun kontainer di-*restart* atau di-*rebuild*.
+- Aplikasi dapat diakses melalui domain publik [https://pantaukantahtangsel.web.id](https://pantaukantahtangsel.web.id) atau port lokal `3001` (HTTP) / `3002` (HTTPS).
+- File `backend/database.sqlite` dan folder `backend/uploads` terhubung melalui *volume* Docker sehingga seluruh database berkas, histori, pengguna, dan dokumen surat tetap aman meskipun kontainer di-*restart* atau di-*rebuild*.
 
-#### Menjalankan Backup Database Otomatis
+#### Menjalankan Backup Database Otomatis (Zero-Downtime)
 ```bash
 chmod +x auto_backup.sh
 ./auto_backup.sh
 ```
-Script akan menghentikan sementara kontainer selama beberapa detik, menyalin `database.sqlite` dengan *timestamp* ke dalam direktori `backups/`, menyalakan kembali layanan, dan membersihkan cadangan yang berusia lebih dari 30 hari.
+Script memanfaatkan mekanisme *online backup* bawaan SQLite (`.backup`) sehingga proses pencadangan berjalan secara instan di latar belakang **tanpa perlu mematikan container aplikasi**. File cadangan diberi *timestamp*, disimpan di direktori `backups/`, dan secara otomatis merotasi cadangan yang berusia lebih dari 30 hari.
 
 ---
 
@@ -252,6 +255,13 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - Pembuatan komponen **Lonceng Notifikasi (`NotificationBell.jsx`)** di *HomeHub* dan *Navbar* (Desktop & Mobile) dengan peringatan suara *Web Audio Chime* 2 putaran (~3,2 detik) serta *auto-polling* kiriman berkas *Transit* setiap 20 detik.
   - Integrasi penuh **Bot Telegram Resmi (`@pantaukantahtangsel_bot`)** untuk pengiriman notifikasi *Transit* dan *Batal Kirim* secara *real-time* ke HP petugas, dilengkapi fitur *1-click deep-linking*, perintah `/daftar` & `/cek`, tombol *Reset*, serta kolom status Telegram pada `UserManagement`.
   - Penyempurnaan tata letak responsif Mobile (*sticky topbar* & anti-cache `index.html`), penyatuan kartu *Admin Panel & Pengguna* di *HomeHub*, pemfokusan *Top 50 Berkas Terlama* khusus berkas aktif, pembatasan hak *Pause/Resume* SOP khusus Administrator, serta sinkronisasi penuh 9 kegiatan Kelompok 2 (PHP) di sisi Backend.
+- **Tahap 10 — Penguatan Keamanan, Optimasi Performa Database, Domain Resmi, & Zero-Downtime Backup:**
+  - **Otentikasi Sandi Bot Telegram:** Pendaftaran bot via `/daftar` kini mewajibkan verifikasi kata sandi akun web (`/daftar <username> <password>`) demi mencegah penyadapan notifikasi oleh pihak luar.
+  - **Optimasi Index Relasi SQLite:** Penambahan *index* database pada kolom `file_history.file_id`, `file_history.scanned_at`, `files(nomor_berkas, tahun_berkas)`, dan `files(is_transit, transit_to_username)` untuk mencegah *table scan* dan melipatgandakan kecepatan query riwayat berkas.
+  - **Perlindungan Berkas Unggahan (*Multer*):** Penambahan batasan ukuran file PDF maksimal 15 MB dan verifikasi tipe MIME untuk mencegah pengunggahan file berbahaya dan DoS disk.
+  - **Mounting Volume Uploads di Docker:** Penambahan bind-mount `./backend/uploads:/app/backend/uploads` pada `docker-compose.yml` agar seluruh dokumen PDF surat masuk tetap aman dan tidak hilang saat container di-*recreate*.
+  - **Backup Online Tanpa Downtime:** Pembaruan `auto_backup.sh` menggunakan SQLite Online Backup API (`.backup`) tanpa mematikan container Docker, menjaga ketersediaan layanan 24/7 bagi petugas di lapangan.
+  - **Sinkronisasi Hari Libur KPI & Perbaikan Unduh PDF:** Menyelaraskan daftar libur nasional (`INDONESIAN_HOLIDAYS`) dan parsing UTC pada perhitungan KPI backend dengan SLA frontend, serta perbaikan *relative URL* unduhan PDF di domain publik `https://pantaukantahtangsel.web.id`.
 
 ---
 
