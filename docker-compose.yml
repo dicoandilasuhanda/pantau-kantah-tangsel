@@ -7,9 +7,10 @@ services:
       - "3001:3001"
       - "3002:3002"
     volumes:
-      # PENTING: Me-mapping database.sqlite dari dalam container ke luar (host QNAP)
+      # PENTING: Me-mapping database.sqlite dan uploads dari dalam container ke luar (host QNAP)
       # agar data tidak hilang ketika container di-restart atau di-update!
       - ./backend/database.sqlite:/app/backend/database.sqlite
+      - ./backend/uploads:/app/backend/uploads
       - ./backend/server.js:/app/backend/server.js
       - ./backend/cert.pem:/app/backend/cert.pem
       - ./backend/key.pem:/app/backend/key.pem

@@ -54,7 +54,17 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
-const upload = multer({ storage: storage });
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 15 * 1024 * 1024 }, // Maksimal 15 MB
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext !== '.pdf' || file.mimetype !== 'application/pdf') {
+      return cb(new Error('Hanya file dokumen PDF yang diperbolehkan!'));
+    }
+    cb(null, true);
+  }
+});
 
 // Proteksi folder uploads: Tidak lagi disajikan secara publik via express.static
 // Dokumen hanya dapat diunduh lewat endpoint terotentikasi /api/surat/file/:filename
@@ -144,6 +154,14 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
         file_path TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
+
+      // Index performa query SQLite
+      db.run(`CREATE INDEX IF NOT EXISTS idx_file_history_file_id ON file_history(file_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_file_history_scanned_at ON file_history(scanned_at)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_files_nomor_tahun ON files(nomor_berkas, tahun_berkas)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_files_transit ON files(is_transit, transit_to_username)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_users_telegram ON users(telegram_chat_id)`);
+      db.run(`PRAGMA foreign_keys = ON`);
 
       // One-time patch for Syahrul's orphaned history (flexible matching)
       db.run(`UPDATE file_history SET scanned_by_username = 'syahrul' WHERE scanned_by_username LIKE '%yahrul%' AND scanned_by_username != 'syahrul'`, (err) => {});
@@ -304,16 +322,27 @@ const requireAdminOrKasi = (req, res, next) => {
 // SURAT API
 // ==========================================
 
+// Middleware upload PDF dengan penanganan error ramah pengguna
+const handlePdfUpload = (req, res, next) => {
+  upload.single('pdf_file')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Ukuran file PDF melebihi batas maksimal 15 MB.' });
+      }
+      return res.status(400).json({ error: err.message || 'Gagal memproses file unggahan.' });
+    }
+    next();
+  });
+};
+
 // Create new surat
-app.post('/api/surat', authenticateJWT, upload.single('pdf_file'), (req, res) => {
+app.post('/api/surat', authenticateJWT, handlePdfUpload, (req, res) => {
   const { asal_surat, nomor_surat, tanggal_diterima, perihal } = req.body;
   const filePath = req.file ? `/uploads/surat/${req.file.filename}` : null;
 
-  db.get('SELECT nomor_agenda FROM surat ORDER BY id DESC LIMIT 1', (err, row) => {
-    let nextAgendaNumber = 1;
-    if (row && row.nomor_agenda) {
-      nextAgendaNumber = parseInt(row.nomor_agenda, 10) + 1;
-    }
+  db.get('SELECT COALESCE(MAX(CAST(nomor_agenda AS INTEGER)), 0) + 1 AS next_agenda FROM surat', (err, row) => {
+    if (err) return res.status(500).json({ error: 'Gagal mengambil nomor agenda surat.' });
+    const nextAgendaNumber = row ? row.next_agenda : 1;
     const nomorAgendaStr = nextAgendaNumber.toString().padStart(5, '0');
 
     db.run(`INSERT INTO surat (nomor_agenda, asal_surat, nomor_surat, tanggal_diterima, perihal, file_path) 
@@ -876,27 +905,33 @@ async function pollTelegramUpdates() {
           const payload = text.split(/\s+/)[1];
           if (payload && payload.toLowerCase().startsWith('link_')) {
             const targetUser = payload.slice(5).trim();
-            linkTelegramAccount(chatId, targetUser);
+            await sendTelegramMessage(
+              chatId,
+              `<b>Verifikasi Akun Pantau.Kantah Tangsel</b>\n\n` +
+              `Untuk menghubungkan notifikasi ke akun <b>${targetUser}</b>, silakan balas dengan format:\n\n` +
+              `<code>/daftar ${targetUser} kata_sandi_anda</code>`
+            );
           } else {
             await sendTelegramMessage(
               chatId,
               `<b>Selamat datang di Bot Resmi Pantau.Kantah Tangsel!</b>\n\n` +
               `Untuk menghubungkan akun Anda agar otomatis menerima notifikasi kiriman berkas (<b>Transit</b>) di HP, silakan balas dengan mengetik:\n\n` +
-              `<code>/daftar username_anda</code>\n\n` +
-              `<i>Contoh:</i> <code>/daftar syahrul</code> atau <code>/daftar admin</code>\n\n` +
+              `<code>/daftar username password_anda</code>\n\n` +
+              `<i>Contoh:</i> <code>/daftar syahrul rahasia123</code>\n\n` +
               `ID Chat Telegram Anda: <code>${chatId}</code>`
             );
           }
         } else if (lower.startsWith('/daftar') || lower.startsWith('/link')) {
           const parts = text.split(/\s+/);
           const inputUsername = parts[1] ? parts[1].trim() : '';
+          const inputPassword = parts.slice(2).join(' ').trim();
           if (!inputUsername) {
             await sendTelegramMessage(
               chatId,
-              `Format belum lengkap. Silakan ketik:\n<code>/daftar username_anda</code>\n\nContoh: <code>/daftar syahrul</code>`
+              `Format belum lengkap. Silakan ketik:\n<code>/daftar username password_anda</code>\n\nContoh: <code>/daftar syahrul rahasia123</code>`
             );
           } else {
-            linkTelegramAccount(chatId, inputUsername);
+            linkTelegramAccount(chatId, inputUsername, inputPassword);
           }
         } else if (lower === '/cek' || lower === '/status') {
           db.get('SELECT username, full_name, role FROM users WHERE telegram_chat_id = ?', [chatId], (err, u) => {
@@ -936,8 +971,8 @@ async function pollTelegramUpdates() {
   }
 }
 
-function linkTelegramAccount(chatId, inputUsername) {
-  db.get('SELECT id, username, full_name, role FROM users WHERE LOWER(username) = LOWER(?)', [inputUsername], (err, user) => {
+function linkTelegramAccount(chatId, inputUsername, inputPassword) {
+  db.get('SELECT id, username, password, full_name, role FROM users WHERE LOWER(username) = LOWER(?)', [inputUsername], (err, user) => {
     if (err || !user) {
       sendTelegramMessage(
         chatId,
@@ -945,6 +980,24 @@ function linkTelegramAccount(chatId, inputUsername) {
       );
       return;
     }
+
+    if (!inputPassword) {
+      sendTelegramMessage(
+        chatId,
+        `Untuk keamanan akun, silakan sertakan password login Anda:\n<code>/daftar ${user.username} kata_sandi_anda</code>`
+      );
+      return;
+    }
+
+    const isMatch = bcrypt.compareSync(inputPassword, user.password);
+    if (!isMatch) {
+      sendTelegramMessage(
+        chatId,
+        `<b>Verifikasi Gagal</b>: Password salah untuk username <code>${user.username}</code>. Silakan coba lagi.`
+      );
+      return;
+    }
+
     db.run('UPDATE users SET telegram_chat_id = ? WHERE id = ?', [String(chatId), user.id], (updateErr) => {
       if (updateErr) {
         sendTelegramMessage(chatId, `Gagal menyimpan koneksi Telegram. Silakan coba lagi.`);
@@ -1365,30 +1418,23 @@ app.post('/api/files/scan', authenticateJWT, (req, res) => {
 
 // Dashboard Analytics
 app.get('/api/reports/dashboard', authenticateJWT, requireAdminOrKasi, (req, res) => {
-  const analytics = {
-    totalFiles: 0,
-    completedFiles: 0,
-    activeFiles: 0,
-    closedFiles: 0,
-    averageDays: 0
-  };
-
-  db.all('SELECT * FROM files', [], (err, rows) => {
+  const query = `
+    SELECT 
+      COUNT(*) AS totalFiles,
+      SUM(CASE WHEN current_location = 'Selesai' THEN 1 ELSE 0 END) AS completedFiles,
+      SUM(CASE WHEN current_location = 'Ditutup' THEN 1 ELSE 0 END) AS closedFiles,
+      SUM(CASE WHEN current_location NOT IN ('Selesai', 'Ditutup') THEN 1 ELSE 0 END) AS activeFiles
+    FROM files
+  `;
+  db.get(query, [], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
-    
-    analytics.totalFiles = rows.length;
-
-    rows.forEach(file => {
-      if (file.current_location === 'Selesai') {
-        analytics.completedFiles++;
-      } else if (file.current_location === 'Ditutup') {
-        analytics.closedFiles++;
-      } else {
-        analytics.activeFiles++;
-      }
+    res.json({
+      totalFiles: row ? (row.totalFiles || 0) : 0,
+      completedFiles: row ? (row.completedFiles || 0) : 0,
+      activeFiles: row ? (row.activeFiles || 0) : 0,
+      closedFiles: row ? (row.closedFiles || 0) : 0,
+      averageDays: 0
     });
-
-    res.json(analytics);
   });
 });
 
@@ -1427,21 +1473,35 @@ app.get('/api/reports/kpi', authenticateJWT, requireAdminOrKasi, (req, res) => {
 
     const kpiData = {};
     const now = new Date();
+    const indonesianHolidaysSet = new Set([
+      '2026-01-01', '2026-01-16', '2026-02-17', '2026-03-19', '2026-03-20',
+      '2026-03-23', '2026-03-24', '2026-04-03', '2026-05-01', '2026-05-14',
+      '2026-05-27', '2026-06-01', '2026-06-16', '2026-08-17', '2026-08-25',
+      '2026-12-25'
+    ]);
+
+    const parseUtcDate = (dateStr) => {
+      if (!dateStr) return new Date();
+      if (dateStr instanceof Date) return new Date(dateStr);
+      const str = String(dateStr);
+      if (str.includes('T')) return new Date(str);
+      return new Date(str.replace(' ', 'T') + 'Z');
+    };
 
     Object.values(filesHistory).forEach(history => {
       for (let i = 0; i < history.length; i++) {
         const current = history[i];
         if (!current.scanned_by_username) continue;
 
-        const startTime = new Date(current.scanned_at);
+        const startTime = parseUtcDate(current.scanned_at);
         let endTime = now;
         
         if (i < history.length - 1) {
-          endTime = new Date(history[i+1].scanned_at);
+          endTime = parseUtcDate(history[i+1].scanned_at);
         } else {
           if (current.location === 'Selesai' || current.location === 'Ditutup') continue;
           if (current.is_transit === 1 && current.transit_at) {
-            endTime = new Date(current.transit_at.replace(' ', 'T') + 'Z');
+            endTime = parseUtcDate(current.transit_at);
           }
         }
 
@@ -1449,11 +1509,16 @@ app.get('/api/reports/kpi', authenticateJWT, requireAdminOrKasi, (req, res) => {
         
         let loopDate = new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate());
         const endDateObj = new Date(endTime.getFullYear(), endTime.getMonth(), endTime.getDate());
-        let weekendMs = 0;
+        let holidayMs = 0;
         
         while (loopDate <= endDateObj) {
           const day = loopDate.getDay();
-          if (day === 0 || day === 6) {
+          const dateStr = loopDate.getFullYear() + '-' +
+                          String(loopDate.getMonth() + 1).padStart(2, '0') + '-' +
+                          String(loopDate.getDate()).padStart(2, '0');
+          const isOffDay = day === 0 || day === 6 || indonesianHolidaysSet.has(dateStr);
+
+          if (isOffDay) {
             let dayStart = new Date(loopDate);
             let dayEnd = new Date(loopDate);
             dayEnd.setDate(dayEnd.getDate() + 1);
@@ -1462,13 +1527,13 @@ app.get('/api/reports/kpi', authenticateJWT, requireAdminOrKasi, (req, res) => {
             let overlapEnd = endTime < dayEnd ? endTime : dayEnd;
             
             if (overlapStart < overlapEnd) {
-              weekendMs += (overlapEnd - overlapStart);
+              holidayMs += (overlapEnd - overlapStart);
             }
           }
           loopDate.setDate(loopDate.getDate() + 1);
         }
         
-        diffMs -= weekendMs;
+        diffMs -= holidayMs;
         const diffHours = Math.max(0, diffMs / (1000 * 60 * 60));
 
         const formattedRoleHint = (current.user_full_name && current.scanned_by_role && !current.scanned_by_role.includes('('))

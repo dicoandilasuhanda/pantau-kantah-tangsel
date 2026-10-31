@@ -17,17 +17,14 @@ echo "========================================"
 echo "Memulai proses backup: $TIMESTAMP"
 echo "========================================"
 
-# 1. Matikan sementara container aplikasi (agar file database tidak sedang ditulis saat dicopy)
-echo "Menghentikan layanan sementara..."
-docker compose stop pantau-sp
-
-# 2. Gandakan file database ke folder backups
-echo "Menyalin database ke $BACKUP_FILENAME..."
-cp backend/database.sqlite "$BACKUP_FILENAME"
-
-# 3. Nyalakan kembali container aplikasi
-echo "Menyalakan kembali layanan..."
-docker compose start pantau-sp
+# 1. Gandakan file database secara online dan aman (tanpa mematikan container)
+echo "Menyalin database secara online ke $BACKUP_FILENAME..."
+if command -v sqlite3 >/dev/null 2>&1; then
+  sqlite3 backend/database.sqlite ".backup '$BACKUP_FILENAME'"
+else
+  # Fallback jika binary sqlite3 belum ada di host
+  docker compose exec -T pantau-sp sqlite3 /app/backend/database.sqlite ".backup '/app/$BACKUP_FILENAME'" 2>/dev/null || cp backend/database.sqlite "$BACKUP_FILENAME"
+fi
 
 echo "Backup berhasil!"
 

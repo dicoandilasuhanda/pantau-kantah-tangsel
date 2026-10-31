@@ -32,7 +32,7 @@ export default function SuratDashboard() {
   );
 
   const getApiBaseUrl = () => {
-    return import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    return import.meta.env.VITE_API_URL || '/api';
   };
 
   // Generate secure URL with token for authenticated PDF access
