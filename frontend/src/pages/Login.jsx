@@ -182,18 +182,8 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Quick Tools & Theme Switcher */}
+          {/* Theme Switcher */}
           <div className="bpn-header-tools">
-            <button
-              type="button"
-              className="bpn-header-btn"
-              onClick={() => setShowHelpModal(true)}
-              title="Bantuan & Kontak IT"
-            >
-              <HelpCircle size={14} />
-              <span>Bantuan Sistem</span>
-            </button>
-
             {/* Tombol Switch Tema Terang/Gelap Proporsional */}
             <button
               type="button"
