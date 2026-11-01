@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
@@ -52,6 +53,16 @@ const SuratEntryRoute = ({ children }) => {
 function AppContent() {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
+
+  useEffect(() => {
+    const syncTheme = () => {
+      const activeTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', activeTheme);
+    };
+    syncTheme();
+    window.addEventListener('theme-change', syncTheme);
+    return () => window.removeEventListener('theme-change', syncTheme);
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>

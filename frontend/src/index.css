@@ -303,6 +303,57 @@ button.secondary:hover {
   box-shadow: 0 2px 6px rgba(11, 37, 69, 0.25);
 }
 
+/* Segmented Theme Switcher */
+.theme-switch-segmented {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
+  border-radius: 9999px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.theme-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: auto !important;
+  font-family: inherit;
+}
+
+.theme-pill-btn:hover {
+  color: var(--text-main);
+}
+
+.theme-pill-btn.active {
+  background: var(--primary-color);
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .theme-pill-btn.active {
+  background: #0B2545;
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 4px rgba(11, 37, 69, 0.25);
+}
+
+[data-theme="dark"] .theme-pill-btn.active {
+  background: #1D4ED8;
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
 /* Tables / Lists */
 .file-list {
   display: flex;

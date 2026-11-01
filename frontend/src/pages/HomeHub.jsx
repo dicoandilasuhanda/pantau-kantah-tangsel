@@ -19,19 +19,23 @@ export default function HomeHub() {
   const isAdmin = userRoles.includes('Administrator');
   const canAccessSurat = isAdmin || userRoles.includes('Petugas Entry Surat');
 
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    document.documentElement.setAttribute('data-theme', nextTheme);
+  const setThemeMode = (mode) => {
+    setTheme(mode);
+    localStorage.setItem('theme', mode);
+    document.documentElement.setAttribute('data-theme', mode);
     window.dispatchEvent(new Event('theme-change'));
   };
 
   useEffect(() => {
+    const saved = localStorage.getItem('theme') || 'light';
+    setTheme(saved);
+    document.documentElement.setAttribute('data-theme', saved);
     const handleThemeSync = () => {
-      setTheme(localStorage.getItem('theme') || 'dark');
+      const current = localStorage.getItem('theme') || 'light';
+      setTheme(current);
+      document.documentElement.setAttribute('data-theme', current);
     };
     window.addEventListener('theme-change', handleThemeSync);
     return () => window.removeEventListener('theme-change', handleThemeSync);
@@ -362,10 +366,6 @@ export default function HomeHub() {
         }
       `}</style>
 
-      <div className="hub-bg-grid" />
-      <div className="hub-glow-1" />
-      <div className="hub-glow-2" />
-
       {/* Top Navigation Bar */}
       <header className="hub-topbar">
         <div className="hub-topbar-inner">
@@ -402,27 +402,27 @@ export default function HomeHub() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={toggleTheme}
-              style={{
-                width: 'auto',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0.45rem 0.75rem',
-                borderRadius: '8px',
-                background: 'var(--surface-card)',
-                border: '1px solid var(--border-color)',
-                cursor: 'pointer',
-                color: 'var(--text-main)',
-                transition: 'all 0.2s ease'
-              }}
-              title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
-              aria-label="Ganti Tema"
-            >
-              {theme === 'dark' ? <Sun size={15} color="#fbbf24" /> : <Moon size={15} color="#1D4ED8" />}
-            </button>
+            <div className="theme-switch-segmented" role="group" aria-label="Pilihan Tema">
+              <button
+                type="button"
+                onClick={() => setThemeMode('light')}
+                className={`theme-pill-btn ${theme === 'light' ? 'active' : ''}`}
+                title="Pilih Mode Terang"
+              >
+                <Sun size={13} color={theme === 'light' ? '#FFFFFF' : '#64748B'} />
+                <span>Terang</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeMode('dark')}
+                className={`theme-pill-btn ${theme === 'dark' ? 'active' : ''}`}
+                title="Pilih Mode Gelap"
+              >
+                <Moon size={13} color={theme === 'dark' ? '#FFFFFF' : '#64748B'} />
+                <span>Gelap</span>
+              </button>
+            </div>
+
             <NotificationBell />
             <button type="button" onClick={handleLogout} className="hub-logout-btn">
               <LogOut size={15} />

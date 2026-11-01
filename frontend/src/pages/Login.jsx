@@ -66,19 +66,23 @@ export default function Login() {
   const navigate = useNavigate();
 
   // Pengaturan tema (dark / light)
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    document.documentElement.setAttribute('data-theme', nextTheme);
+  const setThemeMode = (mode) => {
+    setTheme(mode);
+    localStorage.setItem('theme', mode);
+    document.documentElement.setAttribute('data-theme', mode);
     window.dispatchEvent(new Event('theme-change'));
   };
 
   useEffect(() => {
+    const saved = localStorage.getItem('theme') || 'light';
+    setTheme(saved);
+    document.documentElement.setAttribute('data-theme', saved);
     const handleThemeSync = () => {
-      setTheme(localStorage.getItem('theme') || 'dark');
+      const current = localStorage.getItem('theme') || 'light';
+      setTheme(current);
+      document.documentElement.setAttribute('data-theme', current);
     };
     window.addEventListener('theme-change', handleThemeSync);
     return () => window.removeEventListener('theme-change', handleThemeSync);
@@ -183,19 +187,28 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Theme Switcher */}
+          {/* Theme Switcher Segmented */}
           <div className="bpn-header-tools">
-            {/* Tombol Switch Tema Terang/Gelap Proporsional */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="bpn-theme-btn"
-              title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
-              aria-label="Ganti Tema"
-            >
-              {theme === 'dark' ? <Sun size={14} className="bpn-theme-sun" /> : <Moon size={14} className="bpn-theme-moon" />}
-              <span>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>
-            </button>
+            <div className="theme-switch-segmented" role="group" aria-label="Pilihan Tema Tampilan">
+              <button
+                type="button"
+                onClick={() => setThemeMode('light')}
+                className={`theme-pill-btn ${theme === 'light' ? 'active' : ''}`}
+                title="Pilih Mode Terang"
+              >
+                <Sun size={13} color={theme === 'light' ? '#FFFFFF' : '#64748B'} />
+                <span>Terang</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeMode('dark')}
+                className={`theme-pill-btn ${theme === 'dark' ? 'active' : ''}`}
+                title="Pilih Mode Gelap"
+              >
+                <Moon size={13} color={theme === 'dark' ? '#FFFFFF' : '#64748B'} />
+                <span>Gelap</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
