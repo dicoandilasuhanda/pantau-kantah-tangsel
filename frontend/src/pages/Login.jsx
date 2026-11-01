@@ -435,7 +435,7 @@ export default function Login() {
               </button>
             </div>
             <div className="bpn-modal-body">
-              <p>Untuk reset kata sandi atau kendala akses akun Pantau.Kantah, silakan hubungi Administrator IT internal Kantah Kota Tangerang Selatan, Admin Dico :</p>
+              <p>Untuk reset kata sandi atau kendala akses akun Pantau.Kantah Tangsel, silakan hubungi Administrator IT internal Kantah Kota Tangerang Selatan, Admin Dico :</p>
               <div className="bpn-help-box">
                 <p>• <strong>Lokasi:</strong> Ruang Server &amp; Pengolahan Data (Lantai 2)</p>
               </div>
@@ -1425,6 +1425,18 @@ export default function Login() {
           margin: 0;
           font-size: 0.98rem;
           font-weight: 700;
+        }
+        .bpn-theme-light .bpn-modal-title-group h3 {
+          color: #0F172A !important;
+        }
+        .bpn-theme-dark .bpn-modal-title-group h3 {
+          color: #F8FAFC !important;
+        }
+        .bpn-theme-light .bpn-modal-body {
+          color: #334155 !important;
+        }
+        .bpn-theme-dark .bpn-modal-body {
+          color: #E2E8F0 !important;
         }
         .bpn-modal-close {
           width: auto !important;
