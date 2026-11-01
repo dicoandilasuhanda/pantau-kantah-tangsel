@@ -206,11 +206,6 @@ export default function Login() {
         <div className="bpn-main-container">
           {/* SISI KIRI: Enterprise Context */}
           <section className="bpn-hero-section">
-            <div className="bpn-tag-badge">
-              <Shield size={14} className="bpn-tag-icon" />
-              <span>Pantau.Kantah Tangsel</span>
-            </div>
-
             <div className="bpn-headline-block">
               <h1 className="bpn-main-title">
                 Pelacakan &amp; Monitoring Berkas Pertanahan
@@ -245,17 +240,6 @@ export default function Login() {
                   <h2 className="bpn-feat-title">Serah Terima &amp; Scan QR Code</h2>
                   <p className="bpn-feat-desc">Validasi perpindahan fisik dokumen antar meja dengan pemindaian barcode digital &amp; pencatatan riwayat sah.</p>
                 </div>
-              </div>
-            </div>
-
-            {/* Status Server QNAP */}
-            <div className="bpn-server-bar">
-              <div className="bpn-server-left">
-                <span className="bpn-server-dot"></span>
-                <span>Server Terhubung: <strong>QNAP Kantah Tangsel (10.2.0.122)</strong></span>
-              </div>
-              <div className="bpn-server-right">
-                Latensi: <span className="bpn-server-ping">4ms</span> • NTP: WIB
               </div>
             </div>
           </section>
