@@ -435,11 +435,9 @@ export default function Login() {
               </button>
             </div>
             <div className="bpn-modal-body">
-              <p>Untuk reset kata sandi atau kendala akses akun Pantau.Kantah, silakan hubungi Administrator IT internal Kantah Kota Tangerang Selatan:</p>
+              <p>Untuk reset kata sandi atau kendala akses akun Pantau.Kantah, silakan hubungi Administrator IT internal Kantah Kota Tangerang Selatan, Admin Dico :</p>
               <div className="bpn-help-box">
                 <p>• <strong>Lokasi:</strong> Ruang Server &amp; Pengolahan Data (Lantai 2)</p>
-                <p>• <strong>Telepon Internal:</strong> Ext. 214 (Subbagian Tata Usaha)</p>
-                <p>• <strong>Email Resmi:</strong> <em>kantah-tangsel@atrbpn.go.id</em></p>
               </div>
             </div>
             <div className="bpn-modal-footer">
