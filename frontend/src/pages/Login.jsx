@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sun, Moon, Shield, Clock, HelpCircle, User, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, X, KeyRound, Server } from 'lucide-react';
+import { Sun, Moon, Shield, User, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, HelpCircle, X } from 'lucide-react';
 
 // Helper Cookie
 function setCookie(name, value, days) {
@@ -51,21 +51,17 @@ async function loginRequest(username, password) {
 }
 
 export default function Login() {
-  // Ambil username yang tersimpan jika fitur "Ingat Sesi" aktif
   const [username, setUsername] = useState(() => {
     return localStorage.getItem('saved_username') || getCookie('saved_username') || '';
   });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [seksi, setSeksi] = useState('survei');
   const [rememberMe, setRememberMe] = useState(() => {
     return localStorage.getItem('remember_me') === 'true' || getCookie('remember_me') === 'true';
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSopModal, setShowSopModal] = useState(false);
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [showSsoNotice, setShowSsoNotice] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -102,7 +98,7 @@ export default function Login() {
         let userRole = data.role || userObj.role || userObj.roles || '';
         if (Array.isArray(userRole)) userRole = userRole.join(',');
 
-        // Simpan token & sesi
+        // Simpan sesi login
         localStorage.setItem('token', token);
         sessionStorage.setItem('token', token);
         sessionStorage.setItem('session_active', 'true');
@@ -130,9 +126,7 @@ export default function Login() {
           localStorage.setItem('nama', fullName);
         }
         
-        // Simpan seksi jika ada
-        const finalSeksi = userObj.seksi || seksi;
-        if (finalSeksi) localStorage.setItem('seksi', finalSeksi);
+        if (userObj.seksi) localStorage.setItem('seksi', userObj.seksi);
 
         // Pengaturan Ingat Sesi
         if (rememberMe) {
@@ -149,7 +143,7 @@ export default function Login() {
 
         navigate('/');
       } else {
-        setError(data.message || 'Login gagal, periksa kredensial Anda');
+        setError(data.message || 'Login gagal, periksa username dan kata sandi Anda');
       }
     } catch (err) {
       if (err.status === 429 || (err.response && err.response.status === 429)) {
@@ -195,21 +189,16 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Quick Context, SOP & Theme Switcher */}
+          {/* Quick Tools & Theme Switcher */}
           <div className="bpn-header-tools">
-            <div className="bpn-hours-pill">
-              <Clock size={14} className="bpn-pill-icon" />
-              <span>WIB (UTC+7) Operasional: <strong>08.00 - 15.00</strong></span>
-            </div>
-
             <button
               type="button"
               className="bpn-header-btn"
-              onClick={() => setShowSopModal(true)}
-              title="Panduan Alur Layanan SOP Berkas"
+              onClick={() => setShowHelpModal(true)}
+              title="Bantuan & Kontak IT"
             >
               <HelpCircle size={14} />
-              <span>Panduan Penggunaan SOP</span>
+              <span>Bantuan Sistem</span>
             </button>
 
             {/* Tombol Switch Tema Terang/Gelap Proporsional */}
@@ -217,8 +206,8 @@ export default function Login() {
               type="button"
               onClick={toggleTheme}
               className="bpn-theme-btn"
-              title={theme === 'dark' ? 'Ganti ke Mode Terang (Office Slate)' : 'Ganti ke Mode Gelap (Dark Mode)'}
-              aria-label="Ganti Tema Tampilan"
+              title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+              aria-label="Ganti Tema"
             >
               {theme === 'dark' ? <Sun size={14} className="bpn-theme-sun" /> : <Moon size={14} className="bpn-theme-moon" />}
               <span>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>
@@ -232,23 +221,23 @@ export default function Login() {
          ========================================================================= */}
       <main className="bpn-main">
         <div className="bpn-main-container">
-          {/* SISI KIRI: Institutional Showcase */}
+          {/* SISI KIRI: Enterprise Context */}
           <section className="bpn-hero-section">
             <div className="bpn-tag-badge">
               <Shield size={14} className="bpn-tag-icon" />
-              <span>Sistem Terpadu ATR/BPN Kota Tangerang Selatan</span>
+              <span>Pantau SP • Kantah Kota Tangerang Selatan</span>
             </div>
 
             <div className="bpn-headline-block">
               <h1 className="bpn-main-title">
-                Pusat Kendali &amp; Pelacakan Berkas Layanan Pertanahan
+                Pelacakan &amp; Monitoring Berkas Pertanahan
               </h1>
               <p className="bpn-main-desc">
-                Platform operasional digital internal Kantah Tangsel untuk monitoring perjalanan fisik warkah, permohonan sertipikat, serta tertib administrasi serah terima antar seksi.
+                Sistem pemantauan alur perjalanan fisik warkah, permohonan sertipikat, serta tertib administrasi serah terima antar seksi di Kantor Pertanahan Kota Tangerang Selatan.
               </p>
             </div>
 
-            {/* Kartu Kapabilitas Utama */}
+            {/* Kartu Fitur Utama */}
             <div className="bpn-feature-list">
               <div className="bpn-feat-item">
                 <div className="bpn-feat-icon bpn-icon-blue">
@@ -258,8 +247,8 @@ export default function Login() {
                   </svg>
                 </div>
                 <div>
-                  <h2 className="bpn-feat-title">Pelacakan Posisi Berkas Seketika (Real-time)</h2>
-                  <p className="bpn-feat-desc">Deteksi posisi presisi di Seksi Penetapan Hak, Pendaftaran, atau Pengukuran Kadastral.</p>
+                  <h2 className="bpn-feat-title">Pelacakan Posisi Berkas</h2>
+                  <p className="bpn-feat-desc">Pantau posisi berkas seketika di Seksi Penetapan Hak (PHP), Survei &amp; Pemetaan, maupun Sengketa secara real-time.</p>
                 </div>
               </div>
 
@@ -270,8 +259,8 @@ export default function Login() {
                   </svg>
                 </div>
                 <div>
-                  <h2 className="bpn-feat-title">Serah Terima Digital &amp; Pemindaian QR Barcode</h2>
-                  <p className="bpn-feat-desc">Pencatatan rantai serah terima fisik dokumen berbasis tanda tangan &amp; log mutasi sah.</p>
+                  <h2 className="bpn-feat-title">Serah Terima &amp; Scan QR Code</h2>
+                  <p className="bpn-feat-desc">Validasi perpindahan fisik dokumen antar meja dengan pemindaian barcode digital &amp; pencatatan riwayat sah.</p>
                 </div>
               </div>
             </div>
@@ -288,7 +277,7 @@ export default function Login() {
             </div>
           </section>
 
-          {/* SISI KANAN: Kartu Autentikasi Institusional */}
+          {/* SISI KANAN: Kartu Autentikasi */}
           <section className="bpn-card-section">
             <div className="bpn-login-card">
               <div className="bpn-card-header">
@@ -297,7 +286,7 @@ export default function Login() {
                 </div>
                 <h2 className="bpn-card-title">Masuk ke Akun</h2>
                 <p className="bpn-card-subtitle">
-                  Akses Portal Terotentikasi Khusus Pegawai &amp; Petugas Kantah Kota Tangerang Selatan
+                  Akses portal monitoring khusus pegawai Kantah Kota Tangerang Selatan
                 </p>
               </div>
 
@@ -310,10 +299,10 @@ export default function Login() {
               )}
 
               <form onSubmit={handleSubmit} className="bpn-form">
-                {/* Field 1: Username / NIP */}
+                {/* Field 1: Username */}
                 <div className="bpn-form-group">
                   <label htmlFor="username" className="bpn-label">
-                    NIP Pegawai / Username Sistem
+                    Username
                   </label>
                   <div className="bpn-input-wrapper">
                     <User size={16} className="bpn-field-icon" />
@@ -324,7 +313,7 @@ export default function Login() {
                       className="bpn-input"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Masukkan 18 digit NIP atau ID pengguna"
+                      placeholder="Masukkan username"
                       required
                       autoComplete="username"
                       autoFocus={!username}
@@ -332,16 +321,16 @@ export default function Login() {
                   </div>
                 </div>
 
-                {/* Field 2: Password */}
+                {/* Field 2: Kata Sandi */}
                 <div className="bpn-form-group">
                   <div className="bpn-label-split">
                     <label htmlFor="password" className="bpn-label">
-                      Kata Sandi Operasional
+                      Kata Sandi
                     </label>
                     <button
                       type="button"
                       className="bpn-forgot-link"
-                      onClick={() => setShowForgotModal(true)}
+                      onClick={() => setShowHelpModal(true)}
                     >
                       Lupa sandi?
                     </button>
@@ -355,7 +344,7 @@ export default function Login() {
                       className="bpn-input"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Masukkan kata sandi terdaftar"
+                      placeholder="Masukkan kata sandi"
                       required
                       autoComplete="current-password"
                       autoFocus={!!username}
@@ -372,26 +361,6 @@ export default function Login() {
                   </div>
                 </div>
 
-                {/* Field 3: Seksi Operasional Dropdown */}
-                <div className="bpn-form-group">
-                  <label htmlFor="seksi" className="bpn-label">
-                    Penugasan Seksi Operasional
-                  </label>
-                  <select
-                    id="seksi"
-                    name="seksi"
-                    className="bpn-select"
-                    value={seksi}
-                    onChange={(e) => setSeksi(e.target.value)}
-                  >
-                    <option value="hak">Seksi Penetapan Hak &amp; Pendaftaran (PHP)</option>
-                    <option value="survei">Seksi Survei &amp; Pemetaan (Kadastral)</option>
-                    <option value="sengketa">Seksi Pengendalian &amp; Penanganan Sengketa</option>
-                    <option value="tu">Subbagian Tata Usaha (Loket / Front Office)</option>
-                    <option value="admin">Administrator Sistem &amp; Verifikator TI</option>
-                  </select>
-                </div>
-
                 {/* Checkbox: Ingat Sesi */}
                 <div className="bpn-remember-row">
                   <label className="bpn-checkbox-label">
@@ -401,7 +370,7 @@ export default function Login() {
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
                     />
-                    <span>Ingat sesi di komputer kantor ini</span>
+                    <span>Ingat sesi saya</span>
                   </label>
                 </div>
 
@@ -414,38 +383,22 @@ export default function Login() {
                   {isLoading ? (
                     <span className="bpn-btn-loading">
                       <span className="bpn-spinner" />
-                      Memverifikasi Kredensial...
+                      Memverifikasi...
                     </span>
                   ) : (
                     <>
-                      <span>Masuk ke Sistem Pantau</span>
+                      <span>Masuk ke Sistem</span>
                       <ArrowRight size={16} />
                     </>
                   )}
                 </button>
-
-                {/* Divider Alternatif */}
-                <div className="bpn-divider-box">
-                  <div className="bpn-divider-line"></div>
-                  <span className="bpn-divider-text">Otentikasi Alternatif</span>
-                </div>
-
-                {/* Tombol SSO KKP / Intranet BPN */}
-                <button
-                  type="button"
-                  className="bpn-sso-btn"
-                  onClick={() => setShowSsoNotice(true)}
-                >
-                  <KeyRound size={15} className="bpn-sso-icon" />
-                  <span>Login Terintegrasi SSO KKP / Intranet BPN</span>
-                </button>
               </form>
 
-              {/* Footnote Keamanan TLS 1.3 */}
+              {/* Footnote Keamanan Sesi */}
               <div className="bpn-card-footnote">
                 <span className="bpn-tls-status">
                   <CheckCircle2 size={13} className="bpn-tls-icon" />
-                  TLS 1.3 / Enkripsi 256-bit Aktif
+                  Enkripsi Sesi Aktif
                 </span>
                 <span className="bpn-build-tag">Build v3.4.1</span>
               </div>
@@ -461,10 +414,7 @@ export default function Login() {
         <div className="bpn-footer-container">
           <div className="bpn-footer-left">
             <p className="bpn-footer-copy">
-              © 2026 Kantor Pertanahan Kota Tangerang Selatan — Kementerian Agraria dan Tata Ruang / BPN RI.
-            </p>
-            <p className="bpn-footer-warning">
-              Perhatian: Sistem ini hanya diperuntukkan bagi personel berwenang. Akses tidak sah merupakan pelanggaran UU ITE No. 11/2008.
+              © 2026 Kantor Pertanahan Kota Tangerang Selatan — Kementerian Agraria dan Tata Ruang / BPN RI
             </p>
           </div>
 
@@ -472,13 +422,12 @@ export default function Login() {
             <button
               type="button"
               className="bpn-footer-link-btn"
-              onClick={() => setShowForgotModal(true)}
+              onClick={() => setShowHelpModal(true)}
             >
-              Bantuan Tata Usaha &amp; IT
+              Bantuan &amp; Kontak IT
             </button>
             <span className="bpn-footer-dot">•</span>
             <span className="bpn-footer-node">
-              <Server size={12} style={{ display: 'inline', marginRight: 4 }} />
               Node: <strong>SRV-TGS-QNAP01</strong>
             </span>
             <span className="bpn-footer-dot">•</span>
@@ -495,93 +444,38 @@ export default function Login() {
       </footer>
 
       {/* =========================================================================
-          MODALS & INTERACTIVE POPUPS (SOP, Lupa Sandi, SSO)
+          MODAL BANTUAN & RESET SANDI
          ========================================================================= */}
-      {/* Modal SOP */}
-      {showSopModal && (
-        <div className="bpn-modal-overlay" onClick={() => setShowSopModal(false)}>
+      {showHelpModal && (
+        <div className="bpn-modal-overlay" onClick={() => setShowHelpModal(false)}>
           <div className="bpn-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="bpn-modal-header">
               <div className="bpn-modal-title-group">
                 <HelpCircle size={20} color="#1D4ED8" />
-                <h3>Panduan Singkat SOP Pantau Berkas</h3>
+                <h3>Bantuan &amp; Pemulihan Akun</h3>
               </div>
               <button
                 type="button"
                 className="bpn-modal-close"
-                onClick={() => setShowSopModal(false)}
-                aria-label="Tutup Modal"
+                onClick={() => setShowHelpModal(false)}
+                aria-label="Tutup"
               >
                 <X size={18} />
               </button>
             </div>
             <div className="bpn-modal-body">
-              <div className="bpn-sop-item">
-                <span className="bpn-sop-num">1</span>
-                <div>
-                  <strong>Alur K1 (Berkas Rutin Pelayanan):</strong>
-                  <p>Loket TU (Pendaftaran) &rarr; Pengukuran Kadastral &rarr; Penetapan Hak (PHP) &rarr; Kasubag TU &rarr; Selesai / Arsip Warkah.</p>
-                </div>
-              </div>
-              <div className="bpn-sop-item">
-                <span className="bpn-sop-num">2</span>
-                <div>
-                  <strong>Alur K2 (Berkas Sengketa / Prioritas):</strong>
-                  <p>Loket TU &rarr; Seksi Sengketa / Konflik &rarr; Kepala Kantor &rarr; Penyerahan Kembali.</p>
-                </div>
-              </div>
-              <div className="bpn-sop-item">
-                <span className="bpn-sop-num">3</span>
-                <div>
-                  <strong>Wajib Pindai QR Code:</strong>
-                  <p>Setiap perpindahan berkas fisik antar meja/seksi wajib dipindai via menu <em>Scan QR</em> untuk validasi rantai serah terima dan SLA waktu kerja.</p>
-                </div>
-              </div>
-            </div>
-            <div className="bpn-modal-footer">
-              <button
-                type="button"
-                className="bpn-modal-btn-primary"
-                onClick={() => setShowSopModal(false)}
-              >
-                Mengerti &amp; Lanjutkan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Lupa Sandi */}
-      {showForgotModal && (
-        <div className="bpn-modal-overlay" onClick={() => setShowForgotModal(false)}>
-          <div className="bpn-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="bpn-modal-header">
-              <div className="bpn-modal-title-group">
-                <KeyRound size={20} color="#D97706" />
-                <h3>Pemulihan Kata Sandi Akun</h3>
-              </div>
-              <button
-                type="button"
-                className="bpn-modal-close"
-                onClick={() => setShowForgotModal(false)}
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="bpn-modal-body">
-              <p>Demi standar kepatuhan keamanan data sertipikat Kantah Kota Tangerang Selatan, reset sandi akun dilakukan terpusat.</p>
+              <p>Untuk reset kata sandi atau kendala akses akun Pantau.Kantah, silakan hubungi Administrator IT internal Kantah Kota Tangerang Selatan:</p>
               <div className="bpn-help-box">
-                <p><strong>Kontak Petugas Helpdesk IT Kantah Tangsel:</strong></p>
-                <p>• Ruang Server &amp; Pengolahan Data (Lantai 2)</p>
-                <p>• Saluran Telepon Internal: Ext. 214 (Subbag Tata Usaha)</p>
-                <p>• Email Resmi: <em>kantah-tangsel@atrbpn.go.id</em></p>
+                <p>• <strong>Lokasi:</strong> Ruang Server &amp; Pengolahan Data (Lantai 2)</p>
+                <p>• <strong>Telepon Internal:</strong> Ext. 214 (Subbagian Tata Usaha)</p>
+                <p>• <strong>Email Resmi:</strong> <em>kantah-tangsel@atrbpn.go.id</em></p>
               </div>
             </div>
             <div className="bpn-modal-footer">
               <button
                 type="button"
                 className="bpn-modal-btn-primary"
-                onClick={() => setShowForgotModal(false)}
+                onClick={() => setShowHelpModal(false)}
               >
                 Tutup
               </button>
@@ -590,49 +484,10 @@ export default function Login() {
         </div>
       )}
 
-      {/* Modal SSO Notice */}
-      {showSsoNotice && (
-        <div className="bpn-modal-overlay" onClick={() => setShowSsoNotice(false)}>
-          <div className="bpn-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="bpn-modal-header">
-              <div className="bpn-modal-title-group">
-                <Shield size={20} color="#1D4ED8" />
-                <h3>Otentikasi Terpusat SSO KKP BPN</h3>
-              </div>
-              <button
-                type="button"
-                className="bpn-modal-close"
-                onClick={() => setShowSsoNotice(false)}
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="bpn-modal-body">
-              <p>Otentikasi terintegrasi SSO KKP RI (Komputerisasi Kantor Pertanahan) hanya dapat diakses melalui:</p>
-              <ul className="bpn-modal-list">
-                <li>Jaringan kabel LAN resmi Kantor Pertanahan Kota Tangerang Selatan</li>
-                <li>Atau VPN Resmi Kementerian ATR/BPN</li>
-              </ul>
-              <p className="bpn-modal-muted">Jika Anda sedang bertugas di luar intranet kantor, silakan gunakan login kredensial NIP &amp; sandi lokal di form utama.</p>
-            </div>
-            <div className="bpn-modal-footer">
-              <button
-                type="button"
-                className="bpn-modal-btn-primary"
-                onClick={() => setShowSsoNotice(false)}
-              >
-                Kembali ke Form
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* =========================================================================
-          SCOPED STYLES (100% Offline, Pixel-Perfect, Light & Dark Responsive)
+          SCOPED STYLES
          ========================================================================= */}
       <style>{`
-        /* Root Wrapper & Pola Latar Belakang (gov-pattern) */
         .bpn-login-wrapper {
           min-height: 100vh;
           width: 100%;
@@ -645,7 +500,7 @@ export default function Login() {
           transition: background-color 0.25s ease, color 0.25s ease;
         }
 
-        /* Mode Terang (Default Government White / Slate) */
+        /* Mode Terang (Office Slate & Gov Pattern) */
         .bpn-theme-light {
           background-color: #F8FAFC;
           background-image: radial-gradient(#CBD5E1 0.75px, transparent 0.75px), radial-gradient(#E2E8F0 0.75px, #F8FAFC 0.75px);
@@ -654,7 +509,7 @@ export default function Login() {
           color: #0F172A;
         }
 
-        /* Mode Gelap (BPN Dark / Deep Navy Slate) */
+        /* Mode Gelap (Deep Navy Dark) */
         .bpn-theme-dark {
           background-color: #07182D;
           background-image: radial-gradient(rgba(255, 255, 255, 0.08) 0.75px, transparent 0.75px), radial-gradient(rgba(255, 255, 255, 0.04) 0.75px, #07182D 0.75px);
@@ -805,35 +660,10 @@ export default function Login() {
           gap: 0.75rem;
         }
 
-        .bpn-hours-pill {
-          display: none;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.75rem;
-          padding: 6px 12px;
-          border-radius: 6px;
-          background: #F1F5F9;
-          border: 1px solid #E2E8F0;
-          color: #475569;
-        }
-        @media (min-width: 900px) {
-          .bpn-hours-pill {
-            display: flex;
-          }
-        }
-        .bpn-theme-dark .bpn-hours-pill {
-          background: rgba(15, 23, 42, 0.6);
-          border-color: rgba(255, 255, 255, 0.12);
-          color: #CBD5E1;
-        }
-        .bpn-pill-icon {
-          color: #94A3B8;
-        }
-
         .bpn-header-btn {
           width: auto !important;
           max-width: fit-content !important;
-          display: none !important;
+          display: inline-flex !important;
           align-items: center !important;
           gap: 5px !important;
           background: transparent !important;
@@ -842,14 +672,9 @@ export default function Login() {
           font-size: 0.75rem !important;
           font-weight: 600 !important;
           cursor: pointer !important;
-          padding: 6px 8px !important;
+          padding: 6px 10px !important;
           border-radius: 6px !important;
           transition: color 0.15s, background-color 0.15s !important;
-        }
-        @media (min-width: 768px) {
-          .bpn-header-btn {
-            display: inline-flex !important;
-          }
         }
         .bpn-theme-dark .bpn-header-btn {
           color: #CBD5E1 !important;
@@ -857,6 +682,10 @@ export default function Login() {
         .bpn-header-btn:hover {
           color: #1D4ED8 !important;
           background: rgba(29, 78, 216, 0.08) !important;
+        }
+        .bpn-theme-dark .bpn-header-btn:hover {
+          color: #38BDF8 !important;
+          background: rgba(56, 189, 248, 0.1) !important;
         }
 
         /* Tombol Switch Tema Proporsional & Rapi */
@@ -1139,7 +968,7 @@ export default function Login() {
           width: 100%;
           max-width: 440px;
           border-radius: 18px;
-          padding: 2rem 2.25rem;
+          padding: 2.25rem 2.25rem;
           box-sizing: border-box;
           transition: background-color 0.2s, box-shadow 0.2s;
         }
@@ -1157,14 +986,14 @@ export default function Login() {
         }
         @media (max-width: 640px) {
           .bpn-login-card {
-            padding: 1.5rem 1.25rem;
+            padding: 1.75rem 1.25rem;
           }
         }
 
         .bpn-card-header {
           border-bottom: 1px solid #F1F5F9;
           padding-bottom: 1.15rem;
-          margin-bottom: 1.25rem;
+          margin-bottom: 1.35rem;
         }
         .bpn-theme-dark .bpn-card-header {
           border-bottom-color: rgba(255, 255, 255, 0.08);
@@ -1193,7 +1022,7 @@ export default function Login() {
         }
 
         .bpn-card-subtitle {
-          font-size: 0.78rem;
+          font-size: 0.8rem;
           line-height: 1.45;
           margin: 0;
         }
@@ -1212,7 +1041,7 @@ export default function Login() {
           padding: 9px 12px;
           border-radius: 8px;
           font-size: 0.78rem;
-          margin-bottom: 1rem;
+          margin-bottom: 1.15rem;
           background: #FEF2F2;
           border: 1px solid #FECACA;
           color: #991B1B;
@@ -1231,16 +1060,16 @@ export default function Login() {
         .bpn-form {
           display: flex;
           flex-direction: column;
-          gap: 1.05rem;
+          gap: 1.25rem;
         }
 
         .bpn-form-group {
           display: flex;
           flex-direction: column;
-          gap: 5px;
+          gap: 6px;
         }
         .bpn-label {
-          font-size: 0.76rem;
+          font-size: 0.8rem;
           font-weight: 700;
         }
         .bpn-theme-light .bpn-label {
@@ -1261,7 +1090,7 @@ export default function Login() {
           background: transparent !important;
           border: none !important;
           color: #1D4ED8 !important;
-          font-size: 0.74rem !important;
+          font-size: 0.76rem !important;
           font-weight: 600 !important;
           cursor: pointer !important;
           padding: 0 !important;
@@ -1289,10 +1118,10 @@ export default function Login() {
 
         .bpn-input {
           width: 100%;
-          height: 42px;
+          height: 44px;
           padding: 0 12px 0 38px;
           border-radius: 8px;
-          font-size: 0.86rem;
+          font-size: 0.88rem;
           font-family: inherit;
           box-sizing: border-box;
           outline: none;
@@ -1345,40 +1174,6 @@ export default function Login() {
           color: #38BDF8 !important;
         }
 
-        .bpn-select {
-          width: 100%;
-          height: 42px;
-          padding: 0 12px;
-          border-radius: 8px;
-          font-size: 0.82rem;
-          font-family: inherit;
-          box-sizing: border-box;
-          outline: none;
-          cursor: pointer;
-        }
-        .bpn-theme-light .bpn-select {
-          background-color: #F8FAFC;
-          border: 1px solid #CBD5E1;
-          color: #1E293B;
-        }
-        .bpn-theme-light .bpn-select:focus {
-          border-color: #1D4ED8;
-          box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
-        }
-        .bpn-theme-dark .bpn-select {
-          background-color: rgba(15, 23, 42, 0.85);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          color: #F8FAFC;
-        }
-        .bpn-theme-dark .bpn-select:focus {
-          border-color: #38BDF8;
-          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
-        }
-        .bpn-theme-dark .bpn-select option {
-          background-color: #0B172D;
-          color: #F8FAFC;
-        }
-
         .bpn-remember-row {
           display: flex;
           align-items: center;
@@ -1388,7 +1183,7 @@ export default function Login() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          font-size: 0.77rem;
+          font-size: 0.8rem;
           cursor: pointer;
           user-select: none;
         }
@@ -1415,7 +1210,7 @@ export default function Login() {
           height: 44px;
           border: none !important;
           border-radius: 8px !important;
-          font-size: 0.88rem !important;
+          font-size: 0.9rem !important;
           font-weight: 700 !important;
           cursor: pointer !important;
           display: flex !important;
@@ -1423,6 +1218,7 @@ export default function Login() {
           justify-content: center !important;
           gap: 8px !important;
           transition: transform 0.15s, background-color 0.15s, box-shadow 0.15s !important;
+          margin-top: 0.35rem;
         }
         .bpn-theme-light .bpn-submit-btn {
           background: #0B2545 !important;
@@ -1466,90 +1262,15 @@ export default function Login() {
           to { transform: rotate(360deg); }
         }
 
-        /* Divider Alternatif */
-        .bpn-divider-box {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0.4rem 0;
-        }
-        .bpn-divider-line {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          align-items: center;
-        }
-        .bpn-divider-line::before {
-          content: '';
-          width: 100%;
-          border-top: 1px solid #E2E8F0;
-        }
-        .bpn-theme-dark .bpn-divider-line::before {
-          border-top-color: rgba(255, 255, 255, 0.1);
-        }
-        .bpn-divider-text {
-          position: relative;
-          padding: 0 8px;
-          font-size: 0.68rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-        }
-        .bpn-theme-light .bpn-divider-text {
-          background: #FFFFFF;
-          color: #94A3B8;
-        }
-        .bpn-theme-dark .bpn-divider-text {
-          background: #0B172D;
-          color: #64748B;
-        }
-
-        /* Tombol SSO */
-        .bpn-sso-btn {
-          width: 100% !important;
-          height: 40px;
-          border-radius: 8px !important;
-          font-size: 0.77rem !important;
-          font-weight: 700 !important;
-          cursor: pointer !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          gap: 8px !important;
-          transition: background-color 0.15s, border-color 0.15s !important;
-        }
-        .bpn-theme-light .bpn-sso-btn {
-          background: #FFFFFF !important;
-          border: 1px solid #CBD5E1 !important;
-          color: #334155 !important;
-        }
-        .bpn-theme-light .bpn-sso-btn:hover {
-          background: #F8FAFC !important;
-          border-color: #94A3B8 !important;
-        }
-        .bpn-theme-dark .bpn-sso-btn {
-          background: rgba(15, 23, 42, 0.75) !important;
-          border: 1px solid rgba(255, 255, 255, 0.15) !important;
-          color: #E2E8F0 !important;
-        }
-        .bpn-theme-dark .bpn-sso-btn:hover {
-          background: rgba(30, 41, 59, 0.85) !important;
-          border-color: #38BDF8 !important;
-        }
-        .bpn-sso-icon {
-          color: #D97706;
-        }
-
         /* Footnote Card */
         .bpn-card-footnote {
-          margin-top: 1.15rem;
-          padding-top: 0.9rem;
+          margin-top: 1.35rem;
+          padding-top: 1rem;
           border-top: 1px solid #F1F5F9;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          font-size: 0.7rem;
+          font-size: 0.72rem;
         }
         .bpn-theme-dark .bpn-card-footnote {
           border-top-color: rgba(255, 255, 255, 0.08);
@@ -1598,7 +1319,7 @@ export default function Login() {
           display: flex;
           flex-direction: column;
           gap: 0.75rem;
-          font-size: 0.74rem;
+          font-size: 0.76rem;
         }
         @media (min-width: 768px) {
           .bpn-footer-container {
@@ -1624,17 +1345,6 @@ export default function Login() {
           color: #CBD5E1;
         }
 
-        .bpn-footer-warning {
-          font-size: 0.69rem;
-          margin: 0;
-        }
-        .bpn-theme-light .bpn-footer-warning {
-          color: #94A3B8;
-        }
-        .bpn-theme-dark .bpn-footer-warning {
-          color: #64748B;
-        }
-
         .bpn-footer-right {
           display: flex;
           align-items: center;
@@ -1647,7 +1357,7 @@ export default function Login() {
           background: transparent !important;
           border: none !important;
           color: #64748B !important;
-          font-size: 0.73rem !important;
+          font-size: 0.74rem !important;
           font-weight: 600 !important;
           cursor: pointer !important;
           padding: 0 !important;
@@ -1690,7 +1400,7 @@ export default function Login() {
           text-decoration: underline;
         }
 
-        /* ==================== 4. MODALS ==================== */
+        /* ==================== 4. MODAL BANTUAN ==================== */
         .bpn-modal-overlay {
           position: fixed;
           inset: 0;
@@ -1705,7 +1415,7 @@ export default function Login() {
         }
         .bpn-modal-card {
           width: 100%;
-          max-width: 500px;
+          max-width: 480px;
           border-radius: 14px;
           box-sizing: border-box;
           overflow: hidden;
@@ -1768,40 +1478,17 @@ export default function Login() {
           display: flex;
           flex-direction: column;
           gap: 12px;
-          font-size: 0.82rem;
+          font-size: 0.84rem;
           line-height: 1.5;
         }
         .bpn-modal-body p {
           margin: 0;
         }
-        .bpn-sop-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-        }
-        .bpn-sop-num {
-          width: 22px;
-          height: 22px;
-          border-radius: 50%;
-          background: #EFF6FF;
-          color: #1D4ED8;
-          font-weight: 700;
-          font-size: 0.72rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          margin-top: 2px;
-        }
-        .bpn-theme-dark .bpn-sop-num {
-          background: rgba(29, 78, 216, 0.3);
-          color: #93C5FD;
-        }
 
         .bpn-help-box {
-          padding: 12px;
+          padding: 14px;
           border-radius: 8px;
-          font-size: 0.8rem;
+          font-size: 0.82rem;
           line-height: 1.6;
         }
         .bpn-theme-light .bpn-help-box {
@@ -1811,20 +1498,6 @@ export default function Login() {
         .bpn-theme-dark .bpn-help-box {
           background: rgba(15, 23, 42, 0.6);
           border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .bpn-modal-list {
-          margin: 0;
-          padding-left: 1.25rem;
-          font-size: 0.8rem;
-          line-height: 1.6;
-        }
-        .bpn-modal-muted {
-          font-size: 0.75rem;
-          color: #64748B;
-        }
-        .bpn-theme-dark .bpn-modal-muted {
-          color: #94A3B8;
         }
 
         .bpn-modal-footer {
@@ -1839,7 +1512,7 @@ export default function Login() {
         .bpn-modal-btn-primary {
           width: auto !important;
           max-width: fit-content !important;
-          padding: 8px 16px !important;
+          padding: 8px 18px !important;
           border-radius: 8px !important;
           background: #0B2545 !important;
           color: #FFFFFF !important;
