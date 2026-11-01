@@ -1,46 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
-:root, [data-theme="dark"] {
-  --bg-color: #07182D;
-  --bg-pattern: 
-    radial-gradient(rgba(255, 255, 255, 0.08) 0.75px, transparent 0.75px),
-    radial-gradient(rgba(255, 255, 255, 0.04) 0.75px, #07182D 0.75px);
-  --gov-pattern-dots: radial-gradient(rgba(255, 255, 255, 0.08) 0.75px, transparent 0.75px), radial-gradient(rgba(255, 255, 255, 0.04) 0.75px, #07182D 0.75px);
-  --bpn-navy: #0B2545;
-  --bpn-dark: #07182D;
-  --bpn-blue: #134074;
-  --bpn-accent: #1D4ED8;
-  --bpn-gold: #D97706;
-  --bpn-light-gold: #FEF3C7;
-  --surface-color: rgba(11, 37, 69, 0.85);
-  --surface-card: rgba(11, 37, 69, 0.92);
-  --surface-hover: rgba(19, 64, 116, 0.85);
-  --surface-badge: rgba(11, 37, 69, 0.95);
-  --surface-subtle: rgba(255, 255, 255, 0.06);
-  --surface-dropdown: rgba(7, 24, 45, 0.98);
-  --primary-color: #1D4ED8;
-  --primary-hover: #2563EB;
-  --accent-color: #38BDF8;
-  --text-main: #F8FAFC;
-  --text-muted: #94A3B8;
-  --border-color: rgba(255, 255, 255, 0.12);
-  --error-color: #ef4444;
-  --warning-color: #f59e0b;
-  --success-color: #10b981;
-  --glass-bg: rgba(11, 37, 69, 0.92);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --table-sticky-bg: #07182D;
-  --input-bg: rgba(7, 24, 45, 0.75);
-  --input-autofill-bg: #07182D;
-  --card-shadow: rgba(0, 0, 0, 0.4);
-  --grid-line: rgba(255, 255, 255, 0.05);
-  --skeleton-start: rgba(255, 255, 255, 0.04);
-  --skeleton-mid: rgba(255, 255, 255, 0.12);
-  --hub-card-bg: rgba(11, 37, 69, 0.85);
-  --hub-card-hover-bg: rgba(19, 64, 116, 0.95);
-}
-
-[data-theme="light"] {
+:root, [data-theme="light"] {
   --bg-color: #F8FAFC;
   --bg-pattern: 
     radial-gradient(#CBD5E1 0.75px, transparent 0.75px),
@@ -78,6 +38,46 @@
   --skeleton-mid: rgba(15, 23, 42, 0.09);
   --hub-card-bg: rgba(255, 255, 255, 0.92);
   --hub-card-hover-bg: #FFFFFF;
+}
+
+[data-theme="dark"] {
+  --bg-color: #07182D;
+  --bg-pattern: 
+    radial-gradient(rgba(255, 255, 255, 0.08) 0.75px, transparent 0.75px),
+    radial-gradient(rgba(255, 255, 255, 0.04) 0.75px, #07182D 0.75px);
+  --gov-pattern-dots: radial-gradient(rgba(255, 255, 255, 0.08) 0.75px, transparent 0.75px), radial-gradient(rgba(255, 255, 255, 0.04) 0.75px, #07182D 0.75px);
+  --bpn-navy: #0B2545;
+  --bpn-dark: #07182D;
+  --bpn-blue: #134074;
+  --bpn-accent: #1D4ED8;
+  --bpn-gold: #D97706;
+  --bpn-light-gold: #FEF3C7;
+  --surface-color: rgba(11, 37, 69, 0.85);
+  --surface-card: rgba(11, 37, 69, 0.92);
+  --surface-hover: rgba(19, 64, 116, 0.85);
+  --surface-badge: rgba(11, 37, 69, 0.95);
+  --surface-subtle: rgba(255, 255, 255, 0.06);
+  --surface-dropdown: rgba(7, 24, 45, 0.98);
+  --primary-color: #1D4ED8;
+  --primary-hover: #2563EB;
+  --accent-color: #38BDF8;
+  --text-main: #F8FAFC;
+  --text-muted: #94A3B8;
+  --border-color: rgba(255, 255, 255, 0.12);
+  --error-color: #ef4444;
+  --warning-color: #f59e0b;
+  --success-color: #10b981;
+  --glass-bg: rgba(11, 37, 69, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --table-sticky-bg: #07182D;
+  --input-bg: rgba(7, 24, 45, 0.75);
+  --input-autofill-bg: #07182D;
+  --card-shadow: rgba(0, 0, 0, 0.4);
+  --grid-line: rgba(255, 255, 255, 0.05);
+  --skeleton-start: rgba(255, 255, 255, 0.04);
+  --skeleton-mid: rgba(255, 255, 255, 0.12);
+  --hub-card-bg: rgba(11, 37, 69, 0.85);
+  --hub-card-hover-bg: rgba(19, 64, 116, 0.95);
 }
 
 * {
