@@ -7,6 +7,13 @@
     linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
     radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 45%),
     radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 45%);
+  --gov-pattern-dots: radial-gradient(rgba(255, 255, 255, 0.08) 0.75px, transparent 0.75px), radial-gradient(rgba(255, 255, 255, 0.04) 0.75px, #07182D 0.75px);
+  --bpn-navy: #0B2545;
+  --bpn-dark: #07182D;
+  --bpn-blue: #134074;
+  --bpn-accent: #1D4ED8;
+  --bpn-gold: #D97706;
+  --bpn-light-gold: #FEF3C7;
   --surface-color: rgba(15, 23, 42, 0.75);
   --surface-card: rgba(15, 23, 42, 0.7);
   --surface-hover: rgba(30, 41, 59, 0.85);
@@ -36,12 +43,19 @@
 }
 
 [data-theme="light"] {
-  --bg-color: #f1f5f9;
+  --bg-color: #F8FAFC;
   --bg-pattern: 
     linear-gradient(to right, rgba(148, 163, 184, 0.16) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(148, 163, 184, 0.16) 1px, transparent 1px),
     radial-gradient(circle at 80% 20%, rgba(2, 132, 199, 0.1) 0%, transparent 45%),
     radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.07) 0%, transparent 45%);
+  --gov-pattern-dots: radial-gradient(#CBD5E1 0.75px, transparent 0.75px), radial-gradient(#E2E8F0 0.75px, #F8FAFC 0.75px);
+  --bpn-navy: #0B2545;
+  --bpn-dark: #07182D;
+  --bpn-blue: #134074;
+  --bpn-accent: #1D4ED8;
+  --bpn-gold: #D97706;
+  --bpn-light-gold: #FEF3C7;
   --surface-color: rgba(255, 255, 255, 0.92);
   --surface-card: #ffffff;
   --surface-hover: #f8fafc;
@@ -168,11 +182,14 @@ button {
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
   font-family: 'Inter', sans-serif;
-  width: 100%;
-  display: flex;
+  display: inline-flex;
   justify-content: center;
   align-items: center;
   gap: 0.5rem;
+}
+
+form > button[type="submit"] {
+  width: 100%;
 }
 
 button:hover {

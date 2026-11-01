@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import HomeHub from './pages/HomeHub';
@@ -49,115 +49,110 @@ const SuratEntryRoute = ({ children }) => {
   return userRoles.includes('Petugas Entry Surat') ? children : <Navigate to="/surat" />;
 };
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const isLoginPage = location.pathname === '/login';
+
   return (
-    <Router>
-      <Toaster 
-        position="top-center" 
-        toastOptions={{ 
-          style: { background: 'var(--surface-color)', color: 'var(--text-main)', border: '1px solid var(--border-color)', backdropFilter: 'blur(12px)' },
-          success: { iconTheme: { primary: 'var(--accent-color)', secondary: 'var(--text-main)' } },
-          error: { iconTheme: { primary: 'var(--error-color)', secondary: 'var(--text-main)' } }
-        }} 
-      />
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        <main style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column' }}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-          
-            <Route path="/" element={
-              <PrivateRoute>
-                <HomeHub />
-              </PrivateRoute>
-            } />
-
-            <Route path="/berkas" element={
-              <PrivateRoute>
-                <>
-                  <Navbar />
-                  <Dashboard />
-                </>
-              </PrivateRoute>
-            } />
-
-            <Route path="/surat" element={
-              <SuratRoute>
-                <>
-                  <Navbar />
-                  <SuratDashboard />
-                </>
-              </SuratRoute>
-            } />
-
-            <Route path="/surat/entry" element={
-              <SuratEntryRoute>
-                <>
-                  <Navbar />
-                  <SuratEntryForm />
-                </>
-              </SuratEntryRoute>
-            } />
-
-            <Route path="/entry" element={
-              <PrivateRoute>
-                <>
-                  <Navbar />
-                  <EntryForm />
-                </>
-              </PrivateRoute>
-            } />
-
-            <Route path="/scan" element={
-              <PrivateRoute>
-                <>
-                  <Navbar />
-                  <Scanner />
-                </>
-              </PrivateRoute>
-            } />
-
-            <Route path="/file/:qrcode" element={
-              <PrivateRoute>
-                <>
-                  <Navbar />
-                  <FileDetails />
-                </>
-              </PrivateRoute>
-            } />
-
-            <Route path="/kpi" element={
-              <KpiRoute>
-                <>
-                  <Navbar />
-                  <div style={{ padding: '2rem 0' }}>
-                    <KPIDashboard />
-                  </div>
-                </>
-              </KpiRoute>
-            } />
-
-            {/* Admin Routes */}
-            <Route path="/admin" element={
-              <AdminRoute>
-                <>
-                  <Navbar />
-                  <AdminDashboard />
-                </>
-              </AdminRoute>
-            } />
-            
-            <Route path="/admin/users" element={
-              <AdminRoute>
-                <>
-                  <Navbar />
-                  <UserManagement />
-                </>
-              </AdminRoute>
-            } />
-          </Routes>
-        </main>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      <main style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column' }}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
         
-        {/* Footer Terkunci di Bawah */}
+          <Route path="/" element={
+            <PrivateRoute>
+              <HomeHub />
+            </PrivateRoute>
+          } />
+
+          <Route path="/berkas" element={
+            <PrivateRoute>
+              <>
+                <Navbar />
+                <Dashboard />
+              </>
+            </PrivateRoute>
+          } />
+
+          <Route path="/surat" element={
+            <SuratRoute>
+              <>
+                <Navbar />
+                <SuratDashboard />
+              </>
+            </SuratRoute>
+          } />
+
+          <Route path="/surat/entry" element={
+            <SuratEntryRoute>
+              <>
+                <Navbar />
+                <SuratEntryForm />
+              </>
+            </SuratEntryRoute>
+          } />
+
+          <Route path="/entry" element={
+            <PrivateRoute>
+              <>
+                <Navbar />
+                <EntryForm />
+              </>
+            </PrivateRoute>
+          } />
+
+          <Route path="/scan" element={
+            <PrivateRoute>
+              <>
+                <Navbar />
+                <Scanner />
+              </>
+            </PrivateRoute>
+          } />
+
+          <Route path="/file/:qrcode" element={
+            <PrivateRoute>
+              <>
+                <Navbar />
+                <FileDetails />
+              </>
+            </PrivateRoute>
+          } />
+
+          <Route path="/kpi" element={
+            <KpiRoute>
+              <>
+                <Navbar />
+                <div style={{ padding: '2rem 0' }}>
+                  <KPIDashboard />
+                </div>
+              </>
+            </KpiRoute>
+          } />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={
+            <AdminRoute>
+              <>
+                <Navbar />
+                <AdminDashboard />
+              </>
+            </AdminRoute>
+          } />
+          
+          <Route path="/admin/users" element={
+            <AdminRoute>
+              <>
+                <Navbar />
+                <UserManagement />
+              </>
+            </AdminRoute>
+          } />
+        </Routes>
+      </main>
+      
+      {/* Footer Terkunci di Bawah (Kecuali Halaman Login yang Memiliki Footer Institusi Sendiri) */}
+      {!isLoginPage && (
         <footer 
           style={{ 
             position: 'fixed',
@@ -191,7 +186,23 @@ function App() {
             </a>
           </span>
         </footer>
-      </div>
+      )}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Toaster 
+        position="top-center" 
+        toastOptions={{ 
+          style: { background: 'var(--surface-color)', color: 'var(--text-main)', border: '1px solid var(--border-color)', backdropFilter: 'blur(12px)' },
+          success: { iconTheme: { primary: 'var(--accent-color)', secondary: 'var(--text-main)' } },
+          error: { iconTheme: { primary: 'var(--error-color)', secondary: 'var(--text-main)' } }
+        }} 
+      />
+      <AppContent />
     </Router>
   );
 }
