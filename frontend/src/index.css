@@ -1,12 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
 :root, [data-theme="dark"] {
-  --bg-color: #060913;
+  --bg-color: #07182D;
   --bg-pattern: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 45%),
-    radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 45%);
+    radial-gradient(rgba(255, 255, 255, 0.08) 0.75px, transparent 0.75px),
+    radial-gradient(rgba(255, 255, 255, 0.04) 0.75px, #07182D 0.75px);
   --gov-pattern-dots: radial-gradient(rgba(255, 255, 255, 0.08) 0.75px, transparent 0.75px), radial-gradient(rgba(255, 255, 255, 0.04) 0.75px, #07182D 0.75px);
   --bpn-navy: #0B2545;
   --bpn-dark: #07182D;
@@ -14,41 +12,39 @@
   --bpn-accent: #1D4ED8;
   --bpn-gold: #D97706;
   --bpn-light-gold: #FEF3C7;
-  --surface-color: rgba(15, 23, 42, 0.75);
-  --surface-card: rgba(15, 23, 42, 0.7);
-  --surface-hover: rgba(30, 41, 59, 0.85);
-  --surface-badge: rgba(15, 23, 42, 0.65);
-  --surface-subtle: rgba(255, 255, 255, 0.05);
-  --surface-dropdown: rgba(15, 23, 42, 0.97);
-  --primary-color: #3b82f6;
-  --primary-hover: #60a5fa;
-  --accent-color: #10b981;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --surface-color: rgba(11, 37, 69, 0.85);
+  --surface-card: rgba(11, 37, 69, 0.92);
+  --surface-hover: rgba(19, 64, 116, 0.85);
+  --surface-badge: rgba(11, 37, 69, 0.95);
+  --surface-subtle: rgba(255, 255, 255, 0.06);
+  --surface-dropdown: rgba(7, 24, 45, 0.98);
+  --primary-color: #1D4ED8;
+  --primary-hover: #2563EB;
+  --accent-color: #38BDF8;
+  --text-main: #F8FAFC;
+  --text-muted: #94A3B8;
   --border-color: rgba(255, 255, 255, 0.12);
   --error-color: #ef4444;
   --warning-color: #f59e0b;
   --success-color: #10b981;
-  --glass-bg: rgba(10, 15, 29, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.09);
-  --table-sticky-bg: #0b1329;
-  --input-bg: rgba(15, 23, 42, 0.75);
-  --input-autofill-bg: #0d1526;
-  --card-shadow: rgba(0, 0, 0, 0.35);
-  --grid-line: rgba(255, 255, 255, 0.04);
+  --glass-bg: rgba(11, 37, 69, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --table-sticky-bg: #07182D;
+  --input-bg: rgba(7, 24, 45, 0.75);
+  --input-autofill-bg: #07182D;
+  --card-shadow: rgba(0, 0, 0, 0.4);
+  --grid-line: rgba(255, 255, 255, 0.05);
   --skeleton-start: rgba(255, 255, 255, 0.04);
   --skeleton-mid: rgba(255, 255, 255, 0.12);
-  --hub-card-bg: rgba(15, 23, 42, 0.65);
-  --hub-card-hover-bg: rgba(15, 23, 42, 0.85);
+  --hub-card-bg: rgba(11, 37, 69, 0.85);
+  --hub-card-hover-bg: rgba(19, 64, 116, 0.95);
 }
 
 [data-theme="light"] {
   --bg-color: #F8FAFC;
   --bg-pattern: 
-    linear-gradient(to right, rgba(148, 163, 184, 0.16) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(148, 163, 184, 0.16) 1px, transparent 1px),
-    radial-gradient(circle at 80% 20%, rgba(2, 132, 199, 0.1) 0%, transparent 45%),
-    radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.07) 0%, transparent 45%);
+    radial-gradient(#CBD5E1 0.75px, transparent 0.75px),
+    radial-gradient(#E2E8F0 0.75px, #F8FAFC 0.75px);
   --gov-pattern-dots: radial-gradient(#CBD5E1 0.75px, transparent 0.75px), radial-gradient(#E2E8F0 0.75px, #F8FAFC 0.75px);
   --bpn-navy: #0B2545;
   --bpn-dark: #07182D;
@@ -56,32 +52,32 @@
   --bpn-accent: #1D4ED8;
   --bpn-gold: #D97706;
   --bpn-light-gold: #FEF3C7;
-  --surface-color: rgba(255, 255, 255, 0.92);
-  --surface-card: #ffffff;
-  --surface-hover: #f8fafc;
-  --surface-badge: rgba(255, 255, 255, 0.95);
-  --surface-subtle: rgba(15, 23, 42, 0.04);
-  --surface-dropdown: #ffffff;
-  --primary-color: #0284c7;
-  --primary-hover: #0369a1;
-  --accent-color: #059669;
-  --text-main: #0f172a;
-  --text-muted: #475569;
-  --border-color: rgba(148, 163, 184, 0.32);
+  --surface-color: rgba(255, 255, 255, 0.95);
+  --surface-card: #FFFFFF;
+  --surface-hover: #F1F5F9;
+  --surface-badge: #FFFFFF;
+  --surface-subtle: rgba(11, 37, 69, 0.04);
+  --surface-dropdown: #FFFFFF;
+  --primary-color: #0B2545;
+  --primary-hover: #134074;
+  --accent-color: #1D4ED8;
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --border-color: #E2E8F0;
   --error-color: #dc2626;
   --warning-color: #d97706;
   --success-color: #059669;
-  --glass-bg: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(148, 163, 184, 0.28);
-  --table-sticky-bg: #f8fafc;
-  --input-bg: #ffffff;
-  --input-autofill-bg: #f8fafc;
-  --card-shadow: rgba(15, 23, 42, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-border: #E2E8F0;
+  --table-sticky-bg: #FFFFFF;
+  --input-bg: #FFFFFF;
+  --input-autofill-bg: #FFFFFF;
+  --card-shadow: rgba(11, 37, 69, 0.06);
   --grid-line: rgba(148, 163, 184, 0.15);
   --skeleton-start: rgba(15, 23, 42, 0.04);
   --skeleton-mid: rgba(15, 23, 42, 0.09);
-  --hub-card-bg: rgba(255, 255, 255, 0.88);
-  --hub-card-hover-bg: #ffffff;
+  --hub-card-bg: rgba(255, 255, 255, 0.92);
+  --hub-card-hover-bg: #FFFFFF;
 }
 
 * {
@@ -91,10 +87,11 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-color);
   background-image: var(--bg-pattern);
-  background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%;
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
   background-attachment: fixed;
   color: var(--text-main);
   margin: 0;
@@ -151,14 +148,14 @@ input:not([type="checkbox"]):not([type="radio"]), select, textarea {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   color: var(--text-main);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.25);
 }
 
 input:-webkit-autofill,
@@ -176,12 +173,12 @@ button {
   background: var(--primary-color);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.65rem 1.25rem;
   border-radius: 8px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  font-family: 'Inter', sans-serif;
+  transition: all 0.2s ease, transform 0.1s;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -201,13 +198,14 @@ button:active {
 }
 
 button.secondary {
-  background: transparent;
+  background: var(--surface-card);
   border: 1px solid var(--border-color);
   color: var(--text-main);
 }
 
 button.secondary:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-hover);
+  border-color: var(--text-muted);
 }
 
 /* Layout utilities */
@@ -257,14 +255,15 @@ button.secondary:hover {
   background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--glass-border);
-  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.65rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 50;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .navbar-brand {
@@ -275,7 +274,7 @@ button.secondary:hover {
 
 .nav-links {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: center;
 }
 
@@ -283,14 +282,25 @@ button.secondary:hover {
   color: var(--text-muted);
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.2s;
+  font-size: 0.875rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
-.nav-links a:hover, .nav-links a.active {
-  color: var(--primary-color);
+.nav-links a:hover {
+  color: var(--text-main);
+  background: var(--surface-hover);
+}
+
+.nav-links a.active {
+  background: var(--primary-color);
+  color: #FFFFFF !important;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(11, 37, 69, 0.25);
 }
 
 /* Tables / Lists */

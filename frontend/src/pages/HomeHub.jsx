@@ -63,44 +63,25 @@ export default function HomeHub() {
           flex-direction: column;
           justify-content: flex-start;
           padding: 0 0 5rem 0;
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        .hub-bg-grid {
-          position: fixed;
-          inset: 0;
-          background-image: 
-            linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-          background-size: 40px 40px;
-          mask-image: radial-gradient(circle at 50% 45%, black 35%, transparent 85%);
-          -webkit-mask-image: radial-gradient(circle at 50% 45%, black 35%, transparent 85%);
-          pointer-events: none;
-          z-index: 0;
+        .hub-seal-box {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          background: #0B2545;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #FFFFFF;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+          flex-shrink: 0;
         }
 
-        .hub-glow-1 {
-          position: fixed;
-          top: -10%;
-          left: 15%;
-          width: 520px;
-          height: 520px;
-          background: radial-gradient(circle, rgba(59, 130, 246, 0.16) 0%, transparent 70%);
-          filter: blur(60px);
-          pointer-events: none;
-          z-index: 0;
-        }
-
-        .hub-glow-2 {
-          position: fixed;
-          bottom: 5%;
-          right: 12%;
-          width: 480px;
-          height: 480px;
-          background: radial-gradient(circle, rgba(16, 185, 129, 0.13) 0%, transparent 70%);
-          filter: blur(60px);
-          pointer-events: none;
-          z-index: 0;
+        .hub-seal-icon {
+          width: 20px;
+          height: 20px;
         }
 
         .hub-container {
@@ -122,9 +103,10 @@ export default function HomeHub() {
           background: var(--glass-bg);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid var(--glass-border);
-          padding: 0.85rem 1.5rem;
+          border-bottom: 1px solid var(--border-color);
+          padding: 0.65rem 1.5rem;
           transition: background-color 0.25s ease;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .hub-topbar-inner {
@@ -141,45 +123,42 @@ export default function HomeHub() {
         .hub-user-badge {
           display: inline-flex;
           align-items: center;
-          gap: 0.75rem;
-          padding: 0.5rem 1rem;
-          background: var(--surface-badge);
+          gap: 0.65rem;
+          padding: 0.4rem 0.85rem;
+          background: var(--surface-card);
           border: 1px solid var(--border-color);
           border-radius: 999px;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          box-shadow: 0 1px 2px rgba(0,0,0,0.03);
         }
 
         .hub-user-dot {
-          width: 9px;
-          height: 9px;
+          width: 8px;
+          height: 8px;
           border-radius: 50%;
           background: #10b981;
-          box-shadow: 0 0 10px #10b981;
+          box-shadow: 0 0 8px #10b981;
         }
 
         .hub-logout-btn {
           width: auto !important;
           display: inline-flex;
           align-items: center;
-          gap: 0.5rem;
-          padding: 0.55rem 1.15rem;
-          background: rgba(239, 68, 68, 0.1);
-          color: #f87171;
-          border: 1px solid rgba(239, 68, 68, 0.25);
-          border-radius: 999px;
-          font-size: 0.875rem;
-          font-weight: 500;
+          gap: 0.4rem;
+          padding: 0.45rem 0.95rem;
+          background: rgba(239, 68, 68, 0.1) !important;
+          color: #ef4444 !important;
+          border: 1px solid rgba(239, 68, 68, 0.25) !important;
+          border-radius: 8px !important;
+          font-size: 0.85rem;
+          font-weight: 600;
           cursor: pointer;
-          transition: all 0.25s ease;
-          backdrop-filter: blur(12px);
+          transition: all 0.2s ease;
         }
 
         .hub-logout-btn:hover {
-          background: rgba(239, 68, 68, 0.2);
-          border-color: rgba(239, 68, 68, 0.45);
+          background: rgba(239, 68, 68, 0.2) !important;
+          border-color: rgba(239, 68, 68, 0.45) !important;
           transform: translateY(-1px);
-          box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
         }
 
         .hub-hero {
@@ -390,42 +369,64 @@ export default function HomeHub() {
       {/* Top Navigation Bar */}
       <header className="hub-topbar">
         <div className="hub-topbar-inner">
-          <div className="hub-user-badge">
-            <span className="hub-user-dot" style={{ flexShrink: 0 }} />
-            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {fullName}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div className="hub-seal-box" title="Kementerian ATR/BPN RI">
+              <svg className="hub-seal-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M3 21h18" />
+                <path d="M5 21V7l7-4 7 4v14" />
+                <path d="M9 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+                <path d="M9 21v-5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5" />
+              </svg>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+                Kantor Pertanahan Kota Tangerang Selatan
               </span>
-              <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {roleStr || 'Petugas'}
+              <span style={{ margin: '0 0.35rem', color: 'var(--text-muted)', opacity: 0.5 }}>|</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1D4ED8' }}>
+                Pantau<span style={{ fontWeight: 500, color: 'var(--text-muted)' }}>.Kantah Tangsel</span>
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', flexShrink: 0 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+            <div className="hub-user-badge">
+              <span className="hub-user-dot" style={{ flexShrink: 0 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {fullName}
+                </span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {roleStr || 'Petugas'}
+                </span>
+              </div>
+            </div>
+
             <button
+              type="button"
               onClick={toggleTheme}
               style={{
                 width: 'auto',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '0.55rem',
-                borderRadius: '999px',
-                background: 'var(--surface-badge)',
+                padding: '0.45rem 0.75rem',
+                borderRadius: '8px',
+                background: 'var(--surface-card)',
                 border: '1px solid var(--border-color)',
                 cursor: 'pointer',
-                transition: 'all 0.25s ease'
+                color: 'var(--text-main)',
+                transition: 'all 0.2s ease'
               }}
-              title={theme === 'dark' ? 'Ganti ke Mode Terang (Office Slate)' : 'Ganti ke Mode Gelap (Dark Mode)'}
+              title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
               aria-label="Ganti Tema"
             >
-              {theme === 'dark' ? <Sun size={17} color="#fbbf24" /> : <Moon size={17} color="#0284c7" />}
+              {theme === 'dark' ? <Sun size={15} color="#fbbf24" /> : <Moon size={15} color="#1D4ED8" />}
             </button>
             <NotificationBell />
-            <button onClick={handleLogout} className="hub-logout-btn">
-              <LogOut size={16} />
-              Logout
+            <button type="button" onClick={handleLogout} className="hub-logout-btn">
+              <LogOut size={15} />
+              Keluar
             </button>
           </div>
         </div>

@@ -55,7 +55,7 @@ function AppContent() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <main style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column', paddingBottom: !isLoginPage ? '3.5rem' : '0' }}>
         <Routes>
           <Route path="/login" element={<Login />} />
         
@@ -160,11 +160,10 @@ function AppContent() {
             left: 0,
             right: 0,
             width: '100%',
-            textAlign: 'center', 
-            padding: '12px 16px', 
-            fontSize: '0.8rem', 
+            padding: '10px 1.5rem', 
+            fontSize: '0.78rem', 
             color: 'var(--text-muted)', 
-            backgroundColor: 'var(--surface-color)',
+            backgroundColor: 'var(--glass-bg)',
             borderTop: '1px solid var(--border-color)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
@@ -172,19 +171,21 @@ function AppContent() {
             boxSizing: 'border-box'
           }}
         >
-          <span>
-            © 2026 Pantau.Kantah Tangsel. Build by{' '}
+          <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <span>
+              © 2026 Kantor Pertanahan Kota Tangerang Selatan — Kementerian Agraria dan Tata Ruang / BPN RI
+            </span>
             <a 
               href="https://x.com/dicoandila" 
               target="_blank" 
               rel="noreferrer" 
-              style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 500 }}
+              style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}
               onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
               onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
             >
-              @dicoandila
+              Build by @dicoandila
             </a>
-          </span>
+          </div>
         </footer>
       )}
     </div>

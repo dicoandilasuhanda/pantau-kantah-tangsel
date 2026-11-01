@@ -89,63 +89,164 @@ export default function Navbar() {
   return (
     <>
       <style>{`
+        .navbar-brand-link {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          text-decoration: none;
+          color: inherit;
+        }
+        .navbar-seal-box {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          background: #0B2545;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #FFFFFF;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+          flex-shrink: 0;
+        }
+        .navbar-seal-icon {
+          width: 20px;
+          height: 20px;
+        }
+        .navbar-title-full {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--text-main);
+          letter-spacing: -0.01em;
+        }
+        .navbar-title-short {
+          display: none;
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--text-main);
+        }
+        .navbar-sep {
+          color: var(--text-muted);
+          opacity: 0.5;
+          font-weight: 400;
+        }
+        .navbar-app-name {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #1D4ED8;
+        }
+        .navbar-app-sub {
+          font-weight: 500;
+          color: var(--text-muted);
+        }
+        .nav-user-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.65rem;
+          padding: 0.4rem 0.85rem;
+          background: var(--surface-card);
+          border: 1px solid var(--border-color);
+          border-radius: 999px;
+          user-select: none;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
         .nav-logout-btn {
           width: auto !important;
           display: inline-flex;
           align-items: center;
-          gap: 0.5rem;
-          padding: 0.55rem 1.15rem;
+          gap: 0.4rem;
+          padding: 0.45rem 0.95rem;
           background: rgba(239, 68, 68, 0.1) !important;
-          color: #f87171 !important;
+          color: #ef4444 !important;
           border: 1px solid rgba(239, 68, 68, 0.25) !important;
-          border-radius: 999px !important;
-          font-size: 0.875rem;
-          font-weight: 500;
+          border-radius: 8px !important;
+          font-size: 0.85rem;
+          font-weight: 600;
           cursor: pointer;
-          transition: all 0.25s ease;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          transition: all 0.2s ease;
         }
         .nav-logout-btn:hover {
           background: rgba(239, 68, 68, 0.2) !important;
           border-color: rgba(239, 68, 68, 0.45) !important;
           transform: translateY(-1px);
-          box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
+        }
+        .nav-theme-btn {
+          width: auto !important;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.45rem 0.75rem;
+          background: var(--surface-card) !important;
+          border: 1px solid var(--border-color) !important;
+          border-radius: 8px !important;
+          color: var(--text-main) !important;
+          font-size: 0.85rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .nav-theme-btn:hover {
+          background: var(--surface-hover) !important;
+          border-color: var(--text-muted) !important;
+        }
+        @media (max-width: 1024px) {
+          .navbar-title-full { display: none; }
+          .navbar-title-short { display: inline; }
+        }
+        @media (max-width: 768px) {
+          .navbar {
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+          }
+          .navbar-brand {
+            width: 100%;
+            justify-content: space-between;
+          }
+          .nav-links {
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            gap: 0.4rem;
+          }
         }
       `}</style>
 
       <nav className="navbar">
         <div className="navbar-brand">
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              padding: '0.5rem 1rem',
-              background: 'var(--surface-badge)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '999px',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              cursor: 'default',
-              userSelect: 'none'
-            }}
-          >
+          <Link to="/" className="navbar-brand-link" title="Beranda Pantau.Kantah Tangsel">
+            <div className="navbar-seal-box">
+              <svg className="navbar-seal-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M3 21h18" />
+                <path d="M5 21V7l7-4 7 4v14" />
+                <path d="M9 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+                <path d="M9 21v-5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5" />
+              </svg>
+            </div>
+            <div>
+              <span className="navbar-title-full">Kantor Pertanahan Kota Tangerang Selatan</span>
+              <span className="navbar-title-short">Kantah Tangsel</span>
+              <span className="navbar-sep" style={{ margin: '0 0.35rem' }}>|</span>
+              <span className="navbar-app-name">Pantau<span className="navbar-app-sub">.Kantah Tangsel</span></span>
+            </div>
+          </Link>
+
+          {/* User profile pill */}
+          <div className="nav-user-pill">
             <span
               style={{
-                width: '9px',
-                height: '9px',
+                width: '8px',
+                height: '8px',
                 borderRadius: '50%',
                 background: '#10b981',
-                boxShadow: '0 0 10px #10b981',
+                boxShadow: '0 0 8px #10b981',
                 flexShrink: 0
               }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2 }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2 }}>
                 {fullName}
               </span>
-              <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                 {role || 'Petugas'}
               </span>
             </div>
@@ -154,62 +255,68 @@ export default function Navbar() {
         
         <div className="nav-links">
           <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
-            <Home size={20} /> Hub
+            <Home size={18} /> Hub
           </Link>
 
           {isSuratModule ? (
             <>
               <Link to="/surat" className={location.pathname === '/surat' ? 'active' : ''}>
-                <Mail size={20} /> Surat
+                <Mail size={18} /> Surat
               </Link>
               {userRoles.includes('Petugas Entry Surat') && (
                 <Link to="/surat/entry" className={location.pathname === '/surat/entry' ? 'active' : ''}>
-                  <PlusSquare size={20} /> Entri Surat Baru
+                  <PlusSquare size={18} /> Entri Baru
                 </Link>
               )}
             </>
           ) : (
             <>
               <Link to="/berkas" className={location.pathname === '/berkas' ? 'active' : ''}>
-                <FileText size={20} /> Berkas
+                <FileText size={18} /> Berkas
               </Link>
               
               {(userRoles.includes('Petugas Entry Berkas') || userRoles.includes('Petugas Entry Berkas PHP')) && (
                 <Link to="/entry" className={location.pathname === '/entry' ? 'active' : ''}>
-                  <PlusSquare size={20} /> Entri Berkas Baru
+                  <PlusSquare size={18} /> Entri Baru
                 </Link>
               )}
 
               <Link to="/scan" className={location.pathname === '/scan' ? 'active' : ''}>
-                <Scan size={20} /> Scanner QR
+                <Scan size={18} /> Scanner QR
               </Link>
             </>
           )}
 
           {(userRoles.includes('Administrator') || userRoles.some(r => r.includes('Koordinator')) || userRoles.some(r => r.includes('Kepala Seksi'))) && (
             <Link to="/kpi" className={location.pathname === '/kpi' ? 'active' : ''}>
-              <BarChart2 size={20} /> Dashboard
+              <BarChart2 size={18} /> Dashboard
             </Link>
           )}
 
           <NotificationBell />
 
           <button 
-            className="secondary" 
+            type="button"
+            className="nav-theme-btn" 
             onClick={toggleTheme} 
-            style={{ padding: '0.5rem 0.75rem', width: 'auto' }} 
-            title={theme === 'dark' ? 'Ganti ke Mode Terang (Office Slate)' : 'Ganti ke Mode Gelap (Dark Mode)'}
+            title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
             aria-label="Ganti Tema"
           >
-            {theme === 'dark' ? <Sun size={17} color="#fbbf24" /> : <Moon size={17} color="#0284c7" />}
+            {theme === 'dark' ? <Sun size={15} color="#fbbf24" /> : <Moon size={15} color="#1D4ED8" />}
           </button>
 
-          <button className="secondary" onClick={() => setShowPasswordModal(true)} style={{ padding: '0.5rem 1rem', width: 'auto' }} title="Ubah Kata Sandi">
-            <Key size={16} /> Ubah Sandi
+          <button 
+            type="button"
+            className="secondary" 
+            onClick={() => setShowPasswordModal(true)} 
+            style={{ padding: '0.45rem 0.85rem', width: 'auto', fontSize: '0.85rem' }} 
+            title="Ubah Kata Sandi"
+          >
+            <Key size={15} /> Sandi
           </button>
           
-          <button className="nav-logout-btn" onClick={handleLogout}>
-            <LogOut size={16} /> Logout
+          <button type="button" className="nav-logout-btn" onClick={handleLogout}>
+            <LogOut size={15} /> Keluar
           </button>
         </div>
       </nav>
