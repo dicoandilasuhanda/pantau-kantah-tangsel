@@ -93,12 +93,18 @@ export default function Navbar() {
   return (
     <>
       <style>{`
-        .navbar-brand-link {
+        .navbar-brand-info {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          text-decoration: none;
-          color: inherit;
+          white-space: nowrap;
+          cursor: default;
+          user-select: none;
+        }
+        .navbar-brand-text {
+          display: flex;
+          align-items: center;
+          white-space: nowrap;
         }
         .navbar-seal-box {
           width: 36px;
@@ -190,7 +196,7 @@ export default function Navbar() {
           background: var(--surface-hover) !important;
           border-color: var(--text-muted) !important;
         }
-        @media (max-width: 1024px) {
+        @media (max-width: 1366px) {
           .navbar-title-full { display: none; }
           .navbar-title-short { display: inline; }
         }
@@ -215,17 +221,17 @@ export default function Navbar() {
 
       <nav className="navbar">
         <div className="navbar-brand">
-          <Link to="/" className="navbar-brand-link" title="Beranda Pantau.Kantah Tangsel">
-            <div className="navbar-seal-box">
+          <div className="navbar-brand-info">
+            <div className="navbar-seal-box" title="Kementerian ATR/BPN RI">
               <img src="/logo-atr-bpn.png" alt="Logo Kementerian ATR/BPN" className="navbar-seal-img" />
             </div>
-            <div>
+            <div className="navbar-brand-text">
               <span className="navbar-title-full">Kantor Pertanahan Kota Tangerang Selatan</span>
               <span className="navbar-title-short">Kantah Tangsel</span>
               <span className="navbar-sep" style={{ margin: '0 0.35rem' }}>|</span>
               <span className="navbar-app-name">Pantau<span className="navbar-app-sub">.Kantah Tangsel</span></span>
             </div>
-          </Link>
+          </div>
 
           {/* User profile pill */}
           <div className="nav-user-pill">
