@@ -1080,15 +1080,24 @@ export default function Login() {
         }
         .bpn-field-icon {
           position: absolute;
-          left: 12px;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
           pointer-events: none;
           color: #94A3B8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 16px;
+          height: 16px;
+          z-index: 2;
         }
 
         .bpn-input {
           width: 100%;
           height: 44px;
-          padding: 0 12px 0 38px;
+          padding: 0 40px 0 40px !important;
+          margin: 0 !important;
           border-radius: 8px;
           font-size: 0.88rem;
           font-family: inherit;
@@ -1122,19 +1131,23 @@ export default function Login() {
         }
 
         .bpn-eye-toggle {
-          width: auto !important;
+          width: 24px !important;
+          height: 24px !important;
           max-width: fit-content !important;
           position: absolute;
-          right: 10px;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
           background: transparent !important;
           border: none !important;
           color: #94A3B8 !important;
           cursor: pointer !important;
-          padding: 4px !important;
+          padding: 0 !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
           border-radius: 4px !important;
+          z-index: 2;
         }
         .bpn-eye-toggle:hover {
           color: #1D4ED8 !important;
@@ -1147,14 +1160,17 @@ export default function Login() {
           display: flex;
           align-items: center;
           padding: 2px 0;
+          margin-top: 2px;
         }
         .bpn-checkbox-label {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          font-size: 0.8rem;
+          gap: 9px;
+          font-size: 0.82rem;
           cursor: pointer;
           user-select: none;
+          margin: 0 !important;
+          line-height: 1;
         }
         .bpn-theme-light .bpn-checkbox-label {
           color: #475569;
@@ -1163,11 +1179,15 @@ export default function Login() {
           color: #CBD5E1;
         }
         .bpn-checkbox {
-          width: 16px;
-          height: 16px;
+          width: 16px !important;
+          height: 16px !important;
+          margin: 0 !important;
+          padding: 0 !important;
           border-radius: 4px;
           accent-color: #0B2545;
           cursor: pointer;
+          flex-shrink: 0;
+          vertical-align: middle;
         }
         .bpn-theme-dark .bpn-checkbox {
           accent-color: #1D4ED8;
