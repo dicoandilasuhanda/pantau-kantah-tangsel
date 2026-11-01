@@ -225,7 +225,7 @@ export default function Login() {
           <section className="bpn-hero-section">
             <div className="bpn-tag-badge">
               <Shield size={14} className="bpn-tag-icon" />
-              <span>Pantau SP • Kantah Kota Tangerang Selatan</span>
+              <span>Pantau.Kantah Tangsel</span>
             </div>
 
             <div className="bpn-headline-block">
