@@ -174,17 +174,10 @@ export default function Login() {
               </svg>
             </div>
             <div>
-              <div className="bpn-ministry-row">
-                <span className="bpn-ministry-name">KEMENTERIAN ATR/BPN</span>
-                <span className="bpn-active-badge">
-                  <span className="bpn-pulse-dot"></span>
-                  Sistem Aktif
-                </span>
-              </div>
               <div className="bpn-kantah-title">
                 Kantor Pertanahan Kota Tangerang Selatan
                 <span className="bpn-sep">|</span>
-                <span className="bpn-app-name">Pantau<span className="bpn-app-sub">.Kantah</span></span>
+                <span className="bpn-app-name">Pantau<span className="bpn-app-sub">.Kantah Tangsel</span></span>
               </div>
             </div>
           </div>
@@ -622,14 +615,14 @@ export default function Login() {
         }
 
         .bpn-kantah-title {
-          font-size: 0.85rem;
+          font-size: 0.92rem;
           font-weight: 700;
           color: #0F172A;
-          letter-spacing: -0.01em;
-          margin-top: 2px;
+          letter-spacing: -0.015em;
+          margin: 0;
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 7px;
         }
         .bpn-theme-dark .bpn-kantah-title {
           color: #F8FAFC;
