@@ -140,11 +140,14 @@ export default function Navbar() {
         .navbar-app-name {
           font-size: 0.85rem;
           font-weight: 700;
-          color: #1D4ED8;
+          color: var(--text-main);
         }
         .navbar-app-sub {
-          font-weight: 500;
-          color: var(--text-muted);
+          font-weight: 700;
+          color: #1D4ED8;
+        }
+        [data-theme="dark"] .navbar-app-sub {
+          color: #38BDF8;
         }
         .nav-user-pill {
           display: inline-flex;

@@ -372,6 +372,19 @@ export default function HomeHub() {
           border-color: #38BDF8;
         }
 
+        .hub-app-name {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--text-main);
+        }
+        .hub-app-sub {
+          font-weight: 700;
+          color: #1D4ED8;
+        }
+        [data-theme="dark"] .hub-app-sub {
+          color: #38BDF8;
+        }
+
         @media (max-width: 640px) {
           .hub-topbar {
             padding: 0.75rem 1rem;
@@ -400,8 +413,8 @@ export default function HomeHub() {
                 Kantor Pertanahan Kota Tangerang Selatan
               </span>
               <span style={{ margin: '0 0.35rem', color: 'var(--text-muted)', opacity: 0.5 }}>|</span>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1D4ED8' }}>
-                Pantau<span style={{ fontWeight: 500, color: 'var(--text-muted)' }}>.Kantah Tangsel</span>
+              <span className="hub-app-name">
+                Pantau<span className="hub-app-sub">.Kantah Tangsel</span>
               </span>
             </div>
           </div>
