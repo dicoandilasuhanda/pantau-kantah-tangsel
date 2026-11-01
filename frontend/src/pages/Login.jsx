@@ -376,7 +376,6 @@ export default function Login() {
                   <CheckCircle2 size={13} className="bpn-tls-icon" />
                   Enkripsi Sesi Aktif
                 </span>
-                <span className="bpn-build-tag">Build v3.4.1</span>
               </div>
             </div>
           </section>
@@ -1354,7 +1353,7 @@ export default function Login() {
           border-top: 1px solid #F1F5F9;
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: center;
           font-size: 0.72rem;
         }
         .bpn-theme-dark .bpn-card-footnote {
@@ -1375,10 +1374,6 @@ export default function Login() {
         }
         .bpn-theme-dark .bpn-tls-icon {
           color: #34D399;
-        }
-        .bpn-build-tag {
-          font-family: monospace;
-          color: #94A3B8;
         }
 
         /* ==================== 3. FOOTER ==================== */
