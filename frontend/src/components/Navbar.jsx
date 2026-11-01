@@ -103,18 +103,16 @@ export default function Navbar() {
         .navbar-seal-box {
           width: 36px;
           height: 36px;
-          border-radius: 8px;
-          background: #0B2545;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #FFFFFF;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
           flex-shrink: 0;
         }
-        .navbar-seal-icon {
-          width: 20px;
-          height: 20px;
+        .navbar-seal-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
         }
         .navbar-title-full {
           font-size: 0.85rem;
@@ -219,12 +217,7 @@ export default function Navbar() {
         <div className="navbar-brand">
           <Link to="/" className="navbar-brand-link" title="Beranda Pantau.Kantah Tangsel">
             <div className="navbar-seal-box">
-              <svg className="navbar-seal-icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M3 21h18" />
-                <path d="M5 21V7l7-4 7 4v14" />
-                <path d="M9 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
-                <path d="M9 21v-5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5" />
-              </svg>
+              <img src="/logo-atr-bpn.png" alt="Logo Kementerian ATR/BPN" className="navbar-seal-img" />
             </div>
             <div>
               <span className="navbar-title-full">Kantor Pertanahan Kota Tangerang Selatan</span>
