@@ -52,14 +52,14 @@ export default function Scanner() {
 
     scannerRef.current.start({ facingMode: "environment" }, config, handleScanSuccess, () => {})
       .then(() => setIsCameraReady(true))
-      .catch((err) => {
+      .catch((_err) => {
         setStatus('error');
         setMessage('Gagal mengakses kamera. Pastikan Anda telah memberikan izin kamera.');
       });
 
     return () => {
       if (scannerRef.current && scannerRef.current.isScanning) {
-        scannerRef.current.stop().catch(e => console.log('Failed to stop scanner', e));
+        scannerRef.current.stop().catch(_e => console.log('Failed to stop scanner', _e));
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,7 +71,7 @@ export default function Scanner() {
       try {
         const result = await scannerRef.current.scanFile(file, false);
         handleScanSuccess(result);
-      } catch (err) {
+      } catch {
         toast.error('Gambar tidak terbaca atau bukan QR Code yang valid.');
       }
       event.target.value = ''; // reset input

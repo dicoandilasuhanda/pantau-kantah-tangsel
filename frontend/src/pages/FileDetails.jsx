@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeft, Clock, MapPin, UserCheck, Calendar, AlertTriangle, Edit2, Save, X, MessageSquare, Play, Pause, Send } from 'lucide-react';
-import { SOP_DAYS, getWorkingDays, addWorkingDays, formatDate, getStatusColor, getStatusLabel, parseSQLiteDate, calculateTotalElapsedDays } from '../utils/dateUtils';
+import { SOP_DAYS, getWorkingDays, addWorkingDays, formatDate, getStatusColor, parseSQLiteDate, calculateTotalElapsedDays } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 
 export default function FileDetails() {
@@ -41,7 +41,7 @@ export default function FileDetails() {
         try {
           const userRes = await api.get('/users/list');
           setUsersList(userRes.data);
-        } catch(e) {}
+        } catch {}
       } catch (err) {
         setError(err.response?.data?.error || 'Gagal memuat detail berkas');
       } finally {

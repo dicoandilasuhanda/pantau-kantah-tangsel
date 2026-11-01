@@ -6,7 +6,7 @@ import api from '../utils/api';
 import { parseSQLiteDate } from '../utils/dateUtils';
 
 // Fungsi Web Audio API untuk membunyikan nada lonceng pengumuman kantor yang nyaring, jernih, dan berdurasi ~3.2 detik
-export function playNotificationChime() {
+function playNotificationChime() {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return false;
@@ -77,7 +77,7 @@ export function playNotificationChime() {
       if (ctx.state !== 'closed') ctx.close().catch(() => {});
     }, 3600);
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -102,7 +102,7 @@ export default function NotificationBell() {
     try {
       const res = await api.get('/notifications/telegram-status');
       if (res.data) setTgStatus(res.data);
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, []);
@@ -112,7 +112,7 @@ export default function NotificationBell() {
       await api.post('/notifications/telegram-unlink');
       setTgStatus(prev => ({ ...prev, connected: false, telegram_chat_id: null }));
       toast.success('Koneksi Telegram direset. Silakan klik Hubungkan Notifikasi Telegram HP.');
-    } catch (err) {
+    } catch {
       toast.error('Gagal mereset koneksi Telegram');
     }
   };
@@ -139,7 +139,7 @@ export default function NotificationBell() {
       let notifiedMap = {};
       try {
         notifiedMap = JSON.parse(sessionStorage.getItem('notified_transit_map') || '{}');
-      } catch (e) {
+      } catch {
         notifiedMap = {};
       }
 
@@ -177,7 +177,7 @@ export default function NotificationBell() {
       } else if (isInitialSessionCheck) {
         sessionStorage.setItem('notif_initial_checked', 'true');
       }
-    } catch (err) {
+    } catch {
       // Abaikan error jaringan latar belakang
     } finally {
       if (isManual) setLoading(false);
@@ -231,7 +231,7 @@ export default function NotificationBell() {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, fetchTelegramStatus]);
 
   const formatTransitTime = (dateStr) => {
     if (!dateStr) return 'Baru saja';

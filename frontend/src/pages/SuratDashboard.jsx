@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { MailPlus, Search, Download, FileText } from 'lucide-react';
+import { MailPlus, Search, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SuratDashboard() {
@@ -18,7 +18,7 @@ export default function SuratDashboard() {
     try {
       const response = await api.get('/surat');
       setSuratList(response.data);
-    } catch (error) {
+    } catch {
       toast.error('Gagal mengambil data surat');
     } finally {
       setLoading(false);

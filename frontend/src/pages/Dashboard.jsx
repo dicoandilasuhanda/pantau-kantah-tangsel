@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw } from 'lucide-react';
@@ -37,9 +37,9 @@ export default function Dashboard() {
   const roleStr = userRole;
   const username = localStorage.getItem('username') || '';
 
-  const isMyLocation = (file) => {
+  const isMyLocation = useCallback((file) => {
     return (file.latest_scanned_by_username === username && file.is_transit !== 1) || (file.is_transit == 1 && file.transit_to_username === username);
-  };
+  }, [username]);
 
   const dashboardData = useMemo(() => {
     const active = files.filter(f => f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
@@ -62,7 +62,7 @@ export default function Dashboard() {
       overdueFiles: overdueCount,
       myFiles: myFiles.length,
     };
-  }, [files, roleStr, username]);
+  }, [files, isMyLocation]);
 
   const stalledFiles = useMemo(() => {
     if (!roleStr || roleStr.includes('Administrator')) return [];
@@ -79,13 +79,13 @@ export default function Dashboard() {
       const days = getWorkingDays(updatedAt);
       return days >= 3;
     });
-  }, [files, roleStr, username]);
+  }, [files, roleStr, isMyLocation]);
 
   const filteredFiles = useMemo(() => {
     let result = files;
 
     if (filterType === 'Tugas Saya') {
-      result = result.filter(f => (isMyLocation(f) || (f.is_transit == 1 && f.transit_to_username === localStorage.getItem('username'))) && f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
+      result = result.filter(f => (isMyLocation(f) || (f.is_transit == 1 && f.transit_to_username === username)) && f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
     } else if (filterType === 'Terlambat') {
       result = result.filter(f => {
         const isFinished = f.current_location === 'Selesai' || f.current_location === 'Ditutup';
@@ -115,7 +115,7 @@ export default function Dashboard() {
     }
 
     return result;
-  }, [files, searchQuery, filterType, roleStr, username]);
+  }, [files, searchQuery, filterType, isMyLocation, username]);
 
   const metrics = dashboardData;
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Search, MapPin, Clock, FileText, User } from 'lucide-react';
-import { getWorkingDays, getStatusColor, SOP_DAYS } from '../utils/dateUtils';
+import { Search, FileText, User } from 'lucide-react';
+import { getWorkingDays, getStatusColor } from '../utils/dateUtils';
 import { useNavigate } from 'react-router-dom';
 
 export default function CariBerkasPetugas() {

@@ -16,7 +16,7 @@ export default function Navbar() {
   try {
     const userObj = JSON.parse(localStorage.getItem('user') || '{}');
     if (userObj.full_name) fullName = userObj.full_name;
-  } catch (e) {
+  } catch {
     // ignore JSON parse error
   }
 

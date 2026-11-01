@@ -76,7 +76,7 @@ function UserManagement() {
     try {
       const res = await api.get('/users');
       setUsers(res.data);
-    } catch (err) {
+    } catch {
       toast.error('Gagal mengambil data pengguna');
     } finally {
       setLoading(false);
@@ -132,7 +132,7 @@ function UserManagement() {
       await api.delete(`/users/${id}`);
       toast.success('Pengguna berhasil dihapus');
       fetchUsers();
-    } catch (err) {
+    } catch {
       toast.error('Gagal menghapus pengguna');
     }
   };
