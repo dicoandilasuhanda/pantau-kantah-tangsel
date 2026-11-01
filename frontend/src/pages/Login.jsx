@@ -402,18 +402,6 @@ export default function Login() {
           </div>
 
           <div className="bpn-footer-right">
-            <button
-              type="button"
-              className="bpn-footer-link-btn"
-              onClick={() => setShowHelpModal(true)}
-            >
-              Bantuan &amp; Kontak IT
-            </button>
-            <span className="bpn-footer-dot">•</span>
-            <span className="bpn-footer-node">
-              Node: <strong>SRV-TGS-QNAP01</strong>
-            </span>
-            <span className="bpn-footer-dot">•</span>
             <a
               href="https://x.com/dicoandila"
               target="_blank"
