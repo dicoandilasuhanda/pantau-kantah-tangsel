@@ -139,26 +139,62 @@ export default function Dashboard() {
           background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100% !important;
           background-attachment: fixed !important;
         }
+        .dashboard-container {
+          max-width: 1100px !important;
+          margin: 0 auto !important;
+        }
         .dash-file-card {
-          display: grid;
-          grid-template-columns: minmax(220px, 1.4fr) minmax(200px, 1.1fr) minmax(180px, 1fr);
+          display: flex;
           align-items: center;
-          gap: 1.25rem;
+          gap: 1.5rem;
+        }
+        .dash-col-info {
+          flex: 0 1 380px;
+          min-width: 220px;
+        }
+        .dash-col-timeline {
+          flex: 0 1 240px;
+          min-width: 180px;
+          padding-left: 1.25rem;
+          border-left: 1px solid var(--border-color);
+        }
+        .dash-col-status {
+          flex: 0 0 auto;
+          margin-left: auto;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          text-align: right;
         }
         @media (max-width: 860px) {
           .dash-file-card {
-            grid-template-columns: 1fr !important;
-            gap: 0.75rem !important;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
           }
-          .dash-file-card-right {
-            align-items: flex-start !important;
-            text-align: left !important;
+          .dash-col-info {
+            width: 100%;
+          }
+          .dash-col-timeline {
+            width: 100%;
+            padding-left: 0;
+            border-left: none;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+          }
+          .dash-col-status {
+            width: 100%;
+            margin-left: 0;
+            align-items: flex-start;
+            text-align: left;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
           }
         }
       `}</style>
 
       {/* Main Content Container */}
-      <div className="container animate-fade-in" style={{ position: 'relative', zIndex: 5, paddingBottom: '3rem' }}>
+      <div className="container animate-fade-in dashboard-container" style={{ position: 'relative', zIndex: 5, paddingBottom: '3rem' }}>
         
         {/* Page Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -367,26 +403,27 @@ export default function Dashboard() {
             {[1, 2, 3, 4].map(n => (
               <div 
                 key={n} 
+                className="dash-file-card"
                 style={{
                   background: 'var(--surface-card)',
                   backdropFilter: 'blur(16px)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '14px',
-                  padding: '1.25rem 1.5rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '1rem'
+                  borderRadius: '12px',
+                  padding: '0.85rem 1.15rem'
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1 }}>
-                  <div className="skeleton-box" style={{ width: '180px', height: '22px' }}></div>
-                  <div className="skeleton-box" style={{ width: '280px', height: '16px' }}></div>
-                  <div className="skeleton-box" style={{ width: '140px', height: '14px' }}></div>
+                <div className="dash-col-info" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <div className="skeleton-box" style={{ width: '160px', height: '20px' }}></div>
+                  <div className="skeleton-box" style={{ width: '220px', height: '14px' }}></div>
+                  <div className="skeleton-box" style={{ width: '130px', height: '12px' }}></div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem', width: '140px' }}>
-                  <div className="skeleton-box" style={{ width: '100px', height: '26px', borderRadius: '999px' }}></div>
-                  <div className="skeleton-box" style={{ width: '80px', height: '14px' }}></div>
+                <div className="dash-col-timeline" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <div className="skeleton-box" style={{ width: '120px', height: '14px' }}></div>
+                  <div className="skeleton-box" style={{ width: '100px', height: '14px' }}></div>
+                </div>
+                <div className="dash-col-status" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+                  <div className="skeleton-box" style={{ width: '110px', height: '24px', borderRadius: '999px' }}></div>
+                  <div className="skeleton-box" style={{ width: '90px', height: '12px' }}></div>
                 </div>
               </div>
             ))}
@@ -472,7 +509,7 @@ export default function Dashboard() {
                   }}
                 >
                   {/* Col 1: Identitas Berkas */}
-                  <div style={{ minWidth: 0 }}>
+                  <div className="dash-col-info" style={{ minWidth: 0 }}>
                     <h3 style={{ margin: '0 0 0.2rem 0', display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '1rem', color: 'var(--text-main)', fontWeight: 700 }}>
                       <FileText size={17} color="#1D4ED8" /> {file.nomor_berkas} / {file.tahun_berkas}
                     </h3>
@@ -485,7 +522,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Col 2 (Bagian Tengah): Timeline & SOP */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  <div className="dash-col-timeline" style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <Clock size={13} color="#64748B" />
                       <span>Target SOP: <strong style={{ color: 'var(--text-main)' }}>{sopTarget ? `${sopTarget} Hari Kerja` : 'Tidak Diatur'}</strong></span>
@@ -497,7 +534,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Col 3: Posisi Meja & Durasi SLA */}
-                  <div className="dash-file-card-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem', textAlign: 'right' }}>
+                  <div className="dash-col-status">
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                       <MapPin size={13} color={isTransit ? '#f59e0b' : '#10b981'} />
                       <span style={{
@@ -513,7 +550,7 @@ export default function Dashboard() {
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.8rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.8rem', marginTop: '0.35rem' }}>
                       <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: statusColor, boxShadow: `0 0 6px ${statusColor}`, flexShrink: 0 }} />
                       <span style={{ color: statusColor, fontWeight: '600' }}>
                         {daysText}
