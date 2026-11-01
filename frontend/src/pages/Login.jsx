@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sun, Moon, Shield, User, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, HelpCircle, X } from 'lucide-react';
+import { Sun, Moon, Shield, User, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, HelpCircle, X, Mail } from 'lucide-react';
 
 // Helper Cookie
 function setCookie(name, value, days) {
@@ -217,10 +217,10 @@ export default function Login() {
           <section className="bpn-hero-section">
             <div className="bpn-headline-block">
               <h1 className="bpn-main-title">
-                Pelacakan &amp; Monitoring Berkas Pertanahan
+                Pelacakan Berkas &amp; Monitoring Persuratan
               </h1>
               <p className="bpn-main-desc">
-                Sistem pemantauan alur perjalanan fisik warkah, permohonan sertipikat, serta tertib administrasi serah terima antar seksi di Kantor Pertanahan Kota Tangerang Selatan.
+                Sistem pemantauan alur fisik warkah permohonan, pencatatan agenda surat masuk &amp; disposisi, serta tertib administrasi serah terima di Kantor Pertanahan Kota Tangerang Selatan.
               </p>
             </div>
 
@@ -250,6 +250,16 @@ export default function Login() {
                   <p className="bpn-feat-desc">Validasi perpindahan fisik dokumen antar meja dengan pemindaian barcode digital &amp; pencatatan riwayat sah.</p>
                 </div>
               </div>
+
+              <div className="bpn-feat-item">
+                <div className="bpn-feat-icon bpn-icon-emerald">
+                  <Mail size={18} />
+                </div>
+                <div>
+                  <h2 className="bpn-feat-title">Administrasi &amp; Disposisi Surat</h2>
+                  <p className="bpn-feat-desc">Kelola agenda surat masuk, disposisi pimpinan, serta pemantauan tindak lanjut surat seksi secara akuntabel.</p>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -262,7 +272,7 @@ export default function Login() {
                 </div>
                 <h2 className="bpn-card-title">Masuk ke Akun</h2>
                 <p className="bpn-card-subtitle">
-                  Akses portal monitoring khusus pegawai Kantah Kota Tangerang Selatan
+                  Akses portal monitoring berkas &amp; persuratan pegawai Kantah Tangsel
                 </p>
               </div>
 
@@ -906,6 +916,14 @@ export default function Login() {
         .bpn-theme-dark .bpn-icon-indigo {
           background: rgba(99, 102, 241, 0.15);
           color: #818CF8;
+        }
+        .bpn-icon-emerald {
+          background: #ECFDF5;
+          color: #059669;
+        }
+        .bpn-theme-dark .bpn-icon-emerald {
+          background: rgba(16, 185, 129, 0.15);
+          color: #34D399;
         }
 
         .bpn-feat-title {
