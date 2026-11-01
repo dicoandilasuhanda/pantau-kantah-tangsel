@@ -1,8 +1,18 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw, Clock, Calendar } from 'lucide-react';
 import { getWorkingDays, calculateTotalElapsedDays, getStatusColor, SOP_DAYS } from '../utils/dateUtils';
+
+function formatShortDate(dateStr) {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(String(dateStr).replace(' ', 'T') + (String(dateStr).includes('Z') || String(dateStr).includes('+') ? '' : 'Z'));
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return String(dateStr);
+  }
+}
 
 export default function Dashboard() {
   const [files, setFiles] = useState([]);
@@ -121,7 +131,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ position: 'relative', minHeight: 'calc(100vh - 60px)' }}>
-      {/* Inject Global Grid Background seperti di Login.jsx */}
+      {/* Inject Global Grid Background & Dashboard Styles */}
       <style>{`
         body, #root, .app-container {
           background-color: var(--bg-color) !important;
@@ -129,50 +139,65 @@ export default function Dashboard() {
           background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100% !important;
           background-attachment: fixed !important;
         }
+        .dash-file-card {
+          display: grid;
+          grid-template-columns: minmax(220px, 1.4fr) minmax(200px, 1.1fr) minmax(180px, 1fr);
+          align-items: center;
+          gap: 1.25rem;
+        }
+        @media (max-width: 860px) {
+          .dash-file-card {
+            grid-template-columns: 1fr !important;
+            gap: 0.75rem !important;
+          }
+          .dash-file-card-right {
+            align-items: flex-start !important;
+            text-align: left !important;
+          }
+        }
       `}</style>
 
       {/* Main Content Container */}
-      <div className="container animate-fade-in" style={{ position: 'relative', zIndex: 5, paddingBottom: '3.5rem' }}>
+      <div className="container animate-fade-in" style={{ position: 'relative', zIndex: 5, paddingBottom: '3rem' }}>
         
         {/* Page Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.1) 100%)',
-              border: '1px solid rgba(59, 130, 246, 0.35)',
-              padding: '0.65rem',
-              borderRadius: '14px',
+              background: '#EFF6FF',
+              border: '1px solid #DBEAFE',
+              padding: '0.55rem',
+              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#60a5fa',
-              boxShadow: '0 6px 14px -3px rgba(59, 130, 246, 0.2)'
+              color: '#1D4ED8'
             }}>
-              <BarChart2 size={24} />
+              <BarChart2 size={20} />
             </div>
-            <h1 style={{ margin: 0, fontSize: '1.85rem', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+            <h1 style={{ margin: 0, fontSize: '1.65rem', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
               Monitoring Berkas
             </h1>
           </div>
         </div>
 
         {/* Summary Metric Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem', marginBottom: '1.25rem' }}>
           {/* Card 1: Total Berkas Aktif */}
           <div style={{
             background: 'var(--surface-card)',
             backdropFilter: 'blur(16px)',
             border: '1px solid var(--border-color)',
-            borderLeft: '4px solid #3b82f6',
-            borderRadius: '16px',
-            padding: '1.35rem 1.5rem',
+            borderLeft: '4px solid #1D4ED8',
+            borderRadius: '12px',
+            padding: '0.85rem 1.15rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.4rem',
-            boxShadow: '0 10px 25px -5px var(--card-shadow)'
+            gap: '0.25rem',
+            boxShadow: '0 4px 12px -3px var(--card-shadow)'
           }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>Total Berkas Aktif</span>
-            <strong style={{ fontSize: '2rem', color: 'var(--text-main)', lineHeight: 1.1 }}>{metrics.activeFiles}</strong>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '500' }}>Total Berkas Aktif</span>
+            <strong style={{ fontSize: '1.65rem', color: 'var(--text-main)', lineHeight: 1.1 }}>{metrics.activeFiles}</strong>
           </div>
 
           {/* Card 2: Melewati SOP (Terlambat) */}
@@ -181,15 +206,15 @@ export default function Dashboard() {
             backdropFilter: 'blur(16px)',
             border: '1px solid var(--border-color)',
             borderLeft: '4px solid #ef4444',
-            borderRadius: '16px',
-            padding: '1.35rem 1.5rem',
+            borderRadius: '12px',
+            padding: '0.85rem 1.15rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.4rem',
-            boxShadow: '0 10px 25px -5px var(--card-shadow)'
+            gap: '0.25rem',
+            boxShadow: '0 4px 12px -3px var(--card-shadow)'
           }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>Melewati SOP (Terlambat)</span>
-            <strong style={{ fontSize: '2rem', color: '#ef4444', lineHeight: 1.1 }}>{metrics.overdueFiles}</strong>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '500' }}>Melewati SOP (Terlambat)</span>
+            <strong style={{ fontSize: '1.65rem', color: '#ef4444', lineHeight: 1.1 }}>{metrics.overdueFiles}</strong>
           </div>
 
           {/* Card 3: Menunggu di Meja Saya */}
@@ -198,22 +223,64 @@ export default function Dashboard() {
             backdropFilter: 'blur(16px)',
             border: '1px solid var(--border-color)',
             borderLeft: '4px solid #10b981',
-            borderRadius: '16px',
-            padding: '1.35rem 1.5rem',
+            borderRadius: '12px',
+            padding: '0.85rem 1.15rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.4rem',
-            boxShadow: '0 10px 25px -5px var(--card-shadow)'
+            gap: '0.25rem',
+            boxShadow: '0 4px 12px -3px var(--card-shadow)'
           }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>Menunggu di Meja Saya</span>
-            <strong style={{ fontSize: '2rem', color: 'var(--text-main)', lineHeight: 1.1 }}>{metrics.myFiles}</strong>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '500' }}>Menunggu di Meja Saya</span>
+            <strong style={{ fontSize: '1.65rem', color: 'var(--text-main)', lineHeight: 1.1 }}>{metrics.myFiles}</strong>
           </div>
         </div>
 
-        {/* Filter Pills & Search Bar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.75rem' }}>
-          {/* Filter Tabs */}
-          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+        {/* Filter Pills & Search Bar (Compact Toolbar) */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '0.85rem',
+          marginBottom: '1.25rem',
+          flexWrap: 'wrap'
+        }}>
+          {/* Search Input on Left */}
+          <div style={{ position: 'relative', flex: '1 1 280px', maxWidth: '440px' }}>
+            <div style={{
+              position: 'absolute',
+              left: '0.85rem',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#64748b',
+              display: 'flex',
+              alignItems: 'center',
+              pointerEvents: 'none'
+            }}>
+              <Search size={16} />
+            </div>
+            <input 
+              type="text" 
+              placeholder="Cari berkas, pemohon, kegiatan..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                paddingLeft: '2.5rem',
+                paddingRight: '0.85rem',
+                marginBottom: 0,
+                width: '100%',
+                background: 'var(--surface-card)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '10px',
+                color: 'var(--text-main)',
+                height: '38px',
+                fontSize: '0.85rem'
+              }}
+            />
+          </div>
+
+          {/* Filter Tabs on Right */}
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
             {['Semua', 'Tugas Saya', 'Terlambat', 'Transit', 'Selesai'].map(type => {
               const isActive = filterType === type;
               return (
@@ -222,60 +289,29 @@ export default function Dashboard() {
                   onClick={() => setFilterType(type)}
                   style={{
                     width: 'auto',
-                    padding: '0.5rem 1.4rem',
+                    padding: '0.35rem 0.85rem',
                     borderRadius: '9999px',
-                    border: isActive ? '1px solid rgba(59, 130, 246, 0.6)' : '1px solid var(--border-color)',
+                    border: isActive ? '1px solid rgba(29, 78, 216, 0.6)' : '1px solid var(--border-color)',
                     background: isActive 
-                      ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' 
+                      ? '#1D4ED8' 
                       : 'var(--surface-card)',
                     backdropFilter: 'blur(12px)',
                     color: isActive ? '#ffffff' : 'var(--text-muted)',
                     fontWeight: isActive ? '600' : '500',
                     cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    boxShadow: isActive ? '0 4px 14px rgba(59, 130, 246, 0.35)' : 'none',
-                    transition: 'all 0.2s ease',
-                    margin: 0
+                    fontSize: '0.8rem',
+                    boxShadow: isActive ? '0 2px 8px rgba(29, 78, 216, 0.25)' : 'none',
+                    transition: 'all 0.15s ease',
+                    margin: 0,
+                    height: '36px',
+                    display: 'inline-flex',
+                    alignItems: 'center'
                   }}
                 >
                   {type}
                 </button>
               );
             })}
-          </div>
-
-          {/* Search Input */}
-          <div style={{ position: 'relative', width: '100%' }}>
-            <div style={{
-              position: 'absolute',
-              left: '1.1rem',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: '#64748b',
-              display: 'flex',
-              alignItems: 'center',
-              pointerEvents: 'none'
-            }}>
-              <Search size={18} />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Cari Berkas, Pemohon, Kegiatan, atau Petugas..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                paddingLeft: '2.85rem',
-                marginBottom: 0,
-                width: '100%',
-                background: 'var(--surface-card)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '12px',
-                color: 'var(--text-main)',
-                height: '46px',
-                fontSize: '0.9rem'
-              }}
-            />
           </div>
         </div>
 
@@ -391,7 +427,7 @@ export default function Dashboard() {
             )}
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
             {filteredFiles.map(file => {
               const isDone = file.current_location === 'Selesai' || file.current_location === 'Ditutup';
               const isTransit = !isDone && file.is_transit === 1;
@@ -414,6 +450,7 @@ export default function Dashboard() {
               }
 
               const isHovered = hoveredFileId === file.id;
+              const sopTarget = SOP_DAYS[file.nama_kegiatan];
 
               return (
                 <div
@@ -421,56 +458,64 @@ export default function Dashboard() {
                   onClick={() => navigate(`/file/${file.qr_code}`)}
                   onMouseEnter={() => setHoveredFileId(file.id)}
                   onMouseLeave={() => setHoveredFileId(null)}
+                  className="dash-file-card"
                   style={{
                     cursor: 'pointer',
                     background: isHovered ? 'var(--surface-hover)' : 'var(--surface-card)',
                     backdropFilter: 'blur(16px)',
-                    border: isHovered ? '1px solid var(--primary-color)' : '1px solid var(--border-color)',
-                    borderRadius: '16px',
-                    padding: '1.25rem 1.5rem',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '1rem',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                    transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-                    boxShadow: isHovered ? '0 12px 28px -6px var(--card-shadow)' : '0 6px 20px -4px var(--card-shadow)'
+                    border: isHovered ? '1px solid #1D4ED8' : '1px solid var(--border-color)',
+                    borderRadius: '12px',
+                    padding: '0.85rem 1.15rem',
+                    transition: 'all 0.18s ease',
+                    transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
+                    boxShadow: isHovered ? '0 8px 20px -4px var(--card-shadow)' : '0 2px 6px -2px var(--card-shadow)'
                   }}
                 >
-                  {/* Left Side: File Info */}
-                  <div>
-                    <h3 style={{ margin: '0 0 0.4rem 0', display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '1.1rem', color: 'var(--text-main)' }}>
-                      <FileText size={19} color="#3b82f6" /> {file.nomor_berkas} / {file.tahun_berkas}
+                  {/* Col 1: Identitas Berkas */}
+                  <div style={{ minWidth: 0 }}>
+                    <h3 style={{ margin: '0 0 0.2rem 0', display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '1rem', color: 'var(--text-main)', fontWeight: 700 }}>
+                      <FileText size={17} color="#1D4ED8" /> {file.nomor_berkas} / {file.tahun_berkas}
                     </h3>
-                    <p style={{ fontSize: '0.9rem', margin: '0 0 0.25rem 0', color: 'var(--text-main)', fontWeight: '500' }}>
+                    <p style={{ fontSize: '0.86rem', margin: '0 0 0.15rem 0', color: 'var(--text-main)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {file.nama_kegiatan}
                     </p>
-                    <p style={{ fontSize: '0.84rem', margin: 0, color: 'var(--text-muted)' }}>
+                    <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       Pemohon: {file.nama_pemohon}
                     </p>
                   </div>
 
-                  {/* Right Side: Location & SLA Status */}
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.45rem', justifyContent: 'flex-end' }}>
-                      <MapPin size={15} color={isTransit ? '#f59e0b' : '#10b981'} />
+                  {/* Col 2 (Bagian Tengah): Timeline & SOP */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Clock size={13} color="#64748B" />
+                      <span>Target SOP: <strong style={{ color: 'var(--text-main)' }}>{sopTarget ? `${sopTarget} Hari Kerja` : 'Tidak Diatur'}</strong></span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Calendar size={13} color="#64748B" />
+                      <span>Masuk: <strong style={{ color: 'var(--text-main)' }}>{formatShortDate(file.created_at)}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Col 3: Posisi Meja & Durasi SLA */}
+                  <div className="dash-file-card-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem', textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <MapPin size={13} color={isTransit ? '#f59e0b' : '#10b981'} />
                       <span style={{
-                        padding: '0.25rem 0.75rem',
+                        padding: '0.2rem 0.65rem',
                         borderRadius: '9999px',
-                        fontSize: '0.78rem',
+                        fontSize: '0.76rem',
                         fontWeight: '600',
-                        background: isTransit ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.14)',
-                        border: isTransit ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(16, 185, 129, 0.28)',
-                        color: isTransit ? '#fbbf24' : '#34d399'
+                        background: isTransit ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.12)',
+                        border: isTransit ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid rgba(16, 185, 129, 0.25)',
+                        color: isTransit ? '#d97706' : '#059669'
                       }}>
-                        {isTransit ? `Sedang Transit ke ${file.transit_to_fullname || file.transit_to_username}` : file.current_location}
+                        {isTransit ? `Transit ke ${file.transit_to_fullname || file.transit_to_username}` : file.current_location}
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end', fontSize: '0.85rem' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: statusColor, boxShadow: `0 0 6px ${statusColor}` }} />
-                      <span style={{ color: statusColor, fontWeight: '500' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.8rem' }}>
+                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: statusColor, boxShadow: `0 0 6px ${statusColor}`, flexShrink: 0 }} />
+                      <span style={{ color: statusColor, fontWeight: '600' }}>
                         {daysText}
                       </span>
                     </div>
