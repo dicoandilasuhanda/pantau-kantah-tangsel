@@ -175,7 +175,8 @@ export default function Login() {
             </div>
             <div>
               <div className="bpn-kantah-title">
-                Kantor Pertanahan Kota Tangerang Selatan
+                <span className="bpn-title-full">Kantor Pertanahan Kota Tangerang Selatan</span>
+                <span className="bpn-title-short">Kantah Tangsel</span>
                 <span className="bpn-sep">|</span>
                 <span className="bpn-app-name">Pantau<span className="bpn-app-sub">.Kantah Tangsel</span></span>
               </div>
@@ -587,6 +588,9 @@ export default function Login() {
         .bpn-theme-dark .bpn-kantah-title {
           color: #F8FAFC;
         }
+        .bpn-title-short {
+          display: none;
+        }
         .bpn-sep {
           color: #CBD5E1;
         }
@@ -605,6 +609,54 @@ export default function Login() {
         }
         .bpn-theme-dark .bpn-app-sub {
           color: #93C5FD;
+        }
+
+        @media (max-width: 680px) {
+          .bpn-header-container {
+            padding: 0 0.85rem;
+          }
+          .bpn-title-full {
+            display: none !important;
+          }
+          .bpn-title-short {
+            display: inline !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .bpn-header-container {
+            padding: 0 0.75rem;
+            height: 56px;
+          }
+          .bpn-seal-box {
+            width: 34px;
+            height: 34px;
+            border-radius: 6px;
+          }
+          .bpn-seal-icon {
+            width: 18px;
+            height: 18px;
+          }
+          .bpn-kantah-title {
+            font-size: 0.82rem;
+            gap: 4px;
+          }
+          .bpn-sep {
+            display: none !important;
+          }
+          .bpn-title-short {
+            display: none !important;
+          }
+          .bpn-theme-btn {
+            padding: 6px !important;
+            border-radius: 50% !important;
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+          }
+          .bpn-theme-btn span {
+            display: none !important;
+          }
         }
 
         .bpn-header-tools {
@@ -703,10 +755,27 @@ export default function Login() {
           align-items: center;
         }
         @media (max-width: 960px) {
+          .bpn-main {
+            padding: 1.25rem 1rem 2.25rem 1rem !important;
+          }
           .bpn-main-container {
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 2rem;
-            max-width: 480px;
+            max-width: 440px;
+            margin: 0 auto;
+          }
+          .bpn-card-section {
+            order: 1; /* Form login langsung muncul di atas di layar HP */
+            width: 100%;
+          }
+          .bpn-hero-section {
+            order: 2; /* Penjelasan fitur & sistem di bawahnya */
+            width: 100%;
+            gap: 1.15rem;
+          }
+          .bpn-mobile-seal {
+            display: none !important;
           }
         }
 
@@ -939,25 +1008,48 @@ export default function Login() {
         }
         @media (max-width: 640px) {
           .bpn-login-card {
-            padding: 1.75rem 1.25rem;
+            padding: 1.5rem 1.15rem !important;
+            border-radius: 14px !important;
           }
-        }
-
-        .bpn-card-header {
-          border-bottom: 1px solid #F1F5F9;
-          padding-bottom: 1.15rem;
-          margin-bottom: 1.35rem;
-        }
-        .bpn-theme-dark .bpn-card-header {
-          border-bottom-color: rgba(255, 255, 255, 0.08);
-        }
-        .bpn-mobile-seal {
-          display: none;
-          margin-bottom: 0.75rem;
-        }
-        @media (max-width: 960px) {
-          .bpn-mobile-seal {
-            display: inline-flex;
+          .bpn-card-title {
+            font-size: 1.3rem !important;
+          }
+          .bpn-card-subtitle {
+            font-size: 0.77rem !important;
+          }
+          .bpn-main-title {
+            font-size: 1.45rem !important;
+          }
+          .bpn-main-desc {
+            font-size: 0.84rem !important;
+            line-height: 1.5;
+          }
+          .bpn-input {
+            height: 46px !important;
+            font-size: 16px !important; /* Mencegah auto zoom-in Safari iOS */
+          }
+          .bpn-submit-btn {
+            height: 46px !important;
+            font-size: 0.92rem !important;
+          }
+          .bpn-feat-item {
+            padding: 10px 12px !important;
+            border-radius: 10px !important;
+          }
+          .bpn-feat-title {
+            font-size: 0.82rem !important;
+          }
+          .bpn-feat-desc {
+            font-size: 0.74rem !important;
+          }
+          .bpn-footer-container {
+            text-align: center;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0 1rem;
+          }
+          .bpn-footer-right {
+            justify-content: center;
           }
         }
 
