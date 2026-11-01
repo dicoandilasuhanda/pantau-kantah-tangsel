@@ -1090,24 +1090,45 @@ export default function Login() {
           transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
         }
         .bpn-theme-light .bpn-input {
-          background-color: #F8FAFC;
-          border: 1px solid #CBD5E1;
-          color: #0F172A;
+          background-color: #FFFFFF !important;
+          border: 1px solid #CBD5E1 !important;
+          color: #0F172A !important;
         }
         .bpn-theme-light .bpn-input:focus {
-          background-color: #FFFFFF;
-          border-color: #1D4ED8;
-          box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+          background-color: #FFFFFF !important;
+          border-color: #1D4ED8 !important;
+          box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15) !important;
         }
+        .bpn-theme-light .bpn-input:-webkit-autofill,
+        .bpn-theme-light .bpn-input:-webkit-autofill:hover,
+        .bpn-theme-light .bpn-input:-webkit-autofill:focus,
+        .bpn-theme-light .bpn-input:-webkit-autofill:active {
+          -webkit-text-fill-color: #0F172A !important;
+          caret-color: #0F172A !important;
+          -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+          box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+          transition: background-color 9999s ease-in-out 0s;
+        }
+
         .bpn-theme-dark .bpn-input {
-          background-color: rgba(15, 23, 42, 0.7);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          color: #F8FAFC;
+          background-color: rgba(15, 23, 42, 0.75) !important;
+          border: 1px solid rgba(255, 255, 255, 0.15) !important;
+          color: #F8FAFC !important;
         }
         .bpn-theme-dark .bpn-input:focus {
-          background-color: rgba(15, 23, 42, 0.95);
-          border-color: #38BDF8;
-          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+          background-color: rgba(15, 23, 42, 0.95) !important;
+          border-color: #38BDF8 !important;
+          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+        }
+        .bpn-theme-dark .bpn-input:-webkit-autofill,
+        .bpn-theme-dark .bpn-input:-webkit-autofill:hover,
+        .bpn-theme-dark .bpn-input:-webkit-autofill:focus,
+        .bpn-theme-dark .bpn-input:-webkit-autofill:active {
+          -webkit-text-fill-color: #F8FAFC !important;
+          caret-color: #F8FAFC !important;
+          -webkit-box-shadow: 0 0 0 1000px #0D1526 inset !important;
+          box-shadow: 0 0 0 1000px #0D1526 inset !important;
+          transition: background-color 9999s ease-in-out 0s;
         }
         .bpn-input::placeholder {
           color: #94A3B8;
