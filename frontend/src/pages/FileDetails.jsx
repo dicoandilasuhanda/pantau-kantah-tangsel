@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { QRCodeSVG } from 'qrcode.react';
-import { ArrowLeft, Clock, MapPin, UserCheck, Calendar, AlertTriangle, Edit2, Save, X, MessageSquare, Play, Pause, Send } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, UserCheck, Calendar, AlertTriangle, Edit2, Save, X, MessageSquare, Play, Pause, Send, Loader2 } from 'lucide-react';
 import { SOP_DAYS, getWorkingDays, addWorkingDays, formatDate, getStatusColor, parseSQLiteDate, calculateTotalElapsedDays } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 
@@ -150,8 +150,98 @@ export default function FileDetails() {
     }
   };
 
-  if (loading) return <div className="container"><p>Memuat detail...</p></div>;
-  if (error) return <div className="container"><div className="alert">{error}</div></div>;
+  if (loading) {
+    return (
+      <div
+        className="container"
+        style={{
+          minHeight: '65vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1.25rem',
+          textAlign: 'center'
+        }}
+      >
+        <div style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <Loader2 size={44} color="#1D4ED8" className="spin" />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>
+            Memuat detail berkas...
+          </h3>
+          <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)' }}>
+            Mengambil data histori, status meja, dan riwayat disposisi
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className="container"
+        style={{
+          minHeight: '65vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem 1rem'
+        }}
+      >
+        <div
+          style={{
+            background: 'var(--surface-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '16px',
+            padding: '2rem',
+            maxWidth: '440px',
+            width: '100%',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '0.85rem',
+            boxShadow: '0 8px 24px -4px var(--card-shadow)'
+          }}
+        >
+          <div style={{
+            background: '#FEE2E2',
+            color: '#DC2626',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <AlertTriangle size={24} />
+          </div>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: 700 }}>
+            Gagal Memuat Berkas
+          </h3>
+          <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+            {error}
+          </p>
+          <button
+            className="secondary"
+            onClick={() => navigate(-1)}
+            style={{ marginTop: '0.5rem', width: 'auto', padding: '0.5rem 1.25rem', fontSize: '0.85rem', gap: '0.4rem' }}
+          >
+            <ArrowLeft size={15} /> Kembali
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const createdAtStr = file.created_at ? file.created_at : new Date();
   const latestHistoryDate = (file.history && file.history.length > 0) ? file.history[0].scanned_at : file.created_at;
