@@ -112,14 +112,13 @@ export default function HomeHub() {
         }
 
         .hub-topbar-inner {
-          max-width: 1100px;
           width: 100%;
-          margin: 0 auto;
           display: flex;
           justify-content: space-between;
           align-items: center;
           flex-wrap: wrap;
           gap: 1rem;
+          box-sizing: border-box;
         }
 
         .hub-user-badge {
