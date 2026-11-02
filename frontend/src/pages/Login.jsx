@@ -205,6 +205,7 @@ export default function Login() {
           </div>
         </div>
       </header>
+      <div className="bpn-header-spacer" aria-hidden="true" />
 
       {/* =========================================================================
           2. MAIN CONTENT SECTION (Hero Left + Login Card Right)
@@ -490,21 +491,36 @@ export default function Login() {
         /* ==================== 1. TOP HEADER ==================== */
         .bpn-header {
           width: 100%;
-          position: sticky;
-          top: 0;
-          z-index: 40;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          z-index: 1000 !important;
           transition: background-color 0.2s, border-color 0.2s;
+          box-sizing: border-box;
+        }
+        .bpn-header-spacer {
+          height: 64px;
+          width: 100%;
+          flex-shrink: 0;
+        }
+        @media (max-width: 480px) {
+          .bpn-header-spacer {
+            height: 56px;
+          }
         }
         .bpn-theme-light .bpn-header {
-          background-color: #FFFFFF;
+          background-color: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           border-bottom: 1px solid #E2E8F0;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
         .bpn-theme-dark .bpn-header {
           background-color: rgba(11, 37, 69, 0.92);
           border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
@@ -749,7 +765,8 @@ export default function Login() {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 2.5rem 1.25rem;
+          padding: 2.5rem 1.25rem 4rem 1.25rem;
+          box-sizing: border-box;
         }
 
         .bpn-main-container {
@@ -762,7 +779,7 @@ export default function Login() {
         }
         @media (max-width: 960px) {
           .bpn-main {
-            padding: 1.25rem 1rem 2.25rem 1rem !important;
+            padding: 1.25rem 1rem 4.5rem 1rem !important;
           }
           .bpn-main-container {
             display: flex;
@@ -1395,16 +1412,25 @@ export default function Login() {
         /* ==================== 3. FOOTER ==================== */
         .bpn-footer {
           width: 100%;
-          margin-top: auto;
-          padding: 1.15rem 0;
+          position: fixed !important;
+          bottom: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          z-index: 1000 !important;
+          padding: 10px 0 !important;
+          box-sizing: border-box !important;
           transition: background-color 0.2s, border-color 0.2s;
         }
         .bpn-theme-light .bpn-footer {
-          background: #FFFFFF;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           border-top: 1px solid #E2E8F0;
         }
         .bpn-theme-dark .bpn-footer {
           background: rgba(7, 24, 45, 0.95);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
 
@@ -1413,15 +1439,17 @@ export default function Login() {
           box-sizing: border-box;
           padding: 0 1.5rem;
           display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 0.5rem;
           font-size: 0.76rem;
         }
-        @media (min-width: 768px) {
+        @media (max-width: 680px) {
           .bpn-footer-container {
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
+            padding: 0 0.85rem;
+            font-size: 0.7rem;
           }
         }
 
