@@ -175,8 +175,9 @@ export default function Dashboard() {
         @media (max-width: 860px) {
           .dash-file-card {
             flex-direction: column;
-            align-items: flex-start;
-            gap: 0.75rem;
+            align-items: stretch;
+            gap: 0.5rem;
+            padding: 0.75rem 0.95rem !important;
           }
           .dash-col-info {
             width: 100%;
@@ -185,15 +186,16 @@ export default function Dashboard() {
             width: 100%;
             padding-left: 0;
             border-left: none;
-            padding-top: 0.5rem;
+            padding-top: 0.45rem;
             border-top: 1px solid var(--border-color);
+            gap: 0.2rem !important;
           }
           .dash-col-status {
             width: 100%;
             margin-left: 0;
             align-items: flex-start;
             text-align: left;
-            padding-top: 0.5rem;
+            padding-top: 0.45rem;
             border-top: 1px solid var(--border-color);
           }
           .dash-toolbar {
