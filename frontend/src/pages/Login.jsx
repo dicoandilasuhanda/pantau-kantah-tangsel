@@ -1411,9 +1411,9 @@ export default function Login() {
         }
 
         .bpn-footer-container {
-          max-width: 1280px;
-          margin: 0 auto;
-          padding: 0 1.25rem;
+          width: 100%;
+          box-sizing: border-box;
+          padding: 0 1.5rem;
           display: flex;
           flex-direction: column;
           gap: 0.75rem;

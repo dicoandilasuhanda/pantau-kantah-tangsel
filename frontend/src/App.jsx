@@ -182,15 +182,15 @@ function AppContent() {
             boxSizing: 'border-box'
           }}
         >
-          <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <span>
+          <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <span style={{ textAlign: 'left' }}>
               © 2026 Kantor Pertanahan Kota Tangerang Selatan — Kementerian Agraria dan Tata Ruang / BPN RI
             </span>
             <a 
               href="https://x.com/dicoandila" 
               target="_blank" 
               rel="noreferrer" 
-              style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}
+              style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600, textAlign: 'right' }}
               onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
               onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
             >
