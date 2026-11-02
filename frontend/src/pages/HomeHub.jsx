@@ -439,7 +439,6 @@ export default function HomeHub() {
                 title="Pilih Mode Terang"
               >
                 <Sun size={13} color={theme === 'light' ? '#FFFFFF' : '#64748B'} />
-                <span>Terang</span>
               </button>
               <button
                 type="button"
@@ -448,7 +447,6 @@ export default function HomeHub() {
                 title="Pilih Mode Gelap"
               >
                 <Moon size={13} color={theme === 'dark' ? '#FFFFFF' : '#64748B'} />
-                <span>Gelap</span>
               </button>
             </div>
 
