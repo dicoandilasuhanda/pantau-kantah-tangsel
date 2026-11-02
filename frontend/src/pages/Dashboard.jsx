@@ -142,11 +142,16 @@ export default function Dashboard() {
         .dashboard-container {
           max-width: 1100px !important;
           margin: 0 auto !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
+          overflow-x: hidden !important;
         }
         .dash-file-card {
           display: flex;
           align-items: center;
           gap: 1.5rem;
+          width: 100% !important;
+          box-sizing: border-box !important;
         }
         .dash-col-info {
           flex: 0 1 380px;
@@ -173,6 +178,8 @@ export default function Dashboard() {
           gap: 0.85rem;
           margin-bottom: 1.25rem;
           flex-wrap: wrap;
+          width: 100% !important;
+          box-sizing: border-box !important;
         }
         .dash-search-box {
           position: relative;
@@ -196,16 +203,26 @@ export default function Dashboard() {
           align-items: center;
         }
         @media (max-width: 860px) {
+          .dashboard-container {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            overflow-x: hidden !important;
+          }
           .dash-file-card {
             flex-direction: column !important;
             align-items: stretch !important;
             gap: 0.45rem !important;
             padding: 0.75rem 0.95rem !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
           }
           .dash-col-info {
             flex: none !important;
             width: 100% !important;
             min-width: 0 !important;
+            box-sizing: border-box !important;
           }
           .dash-col-timeline {
             flex: none !important;
@@ -216,6 +233,7 @@ export default function Dashboard() {
             padding-top: 0.45rem !important;
             border-top: 1px solid var(--border-color) !important;
             gap: 0.2rem !important;
+            box-sizing: border-box !important;
           }
           .dash-col-status {
             flex: none !important;
@@ -225,30 +243,49 @@ export default function Dashboard() {
             text-align: left !important;
             padding-top: 0.45rem !important;
             border-top: 1px solid var(--border-color) !important;
+            box-sizing: border-box !important;
+          }
+          .dash-metrics-grid {
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
           }
           .dash-toolbar {
             flex-direction: column !important;
             align-items: stretch !important;
             gap: 0.65rem !important;
             margin-bottom: 0.75rem !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
           }
           .dash-search-box {
             flex: none !important;
             max-width: 100% !important;
             width: 100% !important;
+            min-width: 0 !important;
             height: auto !important;
             margin-bottom: 0 !important;
+            box-sizing: border-box !important;
           }
           .dash-search-box input {
             margin-bottom: 0 !important;
             height: 38px !important;
             width: 100% !important;
+            box-sizing: border-box !important;
           }
           .dash-filter-tabs {
-            overflow-x: auto;
+            display: flex !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            overflow-x: auto !important;
             flex-wrap: nowrap !important;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 4px;
+            padding-bottom: 6px;
+            box-sizing: border-box !important;
             scrollbar-width: none;
           }
           .dash-filter-tabs::-webkit-scrollbar {
@@ -256,6 +293,7 @@ export default function Dashboard() {
           }
           .dash-filter-tabs button {
             flex-shrink: 0;
+            white-space: nowrap;
           }
         }
       `}</style>
@@ -285,7 +323,7 @@ export default function Dashboard() {
         </div>
 
         {/* Summary Metric Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem', marginBottom: '1.25rem' }}>
+        <div className="dash-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem', marginBottom: '1.25rem' }}>
           {/* Card 1: Total Berkas Aktif */}
           <div style={{
             background: 'var(--surface-card)',

@@ -224,6 +224,10 @@ export default function Navbar() {
             padding: 0.55rem 0.85rem;
             position: relative; /* Jangan sticky di mobile agar tidak memblokir layar */
             border-bottom: 1px solid var(--border-color);
+            max-width: 100vw;
+            width: 100%;
+            box-sizing: border-box;
+            overflow-x: hidden;
           }
           .navbar-brand {
             width: 100%;
