@@ -399,7 +399,7 @@ export default function Login() {
         <div className="bpn-footer-container">
           <div className="bpn-footer-left">
             <p className="bpn-footer-copy">
-              © 2026 Kantor Pertanahan Kota Tangerang Selatan — Kementerian Agraria dan Tata Ruang / BPN RI
+              © 2026 Kantor Pertanahan Kota Tangerang Selatan
             </p>
           </div>
 

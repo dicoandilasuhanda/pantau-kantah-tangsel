@@ -184,7 +184,7 @@ function AppContent() {
         >
           <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
             <span style={{ textAlign: 'left' }}>
-              © 2026 Kantor Pertanahan Kota Tangerang Selatan — Kementerian Agraria dan Tata Ruang / BPN RI
+              © 2026 Kantor Pertanahan Kota Tangerang Selatan
             </span>
             <a 
               href="https://x.com/dicoandila" 
