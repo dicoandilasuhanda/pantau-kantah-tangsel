@@ -166,6 +166,29 @@ export default function Dashboard() {
           align-items: flex-end;
           text-align: right;
         }
+        .dash-toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 0.85rem;
+          margin-bottom: 1.25rem;
+          flex-wrap: wrap;
+        }
+        .dash-search-box {
+          position: relative;
+          flex: 1 1 280px;
+          max-width: 440px;
+        }
+        .dash-search-icon {
+          position: absolute;
+          left: 0.85rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          pointer-events: none;
+        }
         .dash-filter-tabs {
           display: flex;
           gap: 0.4rem;
@@ -174,43 +197,52 @@ export default function Dashboard() {
         }
         @media (max-width: 860px) {
           .dash-file-card {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 0.5rem;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 0.45rem !important;
             padding: 0.75rem 0.95rem !important;
           }
           .dash-col-info {
-            width: 100%;
+            flex: none !important;
+            width: 100% !important;
+            min-width: 0 !important;
           }
           .dash-col-timeline {
-            width: 100%;
-            padding-left: 0;
-            border-left: none;
-            padding-top: 0.45rem;
-            border-top: 1px solid var(--border-color);
+            flex: none !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            padding-left: 0 !important;
+            border-left: none !important;
+            padding-top: 0.45rem !important;
+            border-top: 1px solid var(--border-color) !important;
             gap: 0.2rem !important;
           }
           .dash-col-status {
-            width: 100%;
-            margin-left: 0;
-            align-items: flex-start;
-            text-align: left;
-            padding-top: 0.45rem;
-            border-top: 1px solid var(--border-color);
+            flex: none !important;
+            width: 100% !important;
+            margin-left: 0 !important;
+            align-items: flex-start !important;
+            text-align: left !important;
+            padding-top: 0.45rem !important;
+            border-top: 1px solid var(--border-color) !important;
           }
           .dash-toolbar {
-            flex-direction: column;
+            flex-direction: column !important;
             align-items: stretch !important;
             gap: 0.65rem !important;
             margin-bottom: 0.75rem !important;
           }
           .dash-search-box {
+            flex: none !important;
             max-width: 100% !important;
             width: 100% !important;
+            height: auto !important;
             margin-bottom: 0 !important;
           }
           .dash-search-box input {
             margin-bottom: 0 !important;
+            height: 38px !important;
+            width: 100% !important;
           }
           .dash-filter-tabs {
             overflow-x: auto;
@@ -307,26 +339,10 @@ export default function Dashboard() {
         </div>
 
         {/* Filter Pills & Search Bar (Compact Toolbar) */}
-        <div className="dash-toolbar" style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '0.85rem',
-          marginBottom: '1.25rem',
-          flexWrap: 'wrap'
-        }}>
+        <div className="dash-toolbar">
           {/* Search Input on Left */}
-          <div className="dash-search-box" style={{ position: 'relative', flex: '1 1 280px', maxWidth: '440px' }}>
-            <div style={{
-              position: 'absolute',
-              left: '0.85rem',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: '#64748b',
-              display: 'flex',
-              alignItems: 'center',
-              pointerEvents: 'none'
-            }}>
+          <div className="dash-search-box">
+            <div className="dash-search-icon">
               <Search size={16} />
             </div>
             <input 
