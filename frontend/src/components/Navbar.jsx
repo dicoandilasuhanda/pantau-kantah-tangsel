@@ -280,7 +280,7 @@ export default function Navbar() {
             border-radius: 8px;
             margin-bottom: 0.25rem;
           }
-          .nav-mobile-row {
+          .nav-actions-group {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -288,13 +288,29 @@ export default function Navbar() {
             margin-top: 0.25rem;
             padding-top: 0.5rem;
             border-top: 1px solid var(--border-color);
+            width: 100%;
           }
-          .nav-mobile-row button {
+          .nav-actions-group button,
+          .nav-actions-group .theme-switch-segmented {
             flex: 1;
           }
         }
+        .nav-actions-group {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .nav-sandi-btn {
+          width: auto !important;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.45rem 0.85rem;
+          font-size: 0.85rem;
+          border-radius: 8px;
+        }
         @media (min-width: 861px) {
-          .nav-mobile-user-card, .nav-mobile-row, .mobile-only-notif {
+          .nav-mobile-user-card, .mobile-only-notif {
             display: none !important;
           }
         }
@@ -424,7 +440,7 @@ export default function Navbar() {
             <NotificationBell />
           </div>
 
-          <div className="nav-mobile-row">
+          <div className="nav-actions-group">
             <div className="theme-switch-segmented" role="group" aria-label="Pilihan Tema">
               <button
                 type="button"
@@ -446,15 +462,14 @@ export default function Navbar() {
 
             <button 
               type="button"
-              className="secondary" 
+              className="secondary nav-sandi-btn" 
               onClick={() => { setMobileMenuOpen(false); setShowPasswordModal(true); }} 
-              style={{ padding: '0.45rem 0.85rem', width: 'auto', fontSize: '0.85rem' }} 
               title="Ubah Kata Sandi"
             >
               <Key size={15} /> Sandi
             </button>
             
-            <button type="button" className="nav-logout-btn" onClick={handleLogout}>
+            <button type="button" className="nav-logout-btn" onClick={handleLogout} title="Keluar dari Aplikasi">
               <LogOut size={15} /> Keluar
             </button>
           </div>
