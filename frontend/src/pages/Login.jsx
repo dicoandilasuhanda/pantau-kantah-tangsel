@@ -192,7 +192,6 @@ export default function Login() {
                 title="Pilih Mode Terang"
               >
                 <Sun size={13} color={theme === 'light' ? '#FFFFFF' : '#64748B'} />
-                <span>Terang</span>
               </button>
               <button
                 type="button"
@@ -201,7 +200,6 @@ export default function Login() {
                 title="Pilih Mode Gelap"
               >
                 <Moon size={13} color={theme === 'dark' ? '#FFFFFF' : '#64748B'} />
-                <span>Gelap</span>
               </button>
             </div>
           </div>
@@ -511,9 +509,9 @@ export default function Login() {
         }
 
         .bpn-header-container {
-          max-width: 1280px;
-          margin: 0 auto;
-          padding: 0 1.25rem;
+          width: 100%;
+          box-sizing: border-box;
+          padding: 0 1.5rem;
           height: 64px;
           display: flex;
           align-items: center;
