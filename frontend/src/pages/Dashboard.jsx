@@ -202,10 +202,15 @@ export default function Dashboard() {
             flex-direction: column;
             align-items: stretch !important;
             gap: 0.65rem !important;
+            margin-bottom: 0.75rem !important;
           }
           .dash-search-box {
             max-width: 100% !important;
             width: 100% !important;
+            margin-bottom: 0 !important;
+          }
+          .dash-search-box input {
+            margin-bottom: 0 !important;
           }
           .dash-filter-tabs {
             overflow-x: auto;
