@@ -166,6 +166,12 @@ export default function Dashboard() {
           align-items: flex-end;
           text-align: right;
         }
+        .dash-filter-tabs {
+          display: flex;
+          gap: 0.4rem;
+          flex-wrap: wrap;
+          align-items: center;
+        }
         @media (max-width: 860px) {
           .dash-file-card {
             flex-direction: column;
@@ -189,6 +195,28 @@ export default function Dashboard() {
             text-align: left;
             padding-top: 0.5rem;
             border-top: 1px solid var(--border-color);
+          }
+          .dash-toolbar {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 0.65rem !important;
+          }
+          .dash-search-box {
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+          .dash-filter-tabs {
+            overflow-x: auto;
+            flex-wrap: nowrap !important;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+          }
+          .dash-filter-tabs::-webkit-scrollbar {
+            display: none;
+          }
+          .dash-filter-tabs button {
+            flex-shrink: 0;
           }
         }
       `}</style>
@@ -272,7 +300,7 @@ export default function Dashboard() {
         </div>
 
         {/* Filter Pills & Search Bar (Compact Toolbar) */}
-        <div style={{
+        <div className="dash-toolbar" style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -281,7 +309,7 @@ export default function Dashboard() {
           flexWrap: 'wrap'
         }}>
           {/* Search Input on Left */}
-          <div style={{ position: 'relative', flex: '1 1 280px', maxWidth: '440px' }}>
+          <div className="dash-search-box" style={{ position: 'relative', flex: '1 1 280px', maxWidth: '440px' }}>
             <div style={{
               position: 'absolute',
               left: '0.85rem',
@@ -316,7 +344,7 @@ export default function Dashboard() {
           </div>
 
           {/* Filter Tabs on Right */}
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="dash-filter-tabs">
             {['Semua', 'Tugas Saya', 'Terlambat', 'Transit', 'Selesai'].map(type => {
               const isActive = filterType === type;
               return (

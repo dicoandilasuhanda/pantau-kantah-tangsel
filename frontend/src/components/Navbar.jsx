@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Scan, PlusSquare, Key, X, BarChart2, Home, Mail, FileText, Sun, Moon } from 'lucide-react';
+import { LogOut, Scan, PlusSquare, Key, X, BarChart2, Home, Mail, FileText, Sun, Moon, Menu } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import NotificationBell from './NotificationBell';
@@ -21,12 +21,18 @@ export default function Navbar() {
   }
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+  // Tutup menu mobile ketika navigasi berpindah
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const setThemeMode = (mode) => {
     setTheme(mode);
@@ -203,21 +209,94 @@ export default function Navbar() {
           .navbar-title-full { display: none; }
           .navbar-title-short { display: inline; }
         }
-        @media (max-width: 768px) {
+        .nav-mobile-toggle {
+          display: none;
+          background: transparent !important;
+          border: 1px solid var(--border-color) !important;
+          border-radius: 8px;
+          padding: 0.45rem !important;
+          color: var(--text-main) !important;
+          width: auto !important;
+          cursor: pointer;
+        }
+        @media (max-width: 860px) {
           .navbar {
-            flex-direction: column;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
+            padding: 0.55rem 0.85rem;
+            position: relative; /* Jangan sticky di mobile agar tidak memblokir layar */
+            border-bottom: 1px solid var(--border-color);
           }
           .navbar-brand {
             width: 100%;
+            display: flex;
             justify-content: space-between;
+            align-items: center;
+          }
+          .nav-user-pill {
+            display: none !important; /* Di mobile, profil user dipindah ke dalam drawer menu */
+          }
+          .nav-mobile-right-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+          }
+          .nav-mobile-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
           }
           .nav-links {
-            flex-wrap: wrap;
-            justify-content: center;
+            display: none;
             width: 100%;
-            gap: 0.4rem;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 0.5rem;
+          }
+          .nav-links.mobile-open {
+            display: flex;
+            animation: fadeIn 0.2s ease forwards;
+          }
+          .nav-links a {
+            justify-content: flex-start;
+            padding: 0.6rem 0.85rem;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+          }
+          .nav-mobile-user-card {
+            display: flex !important;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.65rem 0.85rem;
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 0.25rem;
+          }
+          .nav-mobile-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-top: 0.25rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+          }
+          .nav-mobile-row button {
+            flex: 1;
+          }
+        }
+        @media (min-width: 861px) {
+          .nav-mobile-user-card, .nav-mobile-row, .mobile-only-notif {
+            display: none !important;
+          }
+        }
+        @media (max-width: 860px) {
+          .desktop-only-notif {
+            display: none !important;
           }
         }
       `}</style>
@@ -236,7 +315,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* User profile pill */}
+          {/* Desktop User profile pill */}
           <div className="nav-user-pill">
             <span
               style={{
@@ -257,9 +336,46 @@ export default function Navbar() {
               </span>
             </div>
           </div>
+
+          {/* Mobile Right Action Bar: Bell Notif + Hamburger Button */}
+          <div className="nav-mobile-right-actions">
+            <div className="mobile-only-notif">
+              <NotificationBell />
+            </div>
+            <button
+              type="button"
+              className="nav-mobile-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Tutup menu' : 'Buka menu'}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
         
-        <div className="nav-links">
+        <div className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          {/* Mobile-only User Identity Card */}
+          <div className="nav-mobile-user-card">
+            <span
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                background: '#10b981',
+                boxShadow: '0 0 8px #10b981',
+                flexShrink: 0
+              }}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+              <strong style={{ fontSize: '0.86rem', color: 'var(--text-main)', lineHeight: 1.2 }}>
+                {fullName}
+              </strong>
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                {role || 'Petugas'}
+              </span>
+            </div>
+          </div>
+
           <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
             <Home size={18} /> Hub
           </Link>
@@ -299,40 +415,45 @@ export default function Navbar() {
             </Link>
           )}
 
-          <NotificationBell />
-
-          <div className="theme-switch-segmented" role="group" aria-label="Pilihan Tema">
-            <button
-              type="button"
-              onClick={() => setThemeMode('light')}
-              className={`theme-pill-btn ${theme === 'light' ? 'active' : ''}`}
-              title="Pilih Mode Terang"
-            >
-              <Sun size={13} color={theme === 'light' ? '#FFFFFF' : '#64748B'} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setThemeMode('dark')}
-              className={`theme-pill-btn ${theme === 'dark' ? 'active' : ''}`}
-              title="Pilih Mode Gelap"
-            >
-              <Moon size={13} color={theme === 'dark' ? '#FFFFFF' : '#64748B'} />
-            </button>
+          {/* Desktop Only Bell Notification */}
+          <div className="desktop-only-notif">
+            <NotificationBell />
           </div>
 
-          <button 
-            type="button"
-            className="secondary" 
-            onClick={() => setShowPasswordModal(true)} 
-            style={{ padding: '0.45rem 0.85rem', width: 'auto', fontSize: '0.85rem' }} 
-            title="Ubah Kata Sandi"
-          >
-            <Key size={15} /> Sandi
-          </button>
-          
-          <button type="button" className="nav-logout-btn" onClick={handleLogout}>
-            <LogOut size={15} /> Keluar
-          </button>
+          <div className="nav-mobile-row">
+            <div className="theme-switch-segmented" role="group" aria-label="Pilihan Tema">
+              <button
+                type="button"
+                onClick={() => setThemeMode('light')}
+                className={`theme-pill-btn ${theme === 'light' ? 'active' : ''}`}
+                title="Pilih Mode Terang"
+              >
+                <Sun size={13} color={theme === 'light' ? '#FFFFFF' : '#64748B'} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeMode('dark')}
+                className={`theme-pill-btn ${theme === 'dark' ? 'active' : ''}`}
+                title="Pilih Mode Gelap"
+              >
+                <Moon size={13} color={theme === 'dark' ? '#FFFFFF' : '#64748B'} />
+              </button>
+            </div>
+
+            <button 
+              type="button"
+              className="secondary" 
+              onClick={() => { setMobileMenuOpen(false); setShowPasswordModal(true); }} 
+              style={{ padding: '0.45rem 0.85rem', width: 'auto', fontSize: '0.85rem' }} 
+              title="Ubah Kata Sandi"
+            >
+              <Key size={15} /> Sandi
+            </button>
+            
+            <button type="button" className="nav-logout-btn" onClick={handleLogout}>
+              <LogOut size={15} /> Keluar
+            </button>
+          </div>
         </div>
       </nav>
 
