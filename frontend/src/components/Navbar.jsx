@@ -219,15 +219,39 @@ export default function Navbar() {
           width: auto !important;
           cursor: pointer;
         }
+        .navbar {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          width: 100% !important;
+          z-index: 1000 !important;
+          background: var(--glass-bg);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-bottom: 1px solid var(--border-color);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+          box-sizing: border-box !important;
+        }
+        .navbar-spacer {
+          height: 56px;
+          width: 100%;
+          flex-shrink: 0;
+        }
         @media (max-width: 860px) {
           .navbar {
             padding: 0.55rem 0.85rem;
-            position: relative; /* Jangan sticky di mobile agar tidak memblokir layar */
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
             border-bottom: 1px solid var(--border-color);
             max-width: 100vw;
-            width: 100%;
+            width: 100% !important;
             box-sizing: border-box;
-            overflow-x: hidden;
+          }
+          .navbar-spacer {
+            height: 48px;
           }
           .navbar-brand {
             width: 100%;
@@ -475,6 +499,7 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+      <div className="navbar-spacer" aria-hidden="true" />
 
       {showPasswordModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>

@@ -96,12 +96,12 @@ export default function HomeHub() {
         }
 
         .hub-topbar {
-          position: sticky;
-          top: 0;
-          left: 0;
-          right: 0;
-          width: 100%;
-          z-index: 100;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          width: 100% !important;
+          z-index: 1000 !important;
           background: var(--glass-bg);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
@@ -109,6 +109,13 @@ export default function HomeHub() {
           padding: 0.65rem 1.5rem;
           transition: background-color 0.25s ease;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+          box-sizing: border-box;
+        }
+
+        .hub-topbar-spacer {
+          height: 58px;
+          width: 100%;
+          flex-shrink: 0;
         }
 
         .hub-topbar-inner {
@@ -388,6 +395,9 @@ export default function HomeHub() {
           .hub-topbar {
             padding: 0.75rem 1rem;
           }
+          .hub-topbar-spacer {
+            height: 50px;
+          }
           .hub-topbar-inner {
             gap: 0.65rem;
           }
@@ -458,6 +468,7 @@ export default function HomeHub() {
           </div>
         </div>
       </header>
+      <div className="hub-topbar-spacer" aria-hidden="true" />
 
       <div className="hub-container">
         {/* Hero Header */}
