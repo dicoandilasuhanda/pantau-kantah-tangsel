@@ -594,7 +594,7 @@ export default function AdminDashboard() {
               const sla = calculateSLA(f.created_at, f.nama_kegiatan);
               const isDone = f.current_location === 'Selesai';
               const isClosed = f.current_location === 'Ditutup';
-              const slaStatus = isDone ? 'Aman' : (sla.isOverdue ? 'Overdue' : 'On-Track');
+              const slaStatus = isDone ? 'Aman' : (isClosed ? 'Ditutup' : (sla.isOverdue ? 'Overdue' : 'On-Track'));
               
               return (
                 <tr key={f.id}>
