@@ -181,7 +181,7 @@ export default function AdminDashboard() {
       const isDone = f.current_location === 'Selesai';
       const isClosed = f.current_location === 'Ditutup';
       const isActive = !isDone && !isClosed;
-      const slaStatus = isDone ? 'Aman' : (sla.isOverdue ? 'Overdue' : 'On-Track');
+      const slaStatus = isDone ? 'Aman' : (isClosed ? 'Ditutup' : (sla.isOverdue ? 'Overdue' : 'On-Track'));
 
       // 1. Filter Tahun
       if (filterYear !== 'Semua') {
@@ -217,8 +217,8 @@ export default function AdminDashboard() {
       if (filterStatus === 'Transit' && !(isActive && f.is_transit === 1)) return false;
 
       // 6. Filter Status SLA
-      if (filterSla === 'Aman' && slaStatus === 'Overdue') return false;
-      if (filterSla === 'Overdue' && slaStatus !== 'Overdue') return false;
+      if (filterSla === 'Aman' && (slaStatus === 'Overdue' || isClosed)) return false;
+      if (filterSla === 'Overdue' && (slaStatus !== 'Overdue' || isClosed)) return false;
 
       // 7. Filter Pencarian Teks
       if (searchTerm) {
@@ -293,7 +293,7 @@ export default function AdminDashboard() {
         'Status Berkas': isDone ? 'Selesai' : (isClosed ? 'Ditutup' : 'Sedang Diproses'),
         'Tanggal Masuk': sla.tanggalMasuk,
         'Jatuh Tempo': sla.tanggalJatuhTempo,
-        'Status SLA': isDone ? 'Aman (Selesai)' : (sla.isOverdue ? 'TERLAMBAT (Overdue)' : 'Aman (On-Track)')
+        'Status SLA': isDone ? 'Aman (Selesai)' : (isClosed ? 'Ditutup' : (sla.isOverdue ? 'TERLAMBAT (Overdue)' : 'Aman (On-Track)'))
       };
     });
 
@@ -624,8 +624,12 @@ export default function AdminDashboard() {
                   <td style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>{sla.tanggalJatuhTempo}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)' }}>
                     <span className="badge" style={{ 
-                      background: slaStatus === 'Overdue' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)', 
-                      color: slaStatus === 'Overdue' ? 'var(--error-color)' : 'var(--success-color)',
+                      background: slaStatus === 'Overdue' 
+                        ? 'rgba(239, 68, 68, 0.2)' 
+                        : (isClosed ? 'rgba(107, 114, 128, 0.2)' : 'rgba(16, 185, 129, 0.2)'), 
+                      color: slaStatus === 'Overdue' 
+                        ? 'var(--error-color)' 
+                        : (isClosed ? '#9ca3af' : 'var(--success-color)'),
                       padding: '0.2rem 0.5rem', fontSize: '0.75rem'
                     }}>
                       {slaStatus}

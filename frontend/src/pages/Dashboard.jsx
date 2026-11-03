@@ -111,7 +111,7 @@ export default function Dashboard() {
     } else if (filterType === 'Transit') {
       result = result.filter(f => f.is_transit === 1 && f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
     } else if (filterType === 'Selesai') {
-      result = result.filter(f => f.current_location === 'Selesai');
+      result = result.filter(f => f.current_location === 'Selesai' || f.current_location === 'Ditutup');
     }
 
     if (searchQuery) {
@@ -567,8 +567,10 @@ export default function Dashboard() {
                 statusColor = 'var(--warning-color, #f59e0b)';
               } else if (isDone) {
                 const totalDaysTaken = calculateTotalElapsedDays(file, updatedAt);
-                daysText = `Diselesaikan dalam ${totalDaysTaken} hari kerja`;
-                statusColor = 'var(--success-color, #10b981)';
+                daysText = file.current_location === 'Ditutup' 
+                  ? `Berkas ditutup (${totalDaysTaken} hari kerja)` 
+                  : `Diselesaikan dalam ${totalDaysTaken} hari kerja`;
+                statusColor = file.current_location === 'Ditutup' ? '#6b7280' : 'var(--success-color, #10b981)';
               } else {
                 const daysAtLocation = getWorkingDays(updatedAt);
                 statusColor = getStatusColor(daysAtLocation);
@@ -625,15 +627,15 @@ export default function Dashboard() {
                   {/* Col 3: Posisi Meja & Durasi SLA */}
                   <div className="dash-col-status">
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <MapPin size={13} color={isTransit ? '#f59e0b' : '#10b981'} />
+                      <MapPin size={13} color={isTransit ? '#f59e0b' : (file.current_location === 'Ditutup' ? '#6b7280' : '#10b981')} />
                       <span style={{
                         padding: '0.2rem 0.65rem',
                         borderRadius: '9999px',
                         fontSize: '0.76rem',
                         fontWeight: '600',
-                        background: isTransit ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.12)',
-                        border: isTransit ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid rgba(16, 185, 129, 0.25)',
-                        color: isTransit ? '#d97706' : '#059669'
+                        background: isTransit ? 'rgba(245, 158, 11, 0.15)' : (file.current_location === 'Ditutup' ? 'rgba(107, 114, 128, 0.15)' : 'rgba(16, 185, 129, 0.12)'),
+                        border: isTransit ? '1px solid rgba(245, 158, 11, 0.35)' : (file.current_location === 'Ditutup' ? '1px solid rgba(107, 114, 128, 0.25)' : '1px solid rgba(16, 185, 129, 0.25)'),
+                        color: isTransit ? '#d97706' : (file.current_location === 'Ditutup' ? '#6b7280' : '#059669')
                       }}>
                         {isTransit ? `Transit ke ${file.transit_to_fullname || file.transit_to_username}` : file.current_location}
                       </span>

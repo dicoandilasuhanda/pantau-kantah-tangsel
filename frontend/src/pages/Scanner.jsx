@@ -28,9 +28,9 @@ export default function Scanner() {
       const response = await api.get(`/files/${result}`);
       setScannedFileDetails(response.data);
 
-      if (response.data.current_location === 'Selesai') {
+      if (response.data.current_location === 'Selesai' || response.data.current_location === 'Ditutup') {
         setStatus('error');
-        const msg = 'Berkas ini sudah berstatus Selesai dan tidak dapat diproses lagi.';
+        const msg = `Berkas ini sudah berstatus ${response.data.current_location} dan tidak dapat diproses lagi.`;
         setMessage(msg);
         toast.error(msg);
       } else if (userRoles.length > 1) {

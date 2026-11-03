@@ -247,10 +247,14 @@ export default function FileDetails() {
   const latestHistoryDate = (file.history && file.history.length > 0) ? file.history[0].scanned_at : file.created_at;
   const updatedAtStr = latestHistoryDate ? latestHistoryDate : new Date();
   
+  const isClosed = file.current_location === 'Ditutup';
+  const isDone = file.current_location === 'Selesai';
+  const isFileCompleted = isDone || isClosed;
+
   const sopDaysTarget = SOP_DAYS[file.nama_kegiatan] || 15;
   const targetDate = addWorkingDays(createdAtStr, sopDaysTarget);
-  const totalDaysElapsed = file.current_location === 'Selesai' ? calculateTotalElapsedDays(file, updatedAtStr) : calculateTotalElapsedDays(file);
-  const isOverdueOverall = totalDaysElapsed > sopDaysTarget;
+  const totalDaysElapsed = isFileCompleted ? calculateTotalElapsedDays(file, updatedAtStr) : calculateTotalElapsedDays(file);
+  const isOverdueOverall = !isClosed && totalDaysElapsed > sopDaysTarget;
 
   const daysAtLocation = getWorkingDays(updatedAtStr);
   const locationStatusColor = getStatusColor(daysAtLocation);
@@ -260,8 +264,6 @@ export default function FileDetails() {
     if (r === 'Petugas Entry Berkas') return file.current_location === 'Loket Pendaftaran (Entry)';
     return file.current_location === r;
   }) || userRoles.includes('Administrator');
-
-  const isFileCompleted = file.current_location === 'Selesai' || file.current_location === 'Ditutup';
 
   return (
     <div className="container animate-fade-in print-container">
@@ -417,26 +419,33 @@ export default function FileDetails() {
               <Calendar size={18} color="var(--primary-color)" />
               <strong style={{ color: 'var(--text-main)' }}>Target Selesai (SOP {sopDaysTarget} hari):</strong>
             </div>
-            <p style={{ marginLeft: '1.75rem', marginBottom: '0.5rem', color: isOverdueOverall ? 'var(--error-color)' : 'var(--text-main)', fontWeight: isOverdueOverall ? 'bold' : 'normal' }}>
-              {formatDate(targetDate)} {isOverdueOverall && '(Terlambat)'}
+            <p style={{ 
+              marginLeft: '1.75rem', 
+              marginBottom: '0.5rem', 
+              color: isClosed ? 'var(--text-muted)' : (isOverdueOverall ? 'var(--error-color)' : 'var(--text-main)'), 
+              fontWeight: isOverdueOverall ? 'bold' : 'normal' 
+            }}>
+              {formatDate(targetDate)} {isClosed ? '(Berkas Ditutup)' : (isOverdueOverall && '(Terlambat)')}
             </p>
             <div style={{ height: '6px', background: 'var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
               <div style={{ 
                 height: '100%', 
                 width: `${Math.min((totalDaysElapsed / sopDaysTarget) * 100, 100)}%`, 
-                background: file.current_location === 'Selesai' 
+                background: isDone 
                   ? 'var(--success-color)' 
-                  : (isOverdueOverall ? 'var(--error-color)' : 'var(--primary-color)')
+                  : (isClosed ? '#6b7280' : (isOverdueOverall ? 'var(--error-color)' : 'var(--primary-color)'))
               }}></div>
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '0.5rem' }}>
               <span>
-                {file.current_location === 'Selesai' ? 'Diselesaikan dalam:' : 'Total berjalan:'} <strong>{totalDaysElapsed} hari kerja</strong>
+                {isDone ? 'Diselesaikan dalam:' : (isClosed ? 'Ditutup setelah:' : 'Total berjalan:')} <strong>{totalDaysElapsed} hari kerja</strong>
               </span>
               <span style={{ textAlign: 'right' }}>
-                {file.current_location === 'Selesai' 
+                {isDone 
                   ? <strong style={{ color: 'var(--success-color)' }}>Berkas Telah Selesai</strong>
-                  : <>Termasuk <strong>{daysAtLocation} hari</strong> di {file.current_location} <br/> SOP {sopDaysTarget} hari</>}
+                  : (isClosed 
+                    ? <strong style={{ color: '#6b7280' }}>Berkas Telah Ditutup</strong>
+                    : <>Termasuk <strong>{daysAtLocation} hari</strong> di {file.current_location} <br/> SOP {sopDaysTarget} hari</>)}
               </span>
             </div>
           </div>
@@ -444,10 +453,12 @@ export default function FileDetails() {
           <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <MapPin size={18} color="var(--primary-color)" />
             <span style={{ color: 'var(--text-muted)' }}>Posisi Berkas Saat Ini:</span>
-            <span className="badge">{file.current_location}</span>
+            <span className="badge" style={isClosed ? { background: 'rgba(107, 114, 128, 0.2)', color: '#9ca3af' } : {}}>
+              {file.current_location}
+            </span>
           </div>
           
-          {file.current_location !== 'Selesai' && (
+          {!isFileCompleted && (
             <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', marginLeft: '1.75rem', fontSize: '0.85rem' }}>
               {daysAtLocation >= 3 ? (
                 <AlertTriangle size={14} color={locationStatusColor} />
