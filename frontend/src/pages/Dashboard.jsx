@@ -32,7 +32,6 @@ export default function Dashboard() {
   const [batchTransitTarget, setBatchTransitTarget] = useState('');
   const [batchTransitSearch, setBatchTransitSearch] = useState('');
   const [batchProcessing, setBatchProcessing] = useState(false);
-  const [batchRoleModal, setBatchRoleModal] = useState(null); // { qrCodes: [], availableRoles: [] }
 
   const fetchAllData = useCallback(async () => {
     try {
@@ -74,12 +73,6 @@ export default function Dashboard() {
     );
   }, [username, userRoles, isAdmin]);
 
-  const canReceiveFile = useCallback((file) => {
-    const isFinished = file.current_location === 'Selesai' || file.current_location === 'Ditutup';
-    if (isFinished || file.is_transit !== 1) return false;
-    return file.transit_to_username === username || isAdmin;
-  }, [username, isAdmin]);
-
   const canCancelTransitFile = useCallback((file) => {
     const isFinished = file.current_location === 'Selesai' || file.current_location === 'Ditutup';
     if (isFinished || file.is_transit !== 1) return false;
@@ -87,8 +80,8 @@ export default function Dashboard() {
   }, [username, isAdmin]);
 
   const isFileSelectable = useCallback((file) => {
-    return canSendFile(file) || canReceiveFile(file) || canCancelTransitFile(file);
-  }, [canSendFile, canReceiveFile, canCancelTransitFile]);
+    return canSendFile(file) || canCancelTransitFile(file);
+  }, [canSendFile, canCancelTransitFile]);
 
   const dashboardData = useMemo(() => {
     const active = files.filter(f => f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
@@ -176,7 +169,6 @@ export default function Dashboard() {
   }, [files, selectedQrCodes]);
 
   const sendableSelected = useMemo(() => selectedFilesObjects.filter(f => canSendFile(f)), [selectedFilesObjects, canSendFile]);
-  const receivableSelected = useMemo(() => selectedFilesObjects.filter(f => canReceiveFile(f)), [selectedFilesObjects, canReceiveFile]);
   const cancelableSelected = useMemo(() => selectedFilesObjects.filter(f => canCancelTransitFile(f)), [selectedFilesObjects, canCancelTransitFile]);
 
   const toggleSelectFile = (e, qrCode) => {
@@ -234,67 +226,7 @@ export default function Dashboard() {
     }
   };
 
-  // 2. Batch Receive (Terima Berkas Transit)
-  const executeBatchReceive = async (qrList, selectedRole = null) => {
-    if (!qrList || qrList.length === 0) return;
-    if (userRoles.length > 1 && !selectedRole) {
-      setBatchRoleModal({ qrCodes: qrList, availableRoles: userRoles });
-      return;
-    }
-
-    setBatchProcessing(true);
-    const fullName = localStorage.getItem('fullName') || localStorage.getItem('full_name');
-    let successCount = 0;
-    let failCount = 0;
-    let lastError = '';
-
-    for (const qr of qrList) {
-      try {
-        await api.post('/files/scan', {
-          qr_code: qr,
-          fullName,
-          isFinishing: false,
-          selected_role: selectedRole || userRoles[0]
-        });
-        successCount++;
-      } catch (err) {
-        const data = err.response?.data;
-        if (data?.requires_smart_confirmation && data?.suggested_role) {
-          try {
-            await api.post('/files/scan', {
-              qr_code: qr,
-              fullName,
-              isFinishing: false,
-              selected_role: data.suggested_role
-            });
-            successCount++;
-            continue;
-          } catch (retryErr) {
-            failCount++;
-            lastError = retryErr.response?.data?.error || 'Gagal menerima berkas';
-          }
-        } else {
-          failCount++;
-          lastError = data?.error || 'Gagal menerima berkas';
-        }
-      }
-    }
-
-    setBatchProcessing(false);
-    setBatchRoleModal(null);
-    setSelectedQrCodes([]);
-    await fetchAllData();
-
-    if (successCount > 0 && failCount === 0) {
-      toast.success(`${successCount} berkas berhasil diterima di meja Anda!`);
-    } else if (successCount > 0 && failCount > 0) {
-      toast.success(`${successCount} berkas diterima, ${failCount} gagal (${lastError})`);
-    } else {
-      toast.error(`Gagal menerima berkas: ${lastError}`);
-    }
-  };
-
-  // 3. Batch Cancel Transit (Batal Kirim)
+  // 2. Batch Cancel Transit (Batal Kirim)
   const handleBatchCancelTransit = async () => {
     if (cancelableSelected.length === 0) return;
     if (!window.confirm(`Batalkan pengiriman untuk ${cancelableSelected.length} berkas yang dipilih?`)) return;
@@ -660,45 +592,31 @@ export default function Dashboard() {
               <div>
                 <h4 style={{ color: '#34d399', margin: '0 0 0.2rem 0', fontSize: '0.95rem' }}>Pemberitahuan: Berkas Dikirim ke Anda</h4>
                 <p style={{ color: 'var(--text-main)', fontSize: '0.9rem', margin: 0 }}>
-                  Ada <strong>{transitFiles.length} berkas</strong> yang sedang dikirim ke meja Anda dan menunggu penerimaan.
+                  Ada <strong>{transitFiles.length} berkas</strong> sedang menuju meja Anda. Pindai fisik QR berkas untuk menerima.
                 </p>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button
-                onClick={() => executeBatchReceive(transitFiles.map(f => f.qr_code))}
-                disabled={batchProcessing}
+                onClick={() => navigate('/scan')}
                 style={{
                   width: 'auto',
                   background: '#10b981',
                   color: '#ffffff',
                   border: 'none',
-                  padding: '0.45rem 0.95rem',
+                  padding: '0.5rem 1.1rem',
                   borderRadius: '10px',
-                  fontSize: '0.82rem',
+                  fontSize: '0.84rem',
                   fontWeight: 600,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.4rem',
-                  cursor: batchProcessing ? 'wait' : 'pointer',
-                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)'
+                  gap: '0.45rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
+                  margin: 0
                 }}
               >
-                {batchProcessing ? <Loader2 size={15} className="spin" /> : <CheckCircle2 size={15} />}
-                Terima Semua ({transitFiles.length})
-              </button>
-              <button
-                onClick={() => navigate('/scan')}
-                className="secondary"
-                style={{
-                  width: 'auto',
-                  padding: '0.45rem 0.85rem',
-                  borderRadius: '10px',
-                  fontSize: '0.82rem',
-                  fontWeight: 600
-                }}
-              >
-                Scan QR Batch
+                <QrCode size={16} /> Buka Scanner QR Beruntun
               </button>
             </div>
           </div>
@@ -787,30 +705,6 @@ export default function Dashboard() {
                   </button>
                 )}
 
-                {receivableSelected.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => executeBatchReceive(receivableSelected.map(f => f.qr_code))}
-                    disabled={batchProcessing}
-                    style={{
-                      width: 'auto',
-                      background: '#10b981',
-                      color: '#fff',
-                      border: 'none',
-                      padding: '0.4rem 0.85rem',
-                      borderRadius: '9px',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      margin: 0
-                    }}
-                  >
-                    <Check size={14} /> Terima Batch ({receivableSelected.length})
-                  </button>
-                )}
-
                 {cancelableSelected.length > 0 && (
                   <button
                     type="button"
@@ -855,7 +749,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                Centang berkas untuk serah terima (Kirim / Terima / Batal Transit) secara batch
+                Centang berkas untuk Kirim (Transit) atau Batal Kirim secara batch
               </span>
             )}
           </div>
@@ -1246,82 +1140,6 @@ export default function Dashboard() {
               >
                 {batchProcessing ? <Loader2 size={15} className="spin" /> : <Send size={15} />}
                 {batchProcessing ? 'Mengirim...' : `Kirim ${sendableSelected.length} Berkas`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal 2: Pilih Jabatan Saat Terima Batch (Untuk User Multi-Role) */}
-      {batchRoleModal && (
-        <div
-          onClick={() => !batchProcessing && setBatchRoleModal(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.65)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 2000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem'
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--surface-card)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '16px',
-              padding: '1.5rem',
-              width: '100%',
-              maxWidth: '420px',
-              boxShadow: '0 20px 40px -10px rgba(0,0,0,0.4)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <Users size={20} color="#10b981" />
-              <h3 style={{ margin: 0, fontSize: '1.08rem', color: 'var(--text-main)' }}>
-                Pilih Jabatan Penerimaan Batch
-              </h3>
-            </div>
-            <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Pilih jabatan Anda untuk menerima <strong>{batchRoleModal.qrCodes.length} berkas</strong> sekaligus:
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-              {batchRoleModal.availableRoles.map(r => (
-                <button
-                  key={r}
-                  type="button"
-                  disabled={batchProcessing}
-                  onClick={() => executeBatchReceive(batchRoleModal.qrCodes, r)}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '10px',
-                    background: 'var(--bg-color)',
-                    color: 'var(--text-main)',
-                    border: '1px solid var(--border-color)',
-                    fontWeight: 600,
-                    fontSize: '0.86rem',
-                    margin: 0
-                  }}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                className="secondary"
-                disabled={batchProcessing}
-                onClick={() => setBatchRoleModal(null)}
-                style={{ width: 'auto', padding: '0.45rem 1rem', fontSize: '0.84rem', margin: 0 }}
-              >
-                Batal
               </button>
             </div>
           </div>
