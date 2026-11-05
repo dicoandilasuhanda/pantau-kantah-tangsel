@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw, Clock, Calendar } from 'lucide-react';
+import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw, Clock, Calendar, Send, CheckSquare, Square, X, Check, Loader2, Users } from 'lucide-react';
 import { getWorkingDays, calculateTotalElapsedDays, getStatusColor, SOP_DAYS } from '../utils/dateUtils';
+import toast from 'react-hot-toast';
 
 function formatShortDate(dateStr) {
   if (!dateStr) return '-';
@@ -23,33 +24,71 @@ export default function Dashboard() {
   const [hoveredFileId, setHoveredFileId] = useState(null);
   const navigate = useNavigate();
   const [transitFiles, setTransitFiles] = useState([]);
+  const [usersList, setUsersList] = useState([]);
+
+  // Batch Handover State
+  const [selectedQrCodes, setSelectedQrCodes] = useState([]);
+  const [showBatchTransitModal, setShowBatchTransitModal] = useState(false);
+  const [batchTransitTarget, setBatchTransitTarget] = useState('');
+  const [batchTransitSearch, setBatchTransitSearch] = useState('');
+  const [batchProcessing, setBatchProcessing] = useState(false);
+  const [batchRoleModal, setBatchRoleModal] = useState(null); // { qrCodes: [], availableRoles: [] }
+
+  const fetchAllData = useCallback(async () => {
+    try {
+      const response = await api.get('/files');
+      setFiles(response.data);
+      
+      const transitRes = await api.get('/files/my-transits');
+      setTransitFiles(transitRes.data);
+    } catch (err) {
+      console.error("Failed to load files", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const role = localStorage.getItem('role') || '';
     setUserRole(role);
-    
-    const fetchFiles = async () => {
-      try {
-        const response = await api.get('/files');
-        setFiles(response.data);
-        
-        const transitRes = await api.get('/files/my-transits');
-        setTransitFiles(transitRes.data);
-      } catch (err) {
-        console.error("Failed to load files", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFiles();
-  }, []);
+    fetchAllData();
+    api.get('/users/list').then(res => setUsersList(res.data || [])).catch(() => {});
+  }, [fetchAllData]);
 
   const roleStr = userRole;
   const username = localStorage.getItem('username') || '';
+  const userRoles = useMemo(() => roleStr.split(',').map(r => r.trim()).filter(Boolean), [roleStr]);
+  const isAdmin = userRoles.includes('Administrator');
 
   const isMyLocation = useCallback((file) => {
     return (file.latest_scanned_by_username === username && file.is_transit !== 1) || (file.is_transit == 1 && file.transit_to_username === username);
   }, [username]);
+
+  const canSendFile = useCallback((file) => {
+    const isFinished = file.current_location === 'Selesai' || file.current_location === 'Ditutup';
+    if (isFinished || file.is_transit === 1) return false;
+    return (
+      file.latest_scanned_by_username === username ||
+      userRoles.some(r => r === 'Petugas Entry Berkas' ? file.current_location === 'Loket Pendaftaran (Entry)' : file.current_location === r) ||
+      isAdmin
+    );
+  }, [username, userRoles, isAdmin]);
+
+  const canReceiveFile = useCallback((file) => {
+    const isFinished = file.current_location === 'Selesai' || file.current_location === 'Ditutup';
+    if (isFinished || file.is_transit !== 1) return false;
+    return file.transit_to_username === username || isAdmin;
+  }, [username, isAdmin]);
+
+  const canCancelTransitFile = useCallback((file) => {
+    const isFinished = file.current_location === 'Selesai' || file.current_location === 'Ditutup';
+    if (isFinished || file.is_transit !== 1) return false;
+    return file.transit_by_username === username || isAdmin;
+  }, [username, isAdmin]);
+
+  const isFileSelectable = useCallback((file) => {
+    return canSendFile(file) || canReceiveFile(file) || canCancelTransitFile(file);
+  }, [canSendFile, canReceiveFile, canCancelTransitFile]);
 
   const dashboardData = useMemo(() => {
     const active = files.filter(f => f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
@@ -126,6 +165,167 @@ export default function Dashboard() {
 
     return result;
   }, [files, searchQuery, filterType, isMyLocation, username]);
+
+  const selectableFilteredFiles = useMemo(() => {
+    return filteredFiles.filter(f => isFileSelectable(f));
+  }, [filteredFiles, isFileSelectable]);
+
+  const selectedFilesObjects = useMemo(() => {
+    const set = new Set(selectedQrCodes);
+    return files.filter(f => set.has(f.qr_code));
+  }, [files, selectedQrCodes]);
+
+  const sendableSelected = useMemo(() => selectedFilesObjects.filter(f => canSendFile(f)), [selectedFilesObjects, canSendFile]);
+  const receivableSelected = useMemo(() => selectedFilesObjects.filter(f => canReceiveFile(f)), [selectedFilesObjects, canReceiveFile]);
+  const cancelableSelected = useMemo(() => selectedFilesObjects.filter(f => canCancelTransitFile(f)), [selectedFilesObjects, canCancelTransitFile]);
+
+  const toggleSelectFile = (e, qrCode) => {
+    e.stopPropagation();
+    setSelectedQrCodes(prev => prev.includes(qrCode) ? prev.filter(q => q !== qrCode) : [...prev, qrCode]);
+  };
+
+  const toggleSelectAllFiltered = () => {
+    const allSelectableQrs = selectableFilteredFiles.map(f => f.qr_code);
+    const allSelected = allSelectableQrs.length > 0 && allSelectableQrs.every(qr => selectedQrCodes.includes(qr));
+    if (allSelected) {
+      setSelectedQrCodes(prev => prev.filter(qr => !allSelectableQrs.includes(qr)));
+    } else {
+      setSelectedQrCodes(prev => Array.from(new Set([...prev, ...allSelectableQrs])));
+    }
+  };
+
+  // 1. Batch Send (Transit)
+  const handleBatchTransitSubmit = async () => {
+    if (!batchTransitTarget) {
+      toast.error('Pilih petugas tujuan terlebih dahulu');
+      return;
+    }
+    if (sendableSelected.length === 0) {
+      toast.error('Tidak ada berkas yang dapat dikirim dari pilihan Anda');
+      return;
+    }
+    setBatchProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+    let lastError = '';
+
+    for (const f of sendableSelected) {
+      try {
+        await api.post(`/files/${f.qr_code}/transit`, { target_username: batchTransitTarget });
+        successCount++;
+      } catch (err) {
+        failCount++;
+        lastError = err.response?.data?.error || 'Gagal mengirim berkas';
+      }
+    }
+
+    setBatchProcessing(false);
+    setShowBatchTransitModal(false);
+    setBatchTransitTarget('');
+    setSelectedQrCodes([]);
+    await fetchAllData();
+
+    if (successCount > 0 && failCount === 0) {
+      toast.success(`${successCount} berkas berhasil dikirim (Transit)!`);
+    } else if (successCount > 0 && failCount > 0) {
+      toast.success(`${successCount} berkas terkirim, ${failCount} gagal (${lastError})`);
+    } else {
+      toast.error(`Gagal mengirim berkas: ${lastError}`);
+    }
+  };
+
+  // 2. Batch Receive (Terima Berkas Transit)
+  const executeBatchReceive = async (qrList, selectedRole = null) => {
+    if (!qrList || qrList.length === 0) return;
+    if (userRoles.length > 1 && !selectedRole) {
+      setBatchRoleModal({ qrCodes: qrList, availableRoles: userRoles });
+      return;
+    }
+
+    setBatchProcessing(true);
+    const fullName = localStorage.getItem('fullName') || localStorage.getItem('full_name');
+    let successCount = 0;
+    let failCount = 0;
+    let lastError = '';
+
+    for (const qr of qrList) {
+      try {
+        await api.post('/files/scan', {
+          qr_code: qr,
+          fullName,
+          isFinishing: false,
+          selected_role: selectedRole || userRoles[0]
+        });
+        successCount++;
+      } catch (err) {
+        const data = err.response?.data;
+        if (data?.requires_smart_confirmation && data?.suggested_role) {
+          try {
+            await api.post('/files/scan', {
+              qr_code: qr,
+              fullName,
+              isFinishing: false,
+              selected_role: data.suggested_role
+            });
+            successCount++;
+            continue;
+          } catch (retryErr) {
+            failCount++;
+            lastError = retryErr.response?.data?.error || 'Gagal menerima berkas';
+          }
+        } else {
+          failCount++;
+          lastError = data?.error || 'Gagal menerima berkas';
+        }
+      }
+    }
+
+    setBatchProcessing(false);
+    setBatchRoleModal(null);
+    setSelectedQrCodes([]);
+    await fetchAllData();
+
+    if (successCount > 0 && failCount === 0) {
+      toast.success(`${successCount} berkas berhasil diterima di meja Anda!`);
+    } else if (successCount > 0 && failCount > 0) {
+      toast.success(`${successCount} berkas diterima, ${failCount} gagal (${lastError})`);
+    } else {
+      toast.error(`Gagal menerima berkas: ${lastError}`);
+    }
+  };
+
+  // 3. Batch Cancel Transit (Batal Kirim)
+  const handleBatchCancelTransit = async () => {
+    if (cancelableSelected.length === 0) return;
+    if (!window.confirm(`Batalkan pengiriman untuk ${cancelableSelected.length} berkas yang dipilih?`)) return;
+
+    setBatchProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+    let lastError = '';
+
+    for (const f of cancelableSelected) {
+      try {
+        await api.post(`/files/${f.qr_code}/cancel-transit`);
+        successCount++;
+      } catch (err) {
+        failCount++;
+        lastError = err.response?.data?.error || 'Gagal membatalkan kiriman';
+      }
+    }
+
+    setBatchProcessing(false);
+    setSelectedQrCodes([]);
+    await fetchAllData();
+
+    if (successCount > 0 && failCount === 0) {
+      toast.success(`Pengiriman ${successCount} berkas berhasil dibatalkan.`);
+    } else if (successCount > 0 && failCount > 0) {
+      toast.success(`${successCount} dibatalkan, ${failCount} gagal (${lastError})`);
+    } else {
+      toast.error(`Gagal membatalkan kiriman: ${lastError}`);
+    }
+  };
 
   const metrics = dashboardData;
 
@@ -448,18 +648,216 @@ export default function Dashboard() {
             border: '1px solid rgba(16, 185, 129, 0.3)',
             padding: '1rem 1.35rem',
             borderRadius: '14px',
-            marginBottom: '1.5rem',
+            marginBottom: '1.25rem',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
             gap: '1rem'
           }}>
-            <AlertTriangle size={24} color="#34d399" />
-            <div>
-              <h4 style={{ color: '#34d399', margin: '0 0 0.2rem 0', fontSize: '0.95rem' }}>Pemberitahuan: Berkas Dikirim ke Anda</h4>
-              <p style={{ color: 'var(--text-main)', fontSize: '0.9rem', margin: 0 }}>
-                Ada <strong>{transitFiles.length} berkas</strong> yang sedang dikirim ke meja Anda dan menunggu untuk di-scan penerimaan.
-              </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <AlertTriangle size={24} color="#34d399" style={{ flexShrink: 0 }} />
+              <div>
+                <h4 style={{ color: '#34d399', margin: '0 0 0.2rem 0', fontSize: '0.95rem' }}>Pemberitahuan: Berkas Dikirim ke Anda</h4>
+                <p style={{ color: 'var(--text-main)', fontSize: '0.9rem', margin: 0 }}>
+                  Ada <strong>{transitFiles.length} berkas</strong> yang sedang dikirim ke meja Anda dan menunggu penerimaan.
+                </p>
+              </div>
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => executeBatchReceive(transitFiles.map(f => f.qr_code))}
+                disabled={batchProcessing}
+                style={{
+                  width: 'auto',
+                  background: '#10b981',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.45rem 0.95rem',
+                  borderRadius: '10px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  cursor: batchProcessing ? 'wait' : 'pointer',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)'
+                }}
+              >
+                {batchProcessing ? <Loader2 size={15} className="spin" /> : <CheckCircle2 size={15} />}
+                Terima Semua ({transitFiles.length})
+              </button>
+              <button
+                onClick={() => navigate('/scan')}
+                className="secondary"
+                style={{
+                  width: 'auto',
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: '10px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600
+                }}
+              >
+                Scan QR Batch
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Batch Selection Action Bar */}
+        {!loading && selectableFilteredFiles.length > 0 && (
+          <div style={{
+            background: selectedQrCodes.length > 0 ? 'rgba(29, 78, 216, 0.08)' : 'var(--surface-card)',
+            backdropFilter: 'blur(12px)',
+            border: selectedQrCodes.length > 0 ? '1px solid rgba(29, 78, 216, 0.4)' : '1px solid var(--border-color)',
+            padding: '0.65rem 1rem',
+            borderRadius: '12px',
+            marginBottom: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            transition: 'all 0.15s ease'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <button
+                type="button"
+                onClick={toggleSelectAllFiltered}
+                style={{
+                  width: 'auto',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '0.2rem 0.35rem',
+                  margin: 0,
+                  color: 'var(--text-main)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: 'none'
+                }}
+              >
+                {selectableFilteredFiles.length > 0 && selectableFilteredFiles.every(f => selectedQrCodes.includes(f.qr_code)) ? (
+                  <CheckSquare size={18} color="#1D4ED8" />
+                ) : (
+                  <Square size={18} color="var(--text-muted)" />
+                )}
+                <span>Pilih Semua ({selectableFilteredFiles.length} berkas)</span>
+              </button>
+              {selectedQrCodes.length > 0 && (
+                <span style={{
+                  fontSize: '0.78rem',
+                  padding: '0.18rem 0.6rem',
+                  borderRadius: '999px',
+                  background: '#1D4ED8',
+                  color: '#fff',
+                  fontWeight: 600
+                }}>
+                  {selectedQrCodes.length} dipilih
+                </span>
+              )}
+            </div>
+
+            {selectedQrCodes.length > 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {sendableSelected.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setBatchTransitSearch(''); setBatchTransitTarget(''); setShowBatchTransitModal(true); }}
+                    disabled={batchProcessing}
+                    style={{
+                      width: 'auto',
+                      background: '#1D4ED8',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '9px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      margin: 0
+                    }}
+                  >
+                    <Send size={14} /> Kirim Batch ({sendableSelected.length})
+                  </button>
+                )}
+
+                {receivableSelected.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => executeBatchReceive(receivableSelected.map(f => f.qr_code))}
+                    disabled={batchProcessing}
+                    style={{
+                      width: 'auto',
+                      background: '#10b981',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '9px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      margin: 0
+                    }}
+                  >
+                    <Check size={14} /> Terima Batch ({receivableSelected.length})
+                  </button>
+                )}
+
+                {cancelableSelected.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleBatchCancelTransit}
+                    disabled={batchProcessing}
+                    style={{
+                      width: 'auto',
+                      background: '#ef4444',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '9px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      margin: 0
+                    }}
+                  >
+                    <RotateCcw size={14} /> Batal Kirim ({cancelableSelected.length})
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedQrCodes([])}
+                  className="secondary"
+                  style={{
+                    width: 'auto',
+                    padding: '0.4rem 0.7rem',
+                    borderRadius: '9px',
+                    fontSize: '0.78rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    margin: 0
+                  }}
+                >
+                  <X size={14} /> Reset Pilihan
+                </button>
+              </div>
+            ) : (
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                Centang berkas untuk serah terima (Kirim / Terima / Batal Transit) secara batch
+              </span>
+            )}
           </div>
         )}
 
@@ -579,6 +977,8 @@ export default function Dashboard() {
 
               const isHovered = hoveredFileId === file.id;
               const sopTarget = SOP_DAYS[file.nama_kegiatan];
+              const selectable = isFileSelectable(file);
+              const isSelected = selectedQrCodes.includes(file.qr_code);
 
               return (
                 <div
@@ -589,9 +989,9 @@ export default function Dashboard() {
                   className="dash-file-card"
                   style={{
                     cursor: 'pointer',
-                    background: isHovered ? 'var(--surface-hover)' : 'var(--surface-card)',
+                    background: isSelected ? 'rgba(29, 78, 216, 0.08)' : (isHovered ? 'var(--surface-hover)' : 'var(--surface-card)'),
                     backdropFilter: 'blur(16px)',
-                    border: isHovered ? '1px solid #1D4ED8' : '1px solid var(--border-color)',
+                    border: isSelected ? '1.5px solid #1D4ED8' : (isHovered ? '1px solid #1D4ED8' : '1px solid var(--border-color)'),
                     borderRadius: '12px',
                     padding: '0.85rem 1.15rem',
                     transition: 'all 0.18s ease',
@@ -599,17 +999,36 @@ export default function Dashboard() {
                     boxShadow: isHovered ? '0 8px 20px -4px var(--card-shadow)' : '0 2px 6px -2px var(--card-shadow)'
                   }}
                 >
-                  {/* Col 1: Identitas Berkas */}
-                  <div className="dash-col-info" style={{ minWidth: 0 }}>
-                    <h3 style={{ margin: '0 0 0.2rem 0', display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '1rem', color: 'var(--text-main)', fontWeight: 700 }}>
-                      <FileText size={17} color="#1D4ED8" /> {file.nomor_berkas} / {file.tahun_berkas}
-                    </h3>
-                    <p style={{ fontSize: '0.86rem', margin: '0 0 0.15rem 0', color: 'var(--text-main)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {file.nama_kegiatan}
-                    </p>
-                    <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      Pemohon: {file.nama_pemohon}
-                    </p>
+                  {/* Col 1: Checkbox + Identitas Berkas */}
+                  <div className="dash-col-info" style={{ minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    {selectable && (
+                      <div
+                        onClick={(e) => toggleSelectFile(e, file.qr_code)}
+                        title={isSelected ? 'Batalkan pilihan berkas ini' : 'Pilih berkas ini untuk aksi batch'}
+                        style={{
+                          paddingTop: '0.15rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          color: isSelected ? '#1D4ED8' : 'var(--text-muted)'
+                        }}
+                      >
+                        {isSelected ? <CheckSquare size={20} color="#1D4ED8" /> : <Square size={20} />}
+                      </div>
+                    )}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <h3 style={{ margin: '0 0 0.2rem 0', display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '1rem', color: 'var(--text-main)', fontWeight: 700 }}>
+                        <FileText size={17} color="#1D4ED8" style={{ flexShrink: 0 }} /> {file.nomor_berkas} / {file.tahun_berkas}
+                      </h3>
+                      <p style={{ fontSize: '0.86rem', margin: '0 0 0.15rem 0', color: 'var(--text-main)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {file.nama_kegiatan}
+                      </p>
+                      <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        Pemohon: {file.nama_pemohon}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Col 2 (Bagian Tengah): Timeline & SOP */}
@@ -654,6 +1073,260 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Modal 1: Kirim Berkas Batch (Transit) */}
+      {showBatchTransitModal && (
+        <div
+          onClick={() => !batchProcessing && setShowBatchTransitModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--surface-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              width: '100%',
+              maxWidth: '480px',
+              boxShadow: '0 20px 40px -10px rgba(0,0,0,0.4)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Send size={20} color="#1D4ED8" />
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>
+                  Kirim Berkas Secara Batch ({sendableSelected.length} Berkas)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBatchTransitModal(false)}
+                disabled={batchProcessing}
+                style={{
+                  width: 'auto',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '0.25rem',
+                  margin: 0,
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{
+              background: 'var(--surface-subtle, rgba(29, 78, 216, 0.06))',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              padding: '0.6rem 0.85rem',
+              marginBottom: '0.9rem',
+              maxHeight: '110px',
+              overflowY: 'auto',
+              fontSize: '0.8rem',
+              color: 'var(--text-main)'
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: '0.3rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                Daftar berkas yang akan dikirim:
+              </div>
+              {sendableSelected.map(f => (
+                <div key={f.qr_code} style={{ padding: '0.15rem 0', display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+                  <strong>{f.nomor_berkas}/{f.tahun_berkas}</strong>
+                  <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {f.nama_pemohon}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p style={{ margin: '0 0 0.45rem 0', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>
+              Pilih Petugas Tujuan:
+            </p>
+            <input
+              type="text"
+              placeholder="Cari nama atau jabatan petugas..."
+              value={batchTransitSearch}
+              onChange={(e) => setBatchTransitSearch(e.target.value)}
+              style={{
+                width: '100%',
+                marginBottom: '0.6rem',
+                padding: '0.6rem 0.85rem',
+                borderRadius: '10px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--bg-color)',
+                color: 'var(--text-main)',
+                fontSize: '0.85rem'
+              }}
+            />
+
+            <div style={{
+              maxHeight: '210px',
+              overflowY: 'auto',
+              marginBottom: '1.1rem',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              background: 'var(--bg-color)'
+            }}>
+              {usersList.filter(u =>
+                (u.full_name || u.username).toLowerCase().includes(batchTransitSearch.toLowerCase()) ||
+                (u.role || '').toLowerCase().includes(batchTransitSearch.toLowerCase())
+              ).map(u => {
+                const isChosen = batchTransitTarget === u.username;
+                return (
+                  <div
+                    key={u.username}
+                    onClick={() => setBatchTransitTarget(u.username)}
+                    style={{
+                      padding: '0.7rem 0.9rem',
+                      cursor: 'pointer',
+                      background: isChosen ? '#1D4ED8' : 'transparent',
+                      color: isChosen ? '#ffffff' : 'var(--text-main)',
+                      borderBottom: '1px solid var(--border-color)',
+                      transition: 'background 0.15s'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.88rem', fontWeight: isChosen ? 700 : 600 }}>
+                      {u.full_name || u.username}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', opacity: isChosen ? 0.92 : 0.7, marginTop: '0.15rem' }}>
+                      {u.role}
+                    </div>
+                  </div>
+                );
+              })}
+              {usersList.filter(u =>
+                (u.full_name || u.username).toLowerCase().includes(batchTransitSearch.toLowerCase()) ||
+                (u.role || '').toLowerCase().includes(batchTransitSearch.toLowerCase())
+              ).length === 0 && (
+                <div style={{ padding: '1rem', fontSize: '0.84rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  Petugas tidak ditemukan
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem' }}>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setShowBatchTransitModal(false)}
+                disabled={batchProcessing}
+                style={{ width: 'auto', padding: '0.55rem 1.1rem', fontSize: '0.85rem', margin: 0 }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleBatchTransitSubmit}
+                disabled={batchProcessing || !batchTransitTarget}
+                style={{
+                  width: 'auto',
+                  background: '#1D4ED8',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '0.55rem 1.2rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  margin: 0
+                }}
+              >
+                {batchProcessing ? <Loader2 size={15} className="spin" /> : <Send size={15} />}
+                {batchProcessing ? 'Mengirim...' : `Kirim ${sendableSelected.length} Berkas`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 2: Pilih Jabatan Saat Terima Batch (Untuk User Multi-Role) */}
+      {batchRoleModal && (
+        <div
+          onClick={() => !batchProcessing && setBatchRoleModal(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--surface-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              width: '100%',
+              maxWidth: '420px',
+              boxShadow: '0 20px 40px -10px rgba(0,0,0,0.4)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <Users size={20} color="#10b981" />
+              <h3 style={{ margin: 0, fontSize: '1.08rem', color: 'var(--text-main)' }}>
+                Pilih Jabatan Penerimaan Batch
+              </h3>
+            </div>
+            <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Pilih jabatan Anda untuk menerima <strong>{batchRoleModal.qrCodes.length} berkas</strong> sekaligus:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+              {batchRoleModal.availableRoles.map(r => (
+                <button
+                  key={r}
+                  type="button"
+                  disabled={batchProcessing}
+                  onClick={() => executeBatchReceive(batchRoleModal.qrCodes, r)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '10px',
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-main)',
+                    border: '1px solid var(--border-color)',
+                    fontWeight: 600,
+                    fontSize: '0.86rem',
+                    margin: 0
+                  }}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="secondary"
+                disabled={batchProcessing}
+                onClick={() => setBatchRoleModal(null)}
+                style={{ width: 'auto', padding: '0.45rem 1rem', fontSize: '0.84rem', margin: 0 }}
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

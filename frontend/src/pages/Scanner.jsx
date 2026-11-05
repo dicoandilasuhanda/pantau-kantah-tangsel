@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { CheckCircle, AlertCircle, Upload } from 'lucide-react';
+import { CheckCircle, AlertCircle, Upload, Layers, QrCode, Check, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Scanner() {
@@ -12,12 +12,107 @@ export default function Scanner() {
   const [message, setMessage] = useState('');
   const [smartData, setSmartData] = useState(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
+
+  // Batch Continuous Scan Mode State
+  const [isBatchMode, setIsBatchMode] = useState(false);
+  const [batchRole, setBatchRole] = useState(() => {
+    const r = localStorage.getItem('role') || '';
+    const arr = r.split(',').map(x => x.trim()).filter(Boolean);
+    return arr[0] || '';
+  });
+  const [batchHistory, setBatchHistory] = useState([]); // [{ id, qr_code, nomor_berkas, nama_pemohon, status: 'success'|'error', msg, time }]
+
   const navigate = useNavigate();
   const roleStr = localStorage.getItem('role') || '';
-  const userRoles = roleStr.split(',').map(r => r.trim());
+  const userRoles = roleStr.split(',').map(r => r.trim()).filter(Boolean);
   const scannerRef = useRef(null);
+  const isBatchModeRef = useRef(isBatchMode);
+  const batchRoleRef = useRef(batchRole);
+  const lastScannedRef = useRef({ qr: '', time: 0 });
+  const isProcessingBatchRef = useRef(false);
+
+  useEffect(() => {
+    isBatchModeRef.current = isBatchMode;
+  }, [isBatchMode]);
+
+  useEffect(() => {
+    batchRoleRef.current = batchRole;
+  }, [batchRole]);
+
+  const handleBatchScan = async (qrCode) => {
+    const now = Date.now();
+    // Hindari scan duplikat beruntun pada QR yang sama dalam 3.5 detik
+    if (lastScannedRef.current.qr === qrCode && now - lastScannedRef.current.time < 3500) {
+      return;
+    }
+    if (isProcessingBatchRef.current) return;
+
+    lastScannedRef.current = { qr: qrCode, time: now };
+    isProcessingBatchRef.current = true;
+
+    try {
+      const fileRes = await api.get(`/files/${qrCode}`);
+      const fileData = fileRes.data;
+      const fullName = localStorage.getItem('fullName') || localStorage.getItem('full_name');
+      const roleToUse = userRoles.length > 1 ? (batchRoleRef.current || userRoles[0]) : userRoles[0];
+
+      const scanRes = await api.post('/files/scan', {
+        qr_code: qrCode,
+        fullName,
+        isFinishing: false,
+        selected_role: roleToUse
+      });
+
+      const successItem = {
+        id: Date.now() + Math.random(),
+        qr_code: qrCode,
+        nomor_berkas: `${fileData.nomor_berkas}/${fileData.tahun_berkas}`,
+        nama_pemohon: fileData.nama_pemohon,
+        nama_kegiatan: fileData.nama_kegiatan,
+        status: 'success',
+        msg: scanRes.data.message || 'Berhasil diterima',
+        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+
+      setBatchHistory(prev => [successItem, ...prev]);
+      toast.success(`Diterima: Berkas ${fileData.nomor_berkas}/${fileData.tahun_berkas}`);
+    } catch (err) {
+      const errMsg = err.response?.data?.error || 'Gagal memproses QR Code';
+      let nomorLabel = 'QR Tidak Dikenal';
+      let pemohonLabel = '-';
+      try {
+        const checkRes = await api.get(`/files/${qrCode}`);
+        if (checkRes.data) {
+          nomorLabel = `${checkRes.data.nomor_berkas}/${checkRes.data.tahun_berkas}`;
+          pemohonLabel = checkRes.data.nama_pemohon;
+        }
+      } catch {}
+
+      const errItem = {
+        id: Date.now() + Math.random(),
+        qr_code: qrCode,
+        nomor_berkas: nomorLabel,
+        nama_pemohon: pemohonLabel,
+        status: 'error',
+        msg: errMsg,
+        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+
+      setBatchHistory(prev => [errItem, ...prev]);
+      toast.error(`${nomorLabel}: ${errMsg}`);
+    } finally {
+      setTimeout(() => {
+        isProcessingBatchRef.current = false;
+      }, 700);
+    }
+  };
 
   const handleScanSuccess = async (result) => {
+    if (isBatchModeRef.current) {
+      await handleBatchScan(result);
+      return;
+    }
+
     if (scannerRef.current && scannerRef.current.isScanning) {
       await scannerRef.current.stop();
     }
@@ -67,18 +162,28 @@ export default function Scanner() {
 
   const handleFileUpload = async (event) => {
     if (event.target.files && event.target.files.length > 0) {
-      const file = event.target.files[0];
-      try {
-        const result = await scannerRef.current.scanFile(file, false);
-        handleScanSuccess(result);
-      } catch {
-        toast.error('Gambar tidak terbaca atau bukan QR Code yang valid.');
+      const filesArr = Array.from(event.target.files);
+      if (isBatchMode && filesArr.length > 1) {
+        for (const f of filesArr) {
+          try {
+            const result = await scannerRef.current.scanFile(f, false);
+            await handleBatchScan(result);
+          } catch {
+            toast.error(`Gagal membaca QR dari gambar ${f.name}`);
+          }
+        }
+      } else {
+        const file = filesArr[0];
+        try {
+          const result = await scannerRef.current.scanFile(file, false);
+          handleScanSuccess(result);
+        } catch {
+          toast.error('Gambar tidak terbaca atau bukan QR Code yang valid.');
+        }
       }
       event.target.value = ''; // reset input
     }
   };
-
-
 
   const processScan = async (qr_code, selected_role = null) => {
     setStatus('processing');
@@ -105,17 +210,118 @@ export default function Scanner() {
     }
   };
 
-
+  const successBatchCount = batchHistory.filter(item => item.status === 'success').length;
 
   return (
     <div className="container animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <h1 style={{ textAlign: 'center' }}>Scanner QR Code</h1>
-      <p style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--text-muted)' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: '0.4rem' }}>Scanner QR Code</h1>
+      <p style={{ textAlign: 'center', marginBottom: '1.25rem', color: 'var(--text-muted)' }}>
         Pindai QR Code pada berkas untuk mencatat penerimaan oleh: <strong style={{ color: 'var(--primary-color)' }}>{roleStr}</strong>
       </p>
+
+      {/* Mode Selector: Satuan vs Batch Beruntun */}
+      <div style={{
+        display: 'inline-flex',
+        background: 'var(--surface-card)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '12px',
+        padding: '0.3rem',
+        gap: '0.35rem',
+        marginBottom: '1.25rem',
+        boxShadow: '0 2px 8px var(--card-shadow)'
+      }}>
+        <button
+          type="button"
+          onClick={() => setIsBatchMode(false)}
+          style={{
+            width: 'auto',
+            margin: 0,
+            padding: '0.45rem 1rem',
+            borderRadius: '9px',
+            border: 'none',
+            fontSize: '0.84rem',
+            fontWeight: 600,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: !isBatchMode ? '#1D4ED8' : 'transparent',
+            color: !isBatchMode ? '#ffffff' : 'var(--text-muted)',
+            cursor: 'pointer'
+          }}
+        >
+          <QrCode size={16} /> Mode Scan Satuan
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setIsBatchMode(true);
+            if (status !== '') {
+              window.location.reload();
+            }
+          }}
+          style={{
+            width: 'auto',
+            margin: 0,
+            padding: '0.45rem 1rem',
+            borderRadius: '9px',
+            border: 'none',
+            fontSize: '0.84rem',
+            fontWeight: 600,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: isBatchMode ? '#10b981' : 'transparent',
+            color: isBatchMode ? '#ffffff' : 'var(--text-muted)',
+            cursor: 'pointer'
+          }}
+        >
+          <Layers size={16} /> Mode Scan Batch (Beruntun)
+        </button>
+      </div>
+
+      {/* Role Selector untuk User Multi-Jabatan saat Mode Batch */}
+      {isBatchMode && userRoles.length > 1 && (
+        <div style={{
+          width: '100%',
+          maxWidth: '500px',
+          marginBottom: '1rem',
+          background: 'var(--surface-card)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '12px',
+          padding: '0.75rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          flexWrap: 'wrap'
+        }}>
+          <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-main)' }}>
+            Terima Sebagai Jabatan:
+          </span>
+          <select
+            value={batchRole}
+            onChange={(e) => setBatchRole(e.target.value)}
+            style={{
+              flex: 1,
+              minWidth: '200px',
+              margin: 0,
+              padding: '0.45rem 0.75rem',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-color)',
+              color: 'var(--text-main)',
+              fontSize: '0.84rem'
+            }}
+          >
+            {userRoles.map(r => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </div>
+      )}
       
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
-        {status === 'success' ? (
+      <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', padding: '1.75rem' }}>
+        {status === 'success' && !isBatchMode ? (
           <div style={{ textAlign: 'center', padding: '2rem 0' }}>
             <CheckCircle size={64} color="var(--accent-color)" style={{ margin: '0 auto 1rem' }} />
             <h2 style={{ color: 'var(--accent-color)' }}>Berhasil!</h2>
@@ -132,7 +338,7 @@ export default function Scanner() {
               <button className="secondary" onClick={() => window.location.reload()} style={{ width: 'auto' }}>Scan Lagi</button>
             </div>
           </div>
-        ) : status === 'error' ? (
+        ) : status === 'error' && !isBatchMode ? (
           <div style={{ textAlign: 'center', padding: '2rem 0' }}>
             <AlertCircle size={64} color="var(--error-color)" style={{ margin: '0 auto 1rem' }} />
             <h2 style={{ color: 'var(--error-color)' }}>Gagal</h2>
@@ -142,7 +348,7 @@ export default function Scanner() {
               <button className="secondary" onClick={() => window.location.reload()} style={{ width: 'auto' }}>Coba Lagi</button>
             </div>
           </div>
-        ) : status === 'smart_confirming' && smartData ? (
+        ) : status === 'smart_confirming' && smartData && !isBatchMode ? (
           <div style={{ textAlign: 'center', padding: '2rem 0' }}>
             <AlertCircle size={64} color="var(--primary-color)" style={{ margin: '0 auto 1rem' }} />
             <h2 style={{ color: 'var(--primary-color)' }}>Konfirmasi Lanjutan</h2>
@@ -158,7 +364,7 @@ export default function Scanner() {
               <button className="secondary" onClick={() => setStatus('role_selection')} style={{ width: 'auto' }}>Tidak, Ubah Manual</button>
             </div>
           </div>
-        ) : status === 'role_selection' && smartData ? (
+        ) : status === 'role_selection' && smartData && !isBatchMode ? (
           <div style={{ textAlign: 'center', padding: '2rem 0' }}>
             <AlertCircle size={64} color="var(--accent-color)" style={{ margin: '0 auto 1rem' }} />
             <h2 style={{ color: 'var(--accent-color)' }}>Pilih Posisi Berkas</h2>
@@ -179,7 +385,7 @@ export default function Scanner() {
               <button className="secondary" onClick={() => navigate('/berkas')} style={{ width: 'auto' }}>Batal</button>
             </div>
           </div>
-        ) : status === 'confirming_accept' ? (
+        ) : status === 'confirming_accept' && !isBatchMode ? (
           <div style={{ textAlign: 'center', padding: '2rem 0' }}>
             <AlertCircle size={64} color="var(--primary-color)" style={{ margin: '0 auto 1rem' }} />
             <h2 style={{ color: 'var(--primary-color)' }}>Konfirmasi Penerimaan</h2>
@@ -194,12 +400,28 @@ export default function Scanner() {
               <button className="secondary" onClick={() => navigate('/berkas')} style={{ width: 'auto' }}>Tidak</button>
             </div>
           </div>
-        ) : status === 'processing' ? (
+        ) : status === 'processing' && !isBatchMode ? (
           <div style={{ textAlign: 'center', padding: '2rem 0' }}>
             <p>Memproses QR Code...</p>
           </div>
         ) : (
           <div style={{ position: 'relative', minHeight: '300px' }}>
+            {isBatchMode && (
+              <div style={{
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                color: '#10b981',
+                padding: '0.6rem 0.85rem',
+                borderRadius: '10px',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                marginBottom: '0.85rem',
+                textAlign: 'center'
+              }}>
+                Mode Batch Aktif — Arahkan kamera ke beberapa QR berkas secara beruntun tanpa perlu menutup kamera.
+              </div>
+            )}
+
             {!isCameraReady && (
               <div style={{ 
                 position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
@@ -214,12 +436,15 @@ export default function Scanner() {
             
             {/* Upload Button */}
             <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Atau unggah gambar QR dari galeri/folder:</p>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                {isBatchMode ? 'Atau pilih beberapa gambar QR sekaligus dari galeri/folder:' : 'Atau unggah gambar QR dari galeri/folder:'}
+              </p>
               <label className="button secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', width: 'auto', cursor: 'pointer', margin: '0 auto' }}>
-                <Upload size={18} /> Pilih Gambar QR
+                <Upload size={18} /> {isBatchMode ? 'Pilih Gambar QR (Bisa Banyak)' : 'Pilih Gambar QR'}
                 <input 
                   type="file" 
                   accept="image/*" 
+                  multiple={isBatchMode}
                   onChange={handleFileUpload} 
                   style={{ display: 'none' }} 
                 />
@@ -228,6 +453,78 @@ export default function Scanner() {
           </div>
         )}
       </div>
+
+      {/* Daftar Riwayat Hasil Scan Batch */}
+      {isBatchMode && (
+        <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', padding: '1.25rem 1.5rem', marginTop: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Layers size={18} color="#10b981" />
+              Hasil Scan Batch ({successBatchCount} diterima)
+            </h3>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {batchHistory.length > 0 && (
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setBatchHistory([])}
+                  style={{ width: 'auto', padding: '0.35rem 0.7rem', fontSize: '0.78rem', margin: 0 }}
+                >
+                  <RotateCcw size={13} /> Bersihkan
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => navigate('/berkas')}
+                style={{ width: 'auto', padding: '0.35rem 0.85rem', fontSize: '0.78rem', margin: 0, background: '#1D4ED8', color: '#fff', border: 'none' }}
+              >
+                <Check size={14} /> Selesai ({successBatchCount})
+              </button>
+            </div>
+          </div>
+
+          {batchHistory.length === 0 ? (
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem 0' }}>
+              Belum ada berkas yang di-scan pada sesi batch ini.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '260px', overflowY: 'auto' }}>
+              {batchHistory.map(item => (
+                <div
+                  key={item.id}
+                  style={{
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    border: item.status === 'success' ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(239, 68, 68, 0.35)',
+                    background: item.status === 'success' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '0.75rem'
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>
+                      {item.status === 'success' ? (
+                        <CheckCircle size={15} color="#10b981" style={{ flexShrink: 0 }} />
+                      ) : (
+                        <AlertCircle size={15} color="#ef4444" style={{ flexShrink: 0 }} />
+                      )}
+                      <span>Berkas {item.nomor_berkas}</span>
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.nama_pemohon !== '-' ? `Pemohon: ${item.nama_pemohon} • ` : ''}{item.msg}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', flexShrink: 0 }}>
+                    {item.time}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
