@@ -228,59 +228,64 @@ export default function HomeHub() {
           transform: translateY(-1px);
         }
 
-        .hub-saran-btn {
-          width: auto !important;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.45rem;
-          padding: 0.4rem 0.85rem;
+        .hub-floating-saran {
+          position: fixed !important;
+          bottom: 1.5rem !important;
+          right: 1.5rem !important;
+          z-index: 990 !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          gap: 0.65rem !important;
+          padding: 0.6rem 1.15rem !important;
           background: var(--surface-card) !important;
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           border: 1px solid var(--border-color) !important;
           border-radius: 999px !important;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
           color: var(--text-main) !important;
-          font-size: 0.83rem;
-          font-weight: 600;
+          font-size: 0.84rem;
+          font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s ease;
-          white-space: nowrap;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          user-select: none;
+          max-width: calc(100vw - 2.5rem);
         }
 
-        .hub-saran-btn:hover {
-          background: var(--surface-hover) !important;
+        .hub-floating-saran:hover {
+          transform: translateY(-3px);
           border-color: #f59e0b !important;
-          color: #f59e0b !important;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+          box-shadow: 0 12px 28px rgba(245, 158, 11, 0.22), 0 4px 10px rgba(0, 0, 0, 0.1);
+          background: var(--surface-hover) !important;
         }
 
-        .hub-hero-saran-pill {
+        .hub-floating-saran-icon {
           display: inline-flex;
           align-items: center;
-          gap: 0.55rem;
-          padding: 0.45rem 1.15rem;
-          border-radius: 999px;
-          background: var(--surface-card);
-          border: 1px solid var(--border-color);
-          color: var(--text-muted);
-          font-size: 0.86rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: rgba(245, 158, 11, 0.15);
+          flex-shrink: 0;
+          box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
         }
 
-        .hub-hero-saran-pill:hover {
-          border-color: #f59e0b;
-          color: var(--text-main);
-          background: var(--surface-hover);
-          transform: translateY(-1px);
-          box-shadow: 0 6px 16px rgba(245, 158, 11, 0.18);
-        }
-
-        .hub-hero-saran-pill strong {
+        .hub-floating-saran strong {
           color: #1D4ED8;
+          font-weight: 700;
         }
-        [data-theme="dark"] .hub-hero-saran-pill strong {
+        [data-theme="dark"] .hub-floating-saran strong {
           color: #38BDF8;
+        }
+
+        @media (max-width: 640px) {
+          .hub-floating-saran {
+            bottom: 1rem !important;
+            right: 1rem !important;
+            padding: 0.5rem 0.95rem !important;
+            font-size: 0.78rem !important;
+          }
         }
 
         .hub-hero {
@@ -526,16 +531,6 @@ export default function HomeHub() {
           </div>
 
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => setShowSuggestionModal(true)}
-              className="hub-saran-btn"
-              title="Sumbang Saran & Ide Fitur Baru"
-            >
-              <Lightbulb size={15} color="#f59e0b" />
-              <span>Saran Fitur</span>
-            </button>
-
             <div 
               className="hub-user-badge" 
               onClick={() => navigate('/profile')}
@@ -602,16 +597,6 @@ export default function HomeHub() {
           <h1 className="hub-title">
             Portal Aplikasi Pantau<span className="hub-title-accent">.Kantah Tangsel</span>
           </h1>
-          <div style={{ marginTop: '0.85rem', display: 'flex', justifyContent: 'center' }}>
-            <button
-              type="button"
-              onClick={() => setShowSuggestionModal(true)}
-              className="hub-hero-saran-pill"
-            >
-              <Lightbulb size={16} color="#f59e0b" />
-              <span>Punya ide pengembangan fitur baru? <strong>Kirim Saran di Sini &rarr;</strong></span>
-            </button>
-          </div>
         </div>
 
         {/* Module Grid */}
@@ -736,6 +721,21 @@ export default function HomeHub() {
           )}
         </div>
       </div>
+
+      {/* Floating Suggestion Button di pojok kanan bawah di atas footer */}
+      <button
+        type="button"
+        onClick={() => setShowSuggestionModal(true)}
+        className="hub-floating-saran"
+        title="Kirim Ide atau Saran Fitur Baru"
+      >
+        <span className="hub-floating-saran-icon">
+          <Lightbulb size={16} color="#f59e0b" />
+        </span>
+        <span className="hub-floating-saran-text">
+          Punya Ide pengembangan fitur baru ? <strong>Kirim Saran di Sini &rarr;</strong>
+        </span>
+      </button>
 
       <SuggestionModal
         isOpen={showSuggestionModal}
