@@ -22,7 +22,7 @@ Dibangun dan dikembangkan oleh **[@dicoandila](https://x.com/dicoandila)**.
 Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism* dengan *sticky topbar* responsif (Desktop & Mobile) yang memisahkan akses modul berdasarkan peran pengguna:
 - **Modul Monitoring Berkas** (Layanan Rutin PNBP — Seksi Survei & Pemetaan dan Seksi PHP).
 - **Modul Monitoring Surat** (Administrasi Persuratan & Arsip PDF Digital).
-- **Modul Admin Panel & Pengguna Terpadu** (Dilengkapi tombol akses cepat langsung ke **Admin Panel** dan **Kelola Akun** dalam satu kartu khusus Administrator).
+- **Modul Admin Panel, Pengguna & Stats** (Dilengkapi tombol akses cepat langsung ke **Admin Panel**, **Kelola Akun**, dan pantauan **Stats** dalam satu kartu khusus Administrator).
 
 ### 2. 📱 Pelacakan Berkas *Real-Time* dengan QR Code Berbasis JWT
 - **Entri Berkas Tervalidasi:** Pembuatan berkas baru dengan validasi anti-duplikasi (`Nomor Berkas` + `Tahun`), pengelompokan otomatis seluruh **14 jenis kegiatan** (**5 Kegiatan Kelompok 1 / Seksi SP** dan **9 Kegiatan Kelompok 2 / Seksi PHP**), serta *modal* konfirmasi sebelum cetak.
@@ -109,11 +109,11 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 - **Panel Manajemen Review (Administrator):** Administrator dapat melihat seluruh saran masuk dari staf/petugas, memperbarui status, memberikan catatan tanggapan, maupun menghapus saran.
 
 ### 12. 📈 Web-App Stats & Pemantauan Pengguna Online Real-Time
-- **Metrik Kehadiran Langsung:** Menampilkan total pengguna terdaftar, jumlah pengguna yang sedang aktif/online (berdasarkan aktivitas 5 menit terakhir), jumlah pengguna offline, total sesi aktif, dan akun terhubung ke Telegram.
+- **Metrik Kehadiran Langsung:** Menampilkan total pengguna terdaftar, jumlah pengguna yang sedang aktif/online (berdasarkan toleransi aktivitas 5 menit terakhir), jumlah pengguna offline, total sesi aktif, dan akun terhubung ke Telegram.
 - **Daftar & Detail Pengguna Online:** Tabel interaktif dengan avatar, nama lengkap, username, peran aktif, waktu aktivitas terakhir (*relative time*), alamat IP terakhir, serta status tautan Telegram.
 - **Manajemen Sesi & Disconnect (Kick):** Administrator memiliki wewenang untuk memutuskan (*kick*) sesi aktif pengguna tertentu jika terdeteksi aktivitas mencurigakan atau untuk pemeliharaan sesi.
 - **Auto-Refresh Cerdas:** Dilengkapi saklar *Auto-Refresh* berkala (15 detik) dengan indikator denyut hijau (*live pulse*) serta tombol penyegaran manual.
-- **Integrasi Terpadu:** Tautan langsung tersedia di bilah navigasi admin (`Navbar.jsx`) dan tab navigasi `AdminDashboard.jsx`.
+- **Integrasi Terpadu & Desain Responsif Anti-Tumpuk:** Tautan langsung berlabel **Stats** terpasang di bilah navigasi admin (`Navbar.jsx`) dengan perlindungan flex anti-kompresi dan breakpoint judul cerdas (&le; 1550px) agar tidak menimpa lonceng notifikasi, serta tab navigasi **Web-app Stats** di `AdminDashboard.jsx`.
 
 ---
 
