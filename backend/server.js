@@ -164,6 +164,7 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
       db.run(`ALTER TABLE surat ADD COLUMN transit_to_username TEXT`, (err) => {});
       db.run(`ALTER TABLE surat ADD COLUMN transit_by_username TEXT`, (err) => {});
       db.run(`ALTER TABLE surat ADD COLUMN transit_at DATETIME`, (err) => {});
+      db.run(`ALTER TABLE surat ADD COLUMN client_ip TEXT`, (err) => {});
       db.run(`UPDATE surat SET current_location = 'Petugas Entry Surat' WHERE current_location IS NULL OR current_location = ''`, (err) => {});
 
       db.run(`CREATE TABLE IF NOT EXISTS surat_history (
@@ -406,9 +407,9 @@ app.post('/api/surat', authenticateJWT, handlePdfUpload, (req, res) => {
     const nextAgendaNumber = row ? row.next_agenda : 1;
     const nomorAgendaStr = nextAgendaNumber.toString().padStart(5, '0');
 
-    db.run(`INSERT INTO surat (nomor_agenda, asal_surat, nomor_surat, tanggal_diterima, perihal, file_path, current_location) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [nomorAgendaStr, asal_surat, nomor_surat, tanggal_diterima, perihal, filePath, initialLocation],
+    db.run(`INSERT INTO surat (nomor_agenda, asal_surat, nomor_surat, tanggal_diterima, perihal, file_path, current_location, client_ip) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nomorAgendaStr, asal_surat, nomor_surat, tanggal_diterima, perihal, filePath, initialLocation, clientIp],
       function (err2) {
         if (err2) return res.status(500).json({ error: err2.message });
         const suratId = this.lastID;
@@ -433,7 +434,8 @@ app.get('/api/surat', authenticateJWT, (req, res) => {
            COALESCE(s.current_location, 'Petugas Entry Surat') as current_location,
            (SELECT scanned_at FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as updated_at,
            (SELECT scanned_by_username FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as latest_scanned_by_username,
-           (SELECT scanned_by_role FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as latest_scan_info
+           (SELECT scanned_by_role FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as latest_scan_info,
+           COALESCE(s.client_ip, (SELECT scanned_ip FROM surat_history sh WHERE sh.surat_id = s.id AND scanned_ip IS NOT NULL AND scanned_ip != 'Unknown' AND scanned_ip != '' ORDER BY id ASC LIMIT 1)) as client_ip
     FROM surat s
     LEFT JOIN users u_to ON s.transit_to_username = u_to.username
     LEFT JOIN users u_by ON s.transit_by_username = u_by.username

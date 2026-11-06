@@ -15,10 +15,14 @@ export default function SuratDashboard() {
 
   useEffect(() => {
     fetchSurat();
-    fetch('https://api.ipify.org?format=json')
-      .then(res => res.json())
-      .then(data => { if (data.ip) setClientIp(data.ip); })
-      .catch(() => {});
+    api.get('/my-ip').then(res => {
+      if (res.data?.ip) setClientIp(res.data.ip);
+    }).catch(() => {
+      fetch('https://api.ipify.org?format=json')
+        .then(res => res.json())
+        .then(data => { if (data.ip) setClientIp(data.ip); })
+        .catch(() => {});
+    });
   }, []);
 
   const fetchSurat = async () => {
@@ -55,8 +59,40 @@ export default function SuratDashboard() {
   const userRoles = roleStr.split(',').map(r => r.trim());
 
   return (
-    <div className="container animate-fade-in dashboard-container" style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', boxSizing: 'border-box', paddingBottom: '3rem' }}>
-      {/* Page Header - Identik dengan Monitoring Berkas */}
+    <div className="container animate-fade-in dashboard-container print-container" style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', boxSizing: 'border-box', paddingBottom: '3rem' }}>
+      {/* Tampilan Cetak Khusus QR Surat (100% Identik dengan Format Cetak Berkas) */}
+      {selectedSuratQr && (
+        <div className="print-only-slip qr-result-panel">
+          <div style={{ textAlign: 'center', marginBottom: '0.85rem' }}>
+            <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '3px' }}>
+              Kantor Pertanahan Kota Tangerang Selatan
+            </p>
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.01em' }}>
+              Pantau<span style={{ color: '#1D4ED8' }}>.Kantah Tangsel</span>
+            </h4>
+          </div>
+
+          <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #ccc', display: 'inline-block' }}>
+            <QRCodeSVG value={`SURAT:${selectedSuratQr.nomor_agenda}`} size={200} />
+          </div>
+
+          <p style={{ fontWeight: 'bold', marginBottom: '0.35rem' }}>No. Agenda: {selectedSuratQr.nomor_agenda}</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>No. Surat: {selectedSuratQr.nomor_surat}</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Asal: {selectedSuratQr.asal_surat}</p>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>Perihal: {selectedSuratQr.perihal}</p>
+          {(() => {
+            const displayIp = selectedSuratQr.client_ip || clientIp;
+            return displayIp ? (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '0.02em', marginTop: '0.25rem' }}>
+                IP: {displayIp}
+              </p>
+            ) : null;
+          })()}
+        </div>
+      )}
+
+      <div className="screen-only-details">
+        {/* Page Header - Identik dengan Monitoring Berkas */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{
@@ -218,10 +254,12 @@ export default function SuratDashboard() {
           </table>
         )}
       </div>
+      </div>
 
       {/* Modal Cetak & Lihat QR Code Surat */}
       {selectedSuratQr && (
         <div 
+          className="no-print"
           onClick={() => setSelectedSuratQr(null)}
           style={{
             position: 'fixed',
@@ -281,20 +319,26 @@ export default function SuratDashboard() {
                 <QRCodeSVG value={`SURAT:${selectedSuratQr.nomor_agenda}`} size={180} />
               </div>
 
-              <p style={{ fontWeight: 800, fontSize: '1.1rem', margin: '0 0 0.35rem 0', color: '#0F172A' }}>
-                Agenda: {selectedSuratQr.nomor_agenda}
+              <p style={{ fontWeight: 800, fontSize: '1.05rem', margin: '0 0 0.35rem 0', color: '#0F172A' }}>
+                No. Agenda: {selectedSuratQr.nomor_agenda}
               </p>
-              <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 0.25rem 0', fontWeight: 600 }}>
+              <p style={{ fontSize: '0.875rem', color: '#475569', margin: '0 0 0.25rem 0' }}>
                 No. Surat: {selectedSuratQr.nomor_surat}
               </p>
-              <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0 0 0.4rem 0' }}>
+              <p style={{ fontSize: '0.875rem', color: '#0F172A', margin: '0 0 0.25rem 0' }}>
                 Asal: {selectedSuratQr.asal_surat}
               </p>
-              {clientIp && (
-                <p style={{ fontSize: '0.7rem', color: '#94A3B8', margin: '0.4rem 0 0 0', letterSpacing: '0.02em' }}>
-                  IP: {clientIp}
-                </p>
-              )}
+              <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 0.35rem 0' }}>
+                Perihal: {selectedSuratQr.perihal}
+              </p>
+              {(() => {
+                const displayIp = selectedSuratQr.client_ip || clientIp;
+                return displayIp ? (
+                  <p style={{ fontSize: '0.75rem', color: '#64748B', margin: '0.35rem 0 0 0', letterSpacing: '0.02em' }}>
+                    IP: {displayIp}
+                  </p>
+                ) : null;
+              })()}
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
@@ -320,6 +364,68 @@ export default function SuratDashboard() {
           </div>
         </div>
       )}
+
+      {/* Global Print Stylesheet Khusus Halaman Ini */}
+      <style>{`
+        @media screen {
+          .print-only-slip {
+            display: none !important;
+          }
+        }
+
+        @media print {
+          header, nav, footer, .no-print, .screen-only-details {
+            display: none !important;
+          }
+
+          @page {
+            size: auto;
+            margin: 6mm;
+          }
+
+          html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+          }
+
+          .print-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+
+          .print-only-slip {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: white !important;
+            color: black !important;
+            box-shadow: none !important;
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            text-align: center !important;
+          }
+
+          .print-only-slip p, .print-only-slip span, 
+          .print-only-slip h1, .print-only-slip h2, 
+          .print-only-slip h3, .print-only-slip h4 {
+            color: black !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
