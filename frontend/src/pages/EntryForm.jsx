@@ -208,7 +208,17 @@ export default function EntryForm() {
             </div>
 
             <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #ccc' }}>
-              <QRCodeSVG value={successData.qr_code} size={200} />
+              <QRCodeSVG 
+                value={successData.qr_code} 
+                size={200} 
+                level="H"
+                imageSettings={{
+                  src: '/logo-atr-bpn.png',
+                  height: 40,
+                  width: 40,
+                  excavate: true
+                }}
+              />
             </div>
             
             <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{successData.nomor_berkas} / {successData.tahun_berkas}</p>

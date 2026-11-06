@@ -165,7 +165,19 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
       db.run(`ALTER TABLE surat ADD COLUMN transit_by_username TEXT`, (err) => {});
       db.run(`ALTER TABLE surat ADD COLUMN transit_at DATETIME`, (err) => {});
       db.run(`ALTER TABLE surat ADD COLUMN client_ip TEXT`, (err) => {});
+      db.run(`ALTER TABLE surat ADD COLUMN qr_code TEXT`, (err) => {});
       db.run(`UPDATE surat SET current_location = 'Petugas Entry Surat' WHERE current_location IS NULL OR current_location = ''`, (err) => {});
+
+      // Backfill token kriptografis QR Code untuk surat lama
+      db.all("SELECT id, nomor_agenda FROM surat WHERE qr_code IS NULL OR qr_code = ''", (err, rows) => {
+        if (!err && rows && rows.length > 0) {
+          rows.forEach(r => {
+            const suratIdentifier = `SURAT-${r.nomor_agenda}-${Date.now()}`;
+            const token = jwt.sign({ suratIdentifier, nomor_agenda: r.nomor_agenda }, JWT_SECRET);
+            db.run("UPDATE surat SET qr_code = ? WHERE id = ?", [token, r.id]);
+          });
+        }
+      });
 
       db.run(`CREATE TABLE IF NOT EXISTS surat_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -406,10 +418,12 @@ app.post('/api/surat', authenticateJWT, handlePdfUpload, (req, res) => {
     if (err) return res.status(500).json({ error: 'Gagal mengambil nomor agenda surat.' });
     const nextAgendaNumber = row ? row.next_agenda : 1;
     const nomorAgendaStr = nextAgendaNumber.toString().padStart(5, '0');
+    const suratIdentifier = `SURAT-${nomorAgendaStr}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const qr_code = jwt.sign({ suratIdentifier, nomor_agenda: nomorAgendaStr }, JWT_SECRET);
 
-    db.run(`INSERT INTO surat (nomor_agenda, asal_surat, nomor_surat, tanggal_diterima, perihal, file_path, current_location, client_ip) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nomorAgendaStr, asal_surat, nomor_surat, tanggal_diterima, perihal, filePath, initialLocation, clientIp],
+    db.run(`INSERT INTO surat (nomor_agenda, asal_surat, nomor_surat, tanggal_diterima, perihal, file_path, current_location, client_ip, qr_code) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nomorAgendaStr, asal_surat, nomor_surat, tanggal_diterima, perihal, filePath, initialLocation, clientIp, qr_code],
       function (err2) {
         if (err2) return res.status(500).json({ error: err2.message });
         const suratId = this.lastID;
@@ -417,7 +431,7 @@ app.post('/api/surat', authenticateJWT, handlePdfUpload, (req, res) => {
           `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
           [suratId, scannedBy, req.user.username, initialLocation, clientIp],
           () => {
-            res.json({ id: suratId, nomor_agenda: nomorAgendaStr, current_location: initialLocation, client_ip: clientIp, message: 'Surat berhasil ditambahkan' });
+            res.json({ id: suratId, nomor_agenda: nomorAgendaStr, qr_code, current_location: initialLocation, client_ip: clientIp, message: 'Surat berhasil ditambahkan' });
           }
         );
       }
@@ -449,17 +463,41 @@ app.get('/api/surat', authenticateJWT, (req, res) => {
 
 // Scan / Terima / Selesaikan Surat
 app.post('/api/surat/scan', authenticateJWT, (req, res) => {
-  const { id, nomor_agenda, isFinishing, selected_role, catatan } = req.body;
+  const { id, nomor_agenda, qr_code, isFinishing, selected_role, catatan } = req.body;
   const fullName = req.user.full_name || req.user.username;
   const userRoles = (req.user.role || '').split(',').map(r => r.trim()).filter(Boolean);
   const roleUsed = (selected_role && userRoles.includes(selected_role)) ? selected_role : (userRoles[0] || 'Petugas');
   const scannedBy = `${fullName} (${roleUsed})`;
   const clientIp = getClientIp(req);
 
-  const whereClause = id ? 'id = ?' : 'LOWER(nomor_agenda) = LOWER(?)';
-  const paramVal = id ? id : String(nomor_agenda || '').trim().padStart(5, '0');
+  let whereClause = 'id = ?';
+  let paramVal = [id];
 
-  db.get(`SELECT * FROM surat WHERE ${whereClause}`, [paramVal], (err, surat) => {
+  if (!id) {
+    if (qr_code) {
+      let extractedAgenda = null;
+      try {
+        const verified = verifyQRCodeToken(qr_code);
+        if (verified && verified.nomor_agenda) {
+          extractedAgenda = verified.nomor_agenda;
+        }
+      } catch {
+        // legacy qr_code or non-jwt
+      }
+      if (extractedAgenda) {
+        whereClause = 'qr_code = ? OR LOWER(nomor_agenda) = LOWER(?)';
+        paramVal = [qr_code, extractedAgenda];
+      } else {
+        whereClause = 'qr_code = ?';
+        paramVal = [qr_code];
+      }
+    } else {
+      whereClause = 'LOWER(nomor_agenda) = LOWER(?)';
+      paramVal = [String(nomor_agenda || '').trim().padStart(5, '0')];
+    }
+  }
+
+  db.get(`SELECT * FROM surat WHERE ${whereClause}`, paramVal, (err, surat) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan dalam sistem.' });
 
@@ -597,6 +635,11 @@ app.delete('/api/surat/:id', authenticateJWT, requireAdmin, (req, res) => {
 
 // Get surat detail & history
 app.get('/api/surat/:id', authenticateJWT, (req, res) => {
+  const param = req.params.id;
+  const isNumeric = /^\d+$/.test(param);
+  const whereClause = isNumeric ? 's.id = ?' : 's.qr_code = ? OR s.nomor_agenda = ?';
+  const paramVal = isNumeric ? [param] : [param, param];
+
   const query = `
     SELECT s.*,
            u_to.full_name as transit_to_fullname,
@@ -604,9 +647,9 @@ app.get('/api/surat/:id', authenticateJWT, (req, res) => {
     FROM surat s
     LEFT JOIN users u_to ON s.transit_to_username = u_to.username
     LEFT JOIN users u_by ON s.transit_by_username = u_by.username
-    WHERE s.id = ?
+    WHERE ${whereClause}
   `;
-  db.get(query, [req.params.id], (err, row) => {
+  db.get(query, paramVal, (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(404).json({ error: 'Surat tidak ditemukan' });
     db.all('SELECT * FROM surat_history WHERE surat_id = ? ORDER BY scanned_at DESC, id DESC', [row.id], (hErr, history) => {

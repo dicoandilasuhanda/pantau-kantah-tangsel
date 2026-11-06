@@ -291,7 +291,17 @@ export default function SuratDetails() {
         </div>
 
         <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #ccc', display: 'inline-block' }}>
-          <QRCodeSVG value={`SURAT:${surat.nomor_agenda}`} size={200} />
+          <QRCodeSVG 
+            value={surat.qr_code || `SURAT:${surat.nomor_agenda}`} 
+            size={200} 
+            level="H"
+            imageSettings={{
+              src: '/logo-atr-bpn.png',
+              height: 40,
+              width: 40,
+              excavate: true
+            }}
+          />
         </div>
 
         <p style={{ fontWeight: 'bold', marginBottom: '0.35rem' }}>No. Agenda: {surat.nomor_agenda}</p>
@@ -422,7 +432,17 @@ export default function SuratDetails() {
           )}
 
           <div className="qr-wrapper" style={{ background: 'white', padding: '1rem', borderRadius: '8px', display: 'inline-block', marginBottom: '1.25rem' }}>
-            <QRCodeSVG value={`SURAT:${surat.nomor_agenda}`} size={150} />
+            <QRCodeSVG 
+              value={surat.qr_code || `SURAT:${surat.nomor_agenda}`} 
+              size={150} 
+              level="H"
+              imageSettings={{
+                src: '/logo-atr-bpn.png',
+                height: 32,
+                width: 32,
+                excavate: true
+              }}
+            />
           </div>
 
           <div className="no-print" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>

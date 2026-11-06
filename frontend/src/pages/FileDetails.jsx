@@ -299,7 +299,17 @@ export default function FileDetails() {
         </div>
 
         <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #ccc', display: 'inline-block' }}>
-          <QRCodeSVG value={file.qr_code} size={200} />
+          <QRCodeSVG 
+            value={file.qr_code} 
+            size={200} 
+            level="H"
+            imageSettings={{
+              src: '/logo-atr-bpn.png',
+              height: 40,
+              width: 40,
+              excavate: true
+            }}
+          />
         </div>
         
         <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{file.nomor_berkas} / {file.tahun_berkas}</p>
@@ -449,7 +459,17 @@ export default function FileDetails() {
           )}
 
           <div className="qr-wrapper" style={{ background: 'white', padding: '1rem', borderRadius: '8px', display: 'inline-block', marginBottom: '1.5rem' }}>
-            <QRCodeSVG value={file.qr_code} size={150} />
+            <QRCodeSVG 
+              value={file.qr_code} 
+              size={150} 
+              level="H"
+              imageSettings={{
+                src: '/logo-atr-bpn.png',
+                height: 32,
+                width: 32,
+                excavate: true
+              }}
+            />
           </div>
 
           <div className="no-print" style={{ marginBottom: '1.5rem' }}>

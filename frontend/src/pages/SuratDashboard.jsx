@@ -73,7 +73,17 @@ export default function SuratDashboard() {
           </div>
 
           <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #ccc', display: 'inline-block' }}>
-            <QRCodeSVG value={`SURAT:${selectedSuratQr.nomor_agenda}`} size={200} />
+            <QRCodeSVG 
+              value={selectedSuratQr.qr_code || `SURAT:${selectedSuratQr.nomor_agenda}`} 
+              size={200} 
+              level="H"
+              imageSettings={{
+                src: '/logo-atr-bpn.png',
+                height: 40,
+                width: 40,
+                excavate: true
+              }}
+            />
           </div>
 
           <p style={{ fontWeight: 'bold', marginBottom: '0.35rem' }}>No. Agenda: {selectedSuratQr.nomor_agenda}</p>
@@ -316,7 +326,17 @@ export default function SuratDashboard() {
               </div>
 
               <div style={{ background: '#FFFFFF', padding: '0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', display: 'inline-block', marginBottom: '0.75rem' }}>
-                <QRCodeSVG value={`SURAT:${selectedSuratQr.nomor_agenda}`} size={180} />
+                <QRCodeSVG 
+                  value={selectedSuratQr.qr_code || `SURAT:${selectedSuratQr.nomor_agenda}`} 
+                  size={180} 
+                  level="H"
+                  imageSettings={{
+                    src: '/logo-atr-bpn.png',
+                    height: 36,
+                    width: 36,
+                    excavate: true
+                  }}
+                />
               </div>
 
               <p style={{ fontWeight: 800, fontSize: '1.05rem', margin: '0 0 0.35rem 0', color: '#0F172A' }}>

@@ -47,7 +47,22 @@ export default function SuratScanner() {
   const findSuratFromCode = async (rawCode) => {
     const clean = rawCode.trim();
     let agendaTarget = clean;
-    if (clean.toUpperCase().startsWith('SURAT:')) {
+    let scannedToken = null;
+
+    if (clean.startsWith('eyJ')) {
+      scannedToken = clean;
+      try {
+        const parts = clean.split('.');
+        if (parts.length >= 2) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.nomor_agenda) {
+            agendaTarget = payload.nomor_agenda;
+          }
+        }
+      } catch (e) {
+        console.warn('JWT parse notice:', e);
+      }
+    } else if (clean.toUpperCase().startsWith('SURAT:')) {
       agendaTarget = clean.substring(6).trim();
     } else if (clean.toUpperCase().startsWith('AGENDA:')) {
       agendaTarget = clean.substring(7).trim();
@@ -66,9 +81,10 @@ export default function SuratScanner() {
       const res = await api.get('/surat');
       const allSurat = res.data || [];
       const match = allSurat.find(s => 
-        s.nomor_agenda.toLowerCase() === agendaTarget.toLowerCase() ||
-        s.nomor_agenda.toLowerCase() === agendaTarget.padStart(5, '0').toLowerCase() ||
-        s.nomor_surat.toLowerCase() === clean.toLowerCase()
+        (scannedToken && s.qr_code === scannedToken) ||
+        (s.nomor_agenda && s.nomor_agenda.toLowerCase() === agendaTarget.toLowerCase()) ||
+        (s.nomor_agenda && s.nomor_agenda.toLowerCase() === agendaTarget.padStart(5, '0').toLowerCase()) ||
+        (s.nomor_surat && s.nomor_surat.toLowerCase() === clean.toLowerCase())
       );
 
       if (match) {
