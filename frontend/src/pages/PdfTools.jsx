@@ -11,7 +11,6 @@ import {
   Download, 
   Plus, 
   CheckCircle, 
-  ShieldCheck, 
   FileText, 
   UploadCloud, 
   Info,
@@ -587,21 +586,7 @@ export default function PdfTools() {
   };
 
   return (
-    <div className="container animate-fade-in" style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.5rem 5rem' }}>
-      {/* Page Header */}
-      <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(29, 78, 216, 0.1)', color: '#1D4ED8', border: '1px solid rgba(29, 78, 216, 0.25)', borderRadius: '999px', padding: '0.35rem 0.95rem', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.85rem' }}>
-          <ShieldCheck size={16} />
-          Utilitas Dokumen Resmi &bull; Pratinjau Visual &bull; 100% In-Browser Aman
-        </div>
-        <h1 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.35rem)', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
-          PDF Tools <span style={{ color: '#1D4ED8' }}>Pantau.Kantah Tangsel</span>
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '650px', margin: '0 auto' }}>
-          Kelola berkas dokumen pertanahan dengan pratinjau visual interaktif ala iLovePDF. Seluruh proses berlangsung aman di komputer Anda.
-        </p>
-      </div>
-
+    <div className="container animate-fade-in" style={{ maxWidth: '1100px', margin: '0 auto', padding: '1.5rem 1.5rem 5rem' }}>
       {/* Security Privacy Notice */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--surface-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.85rem 1.25rem', marginBottom: '2rem', fontSize: '0.84rem', color: 'var(--text-muted)' }}>
         <Info size={20} color="#1D4ED8" style={{ flexShrink: 0 }} />
