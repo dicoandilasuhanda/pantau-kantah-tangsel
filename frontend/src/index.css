@@ -69,7 +69,7 @@
   --success-color: #10b981;
   --glass-bg: rgba(11, 37, 69, 0.92);
   --glass-border: rgba(255, 255, 255, 0.1);
-  --table-sticky-bg: #07182D;
+  --table-sticky-bg: #0B2545;
   --input-bg: rgba(7, 24, 45, 0.75);
   --input-autofill-bg: #07182D;
   --card-shadow: rgba(0, 0, 0, 0.4);
@@ -469,11 +469,18 @@ button.secondary:hover {
 }
 
 .table-sticky-col {
-  position: sticky !important;
-  left: 0 !important;
-  background: var(--table-sticky-bg) !important;
-  box-shadow: 3px 0 8px var(--card-shadow);
-  z-index: 2 !important;
+  position: relative;
+  background: transparent;
+}
+
+@media (max-width: 960px) {
+  .table-sticky-col {
+    position: sticky !important;
+    left: 0 !important;
+    background: var(--table-sticky-bg) !important;
+    box-shadow: 3px 0 8px var(--card-shadow);
+    z-index: 2 !important;
+  }
 }
 
 /* Empty State Card */
