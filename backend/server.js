@@ -153,12 +153,31 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
         tanggal_diterima TEXT,
         perihal TEXT,
         file_path TEXT,
+        current_location TEXT DEFAULT 'Petugas Entry Surat',
+        catatan TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      db.run(`ALTER TABLE surat ADD COLUMN current_location TEXT DEFAULT 'Petugas Entry Surat'`, (err) => {});
+      db.run(`ALTER TABLE surat ADD COLUMN catatan TEXT`, (err) => {});
+      db.run(`UPDATE surat SET current_location = 'Petugas Entry Surat' WHERE current_location IS NULL OR current_location = ''`, (err) => {});
+
+      db.run(`CREATE TABLE IF NOT EXISTS surat_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        surat_id INTEGER,
+        scanned_by_role TEXT,
+        scanned_by_username TEXT,
+        location TEXT,
+        scanned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        scanned_ip TEXT,
+        FOREIGN KEY(surat_id) REFERENCES surat(id)
       )`);
 
       // Index performa query SQLite
       db.run(`CREATE INDEX IF NOT EXISTS idx_file_history_file_id ON file_history(file_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_file_history_scanned_at ON file_history(scanned_at)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_surat_history_surat_id ON surat_history(surat_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_surat_history_scanned_at ON surat_history(scanned_at)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_files_nomor_tahun ON files(nomor_berkas, tahun_berkas)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_files_transit ON files(is_transit, transit_to_username)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_users_telegram ON users(telegram_chat_id)`);
@@ -352,18 +371,30 @@ const handlePdfUpload = (req, res, next) => {
 app.post('/api/surat', authenticateJWT, handlePdfUpload, (req, res) => {
   const { asal_surat, nomor_surat, tanggal_diterima, perihal } = req.body;
   const filePath = req.file ? `/uploads/surat/${req.file.filename}` : null;
+  const initialLocation = 'Petugas Entry Surat';
+  const fullName = req.user.full_name || req.user.username;
+  const roleUsed = req.user.role && req.user.role.includes('Petugas Entry Surat') ? 'Petugas Entry Surat' : (req.user.role || 'Petugas Entry Surat');
+  const scannedBy = `${fullName} (${roleUsed})`;
+  const clientIp = getClientIp(req);
 
   db.get('SELECT COALESCE(MAX(CAST(nomor_agenda AS INTEGER)), 0) + 1 AS next_agenda FROM surat', (err, row) => {
     if (err) return res.status(500).json({ error: 'Gagal mengambil nomor agenda surat.' });
     const nextAgendaNumber = row ? row.next_agenda : 1;
     const nomorAgendaStr = nextAgendaNumber.toString().padStart(5, '0');
 
-    db.run(`INSERT INTO surat (nomor_agenda, asal_surat, nomor_surat, tanggal_diterima, perihal, file_path) 
-            VALUES (?, ?, ?, ?, ?, ?)`,
-      [nomorAgendaStr, asal_surat, nomor_surat, tanggal_diterima, perihal, filePath],
+    db.run(`INSERT INTO surat (nomor_agenda, asal_surat, nomor_surat, tanggal_diterima, perihal, file_path, current_location) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [nomorAgendaStr, asal_surat, nomor_surat, tanggal_diterima, perihal, filePath, initialLocation],
       function (err2) {
         if (err2) return res.status(500).json({ error: err2.message });
-        res.json({ id: this.lastID, nomor_agenda: nomorAgendaStr, message: 'Surat berhasil ditambahkan' });
+        const suratId = this.lastID;
+        db.run(
+          `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
+          [suratId, scannedBy, req.user.username, initialLocation, clientIp],
+          () => {
+            res.json({ id: suratId, nomor_agenda: nomorAgendaStr, current_location: initialLocation, client_ip: clientIp, message: 'Surat berhasil ditambahkan' });
+          }
+        );
       }
     );
   });
@@ -371,18 +402,175 @@ app.post('/api/surat', authenticateJWT, handlePdfUpload, (req, res) => {
 
 // Get all surat
 app.get('/api/surat', authenticateJWT, (req, res) => {
-  db.all('SELECT * FROM surat ORDER BY id DESC', (err, rows) => {
+  const query = `
+    SELECT s.*,
+           COALESCE(s.current_location, 'Petugas Entry Surat') as current_location,
+           (SELECT scanned_at FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as updated_at,
+           (SELECT scanned_by_username FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as latest_scanned_by_username,
+           (SELECT scanned_by_role FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as latest_scan_info
+    FROM surat s
+    ORDER BY s.id DESC
+  `;
+  db.all(query, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
-// Get surat detail
+// Scan / Terima / Selesaikan Surat
+app.post('/api/surat/scan', authenticateJWT, (req, res) => {
+  const { id, nomor_agenda, isFinishing, selected_role, catatan } = req.body;
+  const fullName = req.user.full_name || req.user.username;
+  const userRoles = (req.user.role || '').split(',').map(r => r.trim()).filter(Boolean);
+  const roleUsed = (selected_role && userRoles.includes(selected_role)) ? selected_role : (userRoles[0] || 'Petugas');
+  const scannedBy = `${fullName} (${roleUsed})`;
+  const clientIp = getClientIp(req);
+
+  const whereClause = id ? 'id = ?' : 'LOWER(nomor_agenda) = LOWER(?)';
+  const paramVal = id ? id : String(nomor_agenda || '').trim().padStart(5, '0');
+
+  db.get(`SELECT * FROM surat WHERE ${whereClause}`, [paramVal], (err, surat) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan dalam sistem.' });
+
+    if (surat.current_location === 'Selesai' || surat.current_location === 'Ditutup') {
+      return res.status(400).json({ error: `Surat ini sudah berstatus ${surat.current_location} dan tidak dapat diproses lagi.` });
+    }
+
+    const newLocation = isFinishing ? 'Selesai' : roleUsed;
+    const historyLocation = isFinishing ? `Selesai (${roleUsed})` : roleUsed;
+
+    let updatedCatatan = surat.catatan || '';
+    if (catatan && catatan.trim()) {
+      const ts = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+      const noteLine = `[${ts} - ${fullName}]: ${catatan.trim()}`;
+      updatedCatatan = updatedCatatan ? `${updatedCatatan}\n${noteLine}` : noteLine;
+    }
+
+    db.run(
+      `UPDATE surat SET current_location = ?, catatan = ? WHERE id = ?`,
+      [newLocation, updatedCatatan, surat.id],
+      (updateErr) => {
+        if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+        db.run(
+          `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
+          [surat.id, scannedBy, req.user.username, historyLocation, clientIp],
+          (histErr) => {
+            if (histErr) return res.status(500).json({ error: histErr.message });
+
+            db.all(
+              `SELECT * FROM surat_history WHERE surat_id = ? ORDER BY scanned_at DESC, id DESC`,
+              [surat.id],
+              (hErr, historyRows) => {
+                res.json({
+                  message: isFinishing
+                    ? `Surat Agenda ${surat.nomor_agenda} berhasil diselesaikan!`
+                    : `Surat Agenda ${surat.nomor_agenda} diterima oleh ${fullName} (${roleUsed})`,
+                  current_location: newLocation,
+                  surat: {
+                    ...surat,
+                    current_location: newLocation,
+                    catatan: updatedCatatan,
+                    latest_scan_info: scannedBy,
+                    history: historyRows || []
+                  }
+                });
+              }
+            );
+          }
+        );
+      }
+    );
+  });
+});
+
+// Admin: Selesaikan Surat Manual
+app.put('/api/surat/:id/complete', authenticateJWT, requireAdmin, (req, res) => {
+  const suratId = req.params.id;
+  const fullName = req.user.full_name || req.user.username;
+  const scannedBy = `${fullName} (Administrator)`;
+  const clientIp = getClientIp(req);
+
+  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
+
+    db.run('UPDATE surat SET current_location = ? WHERE id = ?', ['Selesai', suratId], (uErr) => {
+      if (uErr) return res.status(500).json({ error: uErr.message });
+      db.run(
+        `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
+        [suratId, scannedBy, req.user.username, 'Selesai (Oleh Admin)', clientIp],
+        () => {
+          res.json({ message: `Surat Agenda ${surat.nomor_agenda} berhasil diselesaikan.` });
+        }
+      );
+    });
+  });
+});
+
+// Admin: Tutup / Arsipkan Surat dengan Alasan
+app.put('/api/surat/:id/close', authenticateJWT, requireAdmin, (req, res) => {
+  const suratId = req.params.id;
+  const { alasan } = req.body;
+  if (!alasan || !alasan.trim()) {
+    return res.status(400).json({ error: 'Alasan penutupan/pengarsipan surat wajib diisi.' });
+  }
+
+  const fullName = req.user.full_name || req.user.username;
+  const scannedBy = `${fullName} (Administrator)`;
+  const clientIp = getClientIp(req);
+
+  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
+
+    const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+    const closeNote = `-- Surat ditutup/diarsipkan oleh ${fullName} pada ${timestamp}:\nAlasan: ${alasan.trim()}`;
+    const finalCatatan = surat.catatan ? `${surat.catatan}\n\n${closeNote}` : closeNote;
+
+    db.run('UPDATE surat SET current_location = ?, catatan = ? WHERE id = ?', ['Ditutup', finalCatatan, suratId], (uErr) => {
+      if (uErr) return res.status(500).json({ error: uErr.message });
+      db.run(
+        `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
+        [suratId, scannedBy, req.user.username, 'Ditutup (Oleh Admin)', clientIp],
+        () => {
+          res.json({ message: `Surat Agenda ${surat.nomor_agenda} berhasil ditutup/diarsipkan.`, catatan: finalCatatan });
+        }
+      );
+    });
+  });
+});
+
+// Admin: Hapus Surat Permanen
+app.delete('/api/surat/:id', authenticateJWT, requireAdmin, (req, res) => {
+  const suratId = req.params.id;
+  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
+
+    db.run('DELETE FROM surat_history WHERE surat_id = ?', [suratId], (hErr) => {
+      if (hErr) return res.status(500).json({ error: hErr.message });
+      db.run('DELETE FROM surat WHERE id = ?', [suratId], (dErr) => {
+        if (dErr) return res.status(500).json({ error: dErr.message });
+        res.json({ message: `Surat Agenda ${surat.nomor_agenda} berhasil dihapus.` });
+      });
+    });
+  });
+});
+
+// Get surat detail & history
 app.get('/api/surat/:id', authenticateJWT, (req, res) => {
   db.get('SELECT * FROM surat WHERE id = ?', [req.params.id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(404).json({ error: 'Surat tidak ditemukan' });
-    res.json(row);
+    db.all('SELECT * FROM surat_history WHERE surat_id = ? ORDER BY scanned_at DESC, id DESC', [row.id], (hErr, history) => {
+      res.json({
+        ...row,
+        current_location: row.current_location || 'Petugas Entry Surat',
+        history: history || []
+      });
+    });
   });
 });
 
@@ -1594,6 +1782,168 @@ app.get('/api/reports/kpi', authenticateJWT, requireAdminOrKasi, (req, res) => {
     });
 
     res.json(result);
+  });
+});
+
+// KPI Kinerja Persuratan (Surat Masuk)
+app.get('/api/reports/kpi-surat', authenticateJWT, requireAdminOrKasi, (req, res) => {
+  db.all(`SELECT id, nomor_agenda, asal_surat, nomor_surat, tanggal_diterima, perihal, COALESCE(current_location, 'Petugas Entry Surat') as current_location, created_at FROM surat`, [], (sErr, suratRows) => {
+    if (sErr) return res.status(500).json({ error: sErr.message });
+
+    const allSurat = suratRows || [];
+    let completedSurat = 0;
+    let closedSurat = 0;
+    let activeSurat = 0;
+
+    allSurat.forEach(s => {
+      if (s.current_location === 'Selesai') completedSurat++;
+      else if (s.current_location === 'Ditutup') closedSurat++;
+      else activeSurat++;
+    });
+
+    db.all(`
+      SELECT sh.surat_id, sh.scanned_by_username, sh.scanned_by_role, sh.scanned_at, sh.location,
+             s.asal_surat, s.nomor_agenda, s.perihal, COALESCE(s.current_location, 'Petugas Entry Surat') as surat_status,
+             u.full_name as user_full_name
+      FROM surat_history sh
+      JOIN surat s ON sh.surat_id = s.id
+      LEFT JOIN users u ON sh.scanned_by_username = u.username
+      ORDER BY sh.surat_id, sh.scanned_at ASC, sh.id ASC
+    `, [], (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      const suratHistoryMap = {};
+      (rows || []).forEach(r => {
+        if (!suratHistoryMap[r.surat_id]) suratHistoryMap[r.surat_id] = [];
+        suratHistoryMap[r.surat_id].push(r);
+      });
+
+      const kpiData = {};
+      const now = new Date();
+      const indonesianHolidaysSet = new Set([
+        '2026-01-01', '2026-01-16', '2026-02-17', '2026-03-19', '2026-03-20',
+        '2026-03-23', '2026-03-24', '2026-04-03', '2026-05-01', '2026-05-14',
+        '2026-05-27', '2026-06-01', '2026-06-16', '2026-08-17', '2026-08-25',
+        '2026-12-25'
+      ]);
+
+      const parseUtcDate = (dateStr) => {
+        if (!dateStr) return new Date();
+        if (dateStr instanceof Date) return new Date(dateStr);
+        const str = String(dateStr);
+        if (str.includes('T')) return new Date(str);
+        return new Date(str.replace(' ', 'T') + 'Z');
+      };
+
+      Object.values(suratHistoryMap).forEach(history => {
+        for (let i = 0; i < history.length; i++) {
+          const current = history[i];
+          if (!current.scanned_by_username) continue;
+
+          const isFinishStep = String(current.location || '').startsWith('Selesai') || String(current.location || '').startsWith('Ditutup');
+          const startTime = parseUtcDate(current.scanned_at);
+          let endTime = now;
+
+          if (i < history.length - 1) {
+            endTime = parseUtcDate(history[i + 1].scanned_at);
+          } else {
+            if (isFinishStep || current.surat_status === 'Selesai' || current.surat_status === 'Ditutup') {
+              endTime = startTime;
+            }
+          }
+
+          let diffMs = Math.max(0, endTime - startTime);
+
+          if (diffMs > 0) {
+            let loopDate = new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate());
+            const endDateObj = new Date(endTime.getFullYear(), endTime.getMonth(), endTime.getDate());
+            let holidayMs = 0;
+
+            while (loopDate <= endDateObj) {
+              const day = loopDate.getDay();
+              const dateStr = loopDate.getFullYear() + '-' +
+                              String(loopDate.getMonth() + 1).padStart(2, '0') + '-' +
+                              String(loopDate.getDate()).padStart(2, '0');
+              const isOffDay = day === 0 || day === 6 || indonesianHolidaysSet.has(dateStr);
+
+              if (isOffDay) {
+                let dayStart = new Date(loopDate);
+                let dayEnd = new Date(loopDate);
+                dayEnd.setDate(dayEnd.getDate() + 1);
+
+                let overlapStart = startTime > dayStart ? startTime : dayStart;
+                let overlapEnd = endTime < dayEnd ? endTime : dayEnd;
+
+                if (overlapStart < overlapEnd) {
+                  holidayMs += (overlapEnd - overlapStart);
+                }
+              }
+              loopDate.setDate(loopDate.getDate() + 1);
+            }
+            diffMs -= holidayMs;
+          }
+
+          const diffHours = Math.max(0, diffMs / (1000 * 60 * 60));
+
+          const formattedRoleHint = (current.user_full_name && current.scanned_by_role && !current.scanned_by_role.includes('('))
+            ? `${current.user_full_name} (${current.scanned_by_role})`
+            : (current.scanned_by_role || current.scanned_by_username);
+
+          if (!kpiData[current.scanned_by_username]) {
+            kpiData[current.scanned_by_username] = {
+              username: current.scanned_by_username,
+              role_hint: formattedRoleHint,
+              totalHours: 0,
+              count: 0,
+              selesaiCount: 0,
+              byAsal: {}
+            };
+          } else if (formattedRoleHint && formattedRoleHint.includes('(')) {
+            kpiData[current.scanned_by_username].role_hint = formattedRoleHint;
+          }
+
+          const userKpi = kpiData[current.scanned_by_username];
+          userKpi.totalHours += diffHours;
+          userKpi.count += 1;
+          if (String(current.location || '').startsWith('Selesai')) {
+            userKpi.selesaiCount += 1;
+          }
+
+          const asalKey = current.asal_surat || 'Lainnya';
+          if (!userKpi.byAsal[asalKey]) {
+            userKpi.byAsal[asalKey] = { totalHours: 0, count: 0 };
+          }
+          userKpi.byAsal[asalKey].totalHours += diffHours;
+          userKpi.byAsal[asalKey].count += 1;
+        }
+      });
+
+      const officers = Object.values(kpiData).map(u => {
+        const breakdown = Object.keys(u.byAsal).map(asal => ({
+          asalSurat: asal,
+          rataRataJam: Number((u.byAsal[asal].totalHours / u.byAsal[asal].count).toFixed(2)),
+          jumlahInteraksi: u.byAsal[asal].count
+        }));
+        return {
+          username: u.username,
+          roleHint: u.role_hint,
+          rataRataTotalJam: Number((u.totalHours / u.count).toFixed(2)),
+          jumlahInteraksi: u.count,
+          selesaiCount: u.selesaiCount,
+          breakdown
+        };
+      });
+
+      res.json({
+        summary: {
+          totalSurat: allSurat.length,
+          activeSurat,
+          completedSurat,
+          closedSurat
+        },
+        officers
+      });
+    });
   });
 });
 

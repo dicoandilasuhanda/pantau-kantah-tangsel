@@ -587,7 +587,7 @@ export default function HomeHub() {
                 <div className="hub-card-badge">Analitik & KPI</div>
                 <h2 className="hub-card-title">Dashboard Kinerja</h2>
                 <p className="hub-card-desc">
-                  Pantau capaian SLA berkas, tren waktu pemrosesan, visualisasi beban kerja, serta statistik produktivitas seksi secara menyeluruh.
+                  Pantau capaian SLA berkas permohonan, kinerja tindak lanjut persuratan pegawai, tren waktu pemrosesan, serta beban kerja seksi secara menyeluruh.
                 </p>
               </div>
               <div className="hub-card-footer">
@@ -637,7 +637,7 @@ export default function HomeHub() {
                 </div>
                 <h2 className="hub-card-title">Admin Panel & Pengguna</h2>
                 <p className="hub-card-desc">
-                  Kelola seluruh berkas sistem, ekspor laporan Excel, penutupan berkas, serta manajemen akun dan hak akses petugas secara terpusat.
+                  Kelola seluruh berkas permohonan & persuratan sistem, ekspor laporan Excel, penutupan berkas/surat, serta manajemen akun dan hak akses petugas.
                 </p>
               </div>
               <div className="hub-admin-actions" onClick={(e) => e.stopPropagation()}>

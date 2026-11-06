@@ -105,11 +105,16 @@ export default function SuratDashboard() {
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Nomor Surat</th>
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Tgl Diterima</th>
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Perihal</th>
+                <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Posisi / Status</th>
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Berkas</th>
               </tr>
             </thead>
             <tbody>
-              {filteredSurat.map((surat) => (
+              {filteredSurat.map((surat) => {
+                const pos = surat.current_location || 'Petugas Entry Surat';
+                const isDone = pos === 'Selesai';
+                const isClosed = pos === 'Ditutup';
+                return (
                 <tr key={surat.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                   <td className="table-sticky-col" style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
@@ -131,6 +136,22 @@ export default function SuratDashboard() {
                     {surat.perihal}
                   </td>
                   <td style={{ padding: '1rem' }}>
+                    <span 
+                      className="badge" 
+                      style={{ 
+                        background: isDone ? 'rgba(16, 185, 129, 0.15)' : (isClosed ? 'rgba(239, 68, 68, 0.15)' : 'rgba(37, 99, 235, 0.12)'),
+                        color: isDone ? '#10b981' : (isClosed ? '#ef4444' : 'var(--primary-color)')
+                      }}
+                    >
+                      {pos}
+                    </span>
+                    {surat.latest_scan_info && (
+                      <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                        {surat.latest_scan_info}
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '1rem' }}>
                     {surat.file_path ? (
                       <a 
                         href={getSecureFileUrl(surat.file_path)} 
@@ -145,7 +166,8 @@ export default function SuratDashboard() {
                     )}
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         )}

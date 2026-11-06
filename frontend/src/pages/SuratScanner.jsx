@@ -3,7 +3,6 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { 
-  Scan, 
   Upload, 
   FileText, 
   CheckCircle, 
@@ -11,7 +10,10 @@ import {
   RotateCcw, 
   ArrowLeft, 
   ExternalLink,
-  Mail
+  Mail,
+  Check,
+  Clock,
+  MapPin
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -19,7 +21,12 @@ export default function SuratScanner() {
   const [status, setStatus] = useState('scanning'); // 'scanning', 'processing', 'found', 'not_found', 'error'
   const [message, setMessage] = useState('');
   const [scannedSurat, setScannedSurat] = useState(null);
-  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [submittingScan, setSubmittingScan] = useState(false);
+  const [catatanInput, setCatatanInput] = useState('');
+
+  const roleStr = localStorage.getItem('role') || '';
+  const userRoles = roleStr.split(',').map(r => r.trim()).filter(Boolean);
+  const [selectedRole, setSelectedRole] = useState(() => userRoles[0] || 'Petugas');
 
   const navigate = useNavigate();
   const scannerRef = useRef(null);
@@ -38,7 +45,6 @@ export default function SuratScanner() {
 
   const findSuratFromCode = async (rawCode) => {
     const clean = rawCode.trim();
-    // Support formats: "SURAT:00001", "00001", "agenda:00001", or JSON string
     let agendaTarget = clean;
     if (clean.toUpperCase().startsWith('SURAT:')) {
       agendaTarget = clean.substring(6).trim();
@@ -65,7 +71,12 @@ export default function SuratScanner() {
       );
 
       if (match) {
-        setScannedSurat(match);
+        try {
+          const detailRes = await api.get(`/surat/${match.id}`);
+          setScannedSurat(detailRes.data);
+        } catch {
+          setScannedSurat(match);
+        }
         setStatus('found');
         toast.success(`Surat Agenda ${match.nomor_agenda} ditemukan!`);
       } else {
@@ -89,15 +100,36 @@ export default function SuratScanner() {
     await findSuratFromCode(result);
   };
 
+  const handleProcessSurat = async (isFinishing = false) => {
+    if (!scannedSurat) return;
+    setSubmittingScan(true);
+    try {
+      const res = await api.post('/surat/scan', {
+        id: scannedSurat.id,
+        nomor_agenda: scannedSurat.nomor_agenda,
+        isFinishing,
+        selected_role: selectedRole,
+        catatan: catatanInput
+      });
+      setScannedSurat(res.data.surat);
+      setCatatanInput('');
+      toast.success(res.data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal mencatat pemindaian surat');
+    } finally {
+      setSubmittingScan(false);
+    }
+  };
+
   const restartScanner = () => {
     setScannedSurat(null);
     setStatus('scanning');
     setMessage('');
+    setCatatanInput('');
 
     if (scannerRef.current && !scannerRef.current.isScanning) {
       const config = { fps: 5, qrbox: { width: 250, height: 250 } };
       scannerRef.current.start({ facingMode: "environment" }, config, handleScanSuccess, () => {})
-        .then(() => setIsCameraReady(true))
         .catch(() => {
           setStatus('error');
           setMessage('Gagal mengakses kamera. Pastikan Anda telah memberikan izin kamera.');
@@ -110,8 +142,7 @@ export default function SuratScanner() {
     const config = { fps: 5, qrbox: { width: 250, height: 250 } };
 
     scannerRef.current.start({ facingMode: "environment" }, config, handleScanSuccess, () => {})
-      .then(() => setIsCameraReady(true))
-      .catch((_err) => {
+      .catch(() => {
         setStatus('error');
         setMessage('Gagal mengakses kamera. Silakan periksa izin kamera atau gunakan fitur unggah gambar.');
       });
@@ -136,6 +167,8 @@ export default function SuratScanner() {
     }
   };
 
+  const isCompletedOrClosed = scannedSurat && (scannedSurat.current_location === 'Selesai' || scannedSurat.current_location === 'Ditutup');
+
   return (
     <div className="container animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1.5rem 5rem' }}>
       {/* Header */}
@@ -153,7 +186,7 @@ export default function SuratScanner() {
           <div>
             <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800 }}>Scan QR Surat</h1>
             <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              Pindai kode QR fisik surat untuk langsung melihat rincian agenda dan berkas digital
+              Pindai kode QR surat untuk menerima posisi surat, menindaklanjuti, atau membuka arsip PDF
             </p>
           </div>
         </div>
@@ -204,22 +237,34 @@ export default function SuratScanner() {
 
         {/* Status Found Result Card */}
         {status === 'found' && scannedSurat && (
-          <div style={{ textAlign: 'left', padding: '1rem 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: '#10b981' }}>
-              <CheckCircle size={32} />
-              <div>
-                <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.25rem' }}>Data Surat Ditemukan</h3>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Nomor Agenda terdaftar dalam sistem</span>
+          <div style={{ textAlign: 'left', padding: '0.5rem 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#10b981' }}>
+                <CheckCircle size={32} />
+                <div>
+                  <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.25rem' }}>Surat Agenda #{scannedSurat.nomor_agenda}</h3>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    Posisi Saat Ini: <strong style={{ color: 'var(--primary-color)' }}>{scannedSurat.current_location || 'Petugas Entry Surat'}</strong>
+                  </span>
+                </div>
               </div>
+              <span 
+                className="badge" 
+                style={{ 
+                  background: scannedSurat.current_location === 'Selesai' 
+                    ? 'rgba(16, 185, 129, 0.15)' 
+                    : (scannedSurat.current_location === 'Ditutup' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(37, 99, 235, 0.15)'),
+                  color: scannedSurat.current_location === 'Selesai' 
+                    ? '#10b981' 
+                    : (scannedSurat.current_location === 'Ditutup' ? '#ef4444' : 'var(--primary-color)')
+                }}
+              >
+                {scannedSurat.current_location || 'Petugas Entry Surat'}
+              </span>
             </div>
 
             <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Nomor Agenda</span>
-                <span className="badge" style={{ fontSize: '1rem', padding: '0.35rem 0.85rem' }}>{scannedSurat.nomor_agenda}</span>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Asal Surat</span>
                   <strong style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>{scannedSurat.asal_surat}</strong>
@@ -239,13 +284,20 @@ export default function SuratScanner() {
                 <p style={{ margin: 0, color: 'var(--text-main)', fontSize: '0.92rem', lineHeight: 1.5 }}>{scannedSurat.perihal}</p>
               </div>
 
+              {scannedSurat.catatan && (
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px dashed var(--border-color)' }}>
+                  <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Catatan Tindak Lanjut</span>
+                  <pre style={{ margin: 0, color: 'var(--text-main)', fontSize: '0.84rem', whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{scannedSurat.catatan}</pre>
+                </div>
+              )}
+
               {scannedSurat.file_path && (
                 <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                   <a 
                     href={getSecureFileUrl(scannedSurat.file_path)} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="button"
+                    className="button secondary"
                     style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', textDecoration: 'none' }}
                   >
                     <FileText size={18} /> Buka / Unduh Berkas PDF Surat <ExternalLink size={15} />
@@ -253,6 +305,105 @@ export default function SuratScanner() {
                 </div>
               )}
             </div>
+
+            {/* Action Panel: Terima / Selesaikan Surat */}
+            {!isCompletedOrClosed ? (
+              <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                <h4 style={{ margin: '0 0 0.85rem 0', fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                  Konfirmasi Penerimaan & Tindak Lanjut Surat
+                </h4>
+
+                {userRoles.length > 1 && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                      Terima Sebagai Peran/Jabatan:
+                    </label>
+                    <select 
+                      value={selectedRole} 
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      style={{ marginBottom: 0 }}
+                    >
+                      {userRoles.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                    Catatan Tindak Lanjut / Disposisi (Opsional):
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="Tambahkan catatan singkat jika diperlukan..." 
+                    value={catatanInput}
+                    onChange={(e) => setCatatanInput(e.target.value)}
+                    style={{ marginBottom: 0 }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    disabled={submittingScan}
+                    onClick={() => handleProcessSurat(false)}
+                    style={{ flex: '1 1 200px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  >
+                    <MapPin size={17} />
+                    {submittingScan ? 'Memproses...' : 'Terima & Proses Surat Ini'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={submittingScan}
+                    onClick={() => handleProcessSurat(true)}
+                    style={{ flex: '1 1 200px', background: '#059669', borderColor: '#059669', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  >
+                    <Check size={17} />
+                    Selesaikan Tindak Lanjut
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '1rem', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', color: '#10b981', marginBottom: '1.5rem', fontSize: '0.9rem', fontWeight: 600 }}>
+                Surat ini telah berstatus {scannedSurat.current_location}.
+              </div>
+            )}
+
+            {/* Riwayat Perjalanan Surat */}
+            {scannedSurat.history && scannedSurat.history.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Clock size={15} /> Riwayat Perjalanan & Penanganan Surat
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {scannedSurat.history.map((h, idx) => (
+                    <div 
+                      key={h.id || idx} 
+                      style={{ 
+                        padding: '0.75rem 1rem', 
+                        background: idx === 0 ? 'rgba(37, 99, 235, 0.08)' : 'var(--surface-card)', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: '8px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <div>
+                        <strong style={{ fontSize: '0.85rem', color: 'var(--text-main)', display: 'block' }}>{h.location}</strong>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Oleh: {h.scanned_by_role}</span>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {new Date(h.scanned_at.includes('T') ? h.scanned_at : h.scanned_at.replace(' ', 'T') + 'Z').toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <button 
