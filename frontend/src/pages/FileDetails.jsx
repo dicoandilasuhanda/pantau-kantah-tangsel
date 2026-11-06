@@ -280,16 +280,28 @@ export default function FileDetails() {
         <ArrowLeft size={16} /> Kembali
       </button>
 
-      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-        <div className="glass-panel print-target" style={{ flex: '1 1 300px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '0.85rem' }}>
-            <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 3px 0' }}>
-              Kantor Pertanahan Kota Tangerang Selatan
-            </p>
-            <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.01em' }}>
-              Pantau<span style={{ color: '#1D4ED8' }}>.Kantah Tangsel</span>
-            </h4>
-          </div>
+      {/* Tampilan Cetak Khusus QR (100% Identik dengan Hasil Cetak di EntryForm) */}
+      <div className="print-only-slip qr-result-panel">
+        <div style={{ textAlign: 'center', marginBottom: '0.85rem' }}>
+          <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '3px' }}>
+            Kantor Pertanahan Kota Tangerang Selatan
+          </p>
+          <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.01em' }}>
+            Pantau<span style={{ color: '#1D4ED8' }}>.Kantah Tangsel</span>
+          </h4>
+        </div>
+
+        <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #ccc', display: 'inline-block' }}>
+          <QRCodeSVG value={file.qr_code} size={200} />
+        </div>
+        
+        <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{file.nomor_berkas} / {file.tahun_berkas}</p>
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{file.nama_kegiatan}</p>
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-main)' }}>Pemohon: {file.nama_pemohon}</p>
+      </div>
+
+      <div className="screen-only-details" style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+        <div className="glass-panel" style={{ flex: '1 1 300px' }}>
           <h2>{file.nomor_berkas} / {file.tahun_berkas}</h2>
           <p style={{ color: 'var(--text-main)', marginBottom: '0.5rem', fontWeight: '500' }}>{file.nama_kegiatan}</p>
           <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)' }}>Pemohon: {file.nama_pemohon}</p>
@@ -696,8 +708,14 @@ export default function FileDetails() {
       </div>
 
       <style>{`
+        @media screen {
+          .print-only-slip {
+            display: none !important;
+          }
+        }
+
         @media print {
-          header, nav, footer, .no-print {
+          header, nav, footer, .no-print, .screen-only-details {
             display: none !important;
           }
 
@@ -726,38 +744,26 @@ export default function FileDetails() {
             box-shadow: none !important;
           }
 
-          .print-target {
-            background: #ffffff !important;
-            color: #000000 !important;
-            border: 2px dashed #000000 !important;
-            border-radius: 8px !important;
-            padding: 16px !important;
-            max-width: 330px !important;
-            margin: 0 auto !important;
-            text-align: center !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
+          .print-only-slip {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: white !important;
+            color: black !important;
             box-shadow: none !important;
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            text-align: center !important;
           }
 
-          .print-target h2 {
-            color: #000000 !important;
-            font-size: 1.3rem !important;
-            margin: 0 0 6px 0 !important;
-          }
-
-          .print-target p {
-            color: #222222 !important;
-            font-size: 0.85rem !important;
-            margin: 0 0 4px 0 !important;
-          }
-
-          .print-target .qr-wrapper {
-            margin: 12px auto !important;
-            padding: 6px !important;
-            display: inline-block !important;
-            border: 1px solid #ccc !important;
-            background: #ffffff !important;
+          .print-only-slip p, .print-only-slip span, 
+          .print-only-slip h1, .print-only-slip h2, 
+          .print-only-slip h3, .print-only-slip h4 {
+            color: black !important;
           }
         }
       `}</style>
