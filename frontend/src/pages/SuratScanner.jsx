@@ -11,7 +11,6 @@ import {
   RotateCcw, 
   ArrowLeft, 
   ExternalLink,
-  Search,
   Mail
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -21,7 +20,6 @@ export default function SuratScanner() {
   const [message, setMessage] = useState('');
   const [scannedSurat, setScannedSurat] = useState(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
-  const [manualInput, setManualInput] = useState('');
 
   const navigate = useNavigate();
   const scannerRef = useRef(null);
@@ -95,7 +93,6 @@ export default function SuratScanner() {
     setScannedSurat(null);
     setStatus('scanning');
     setMessage('');
-    setManualInput('');
 
     if (scannerRef.current && !scannerRef.current.isScanning) {
       const config = { fps: 5, qrbox: { width: 250, height: 250 } };
@@ -137,16 +134,6 @@ export default function SuratScanner() {
         toast.error('Gagal membaca QR Code dari gambar yang dipilih.');
       }
     }
-  };
-
-  const handleManualSearch = (e) => {
-    e.preventDefault();
-    if (!manualInput.trim()) return;
-    if (scannerRef.current && scannerRef.current.isScanning) {
-      scannerRef.current.stop().catch(() => {});
-    }
-    setStatus('processing');
-    findSuratFromCode(manualInput);
   };
 
   return (
@@ -314,25 +301,6 @@ export default function SuratScanner() {
             </div>
           </div>
         )}
-
-        {/* Manual Input Fallback */}
-        <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)', textAlign: 'left' }}>
-          <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
-            Atau Cari Manual Berdasarkan Nomor Agenda / Surat:
-          </span>
-          <form onSubmit={handleManualSearch} style={{ display: 'flex', gap: '0.5rem' }}>
-            <input 
-              type="text" 
-              placeholder="Contoh: 00001 atau nomor surat..." 
-              value={manualInput} 
-              onChange={(e) => setManualInput(e.target.value)}
-              style={{ marginBottom: 0, flex: 1 }}
-            />
-            <button type="submit" style={{ width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Search size={16} /> Cari
-            </button>
-          </form>
-        </div>
 
       </div>
     </div>
