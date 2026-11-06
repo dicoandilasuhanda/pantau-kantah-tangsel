@@ -19,6 +19,7 @@ export default function FileDetails() {
   const [newDisposisiContent, setNewDisposisiContent] = useState('');
   const [savingDisposisi, setSavingDisposisi] = useState(false);
   const [usersList, setUsersList] = useState([]);
+  const [clientIp, setClientIp] = useState('');
   const [showTransitModal, setShowTransitModal] = useState(false);
   const [transitTarget, setTransitTarget] = useState('');
   const [transitSearch, setTransitSearch] = useState('');
@@ -30,6 +31,9 @@ export default function FileDetails() {
 
   useEffect(() => {
     document.title = 'Pantau.Kantah Tangsel';
+    api.get('/my-ip').then(res => {
+      if (res.data?.ip) setClientIp(res.data.ip);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -37,6 +41,9 @@ export default function FileDetails() {
       try {
         const fileRes = await api.get(`/files/${qrcode}`);
         setFile(fileRes.data);
+        if (fileRes.data?.client_ip) {
+          setClientIp(fileRes.data.client_ip);
+        }
         setNoteContent(fileRes.data.catatan || '');
         
         const dispRes = await api.get(`/files/${qrcode}/disposisi`);
@@ -297,7 +304,12 @@ export default function FileDetails() {
         
         <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{file.nomor_berkas} / {file.tahun_berkas}</p>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{file.nama_kegiatan}</p>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-main)' }}>Pemohon: {file.nama_pemohon}</p>
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-main)', marginBottom: '0.35rem' }}>Pemohon: {file.nama_pemohon}</p>
+        {(clientIp || file.client_ip) && (
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '0.02em', marginTop: '0.25rem' }}>
+            IP: {clientIp || file.client_ip}
+          </p>
+        )}
       </div>
 
       <div className="screen-only-details" style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>

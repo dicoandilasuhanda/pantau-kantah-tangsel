@@ -13,11 +13,15 @@ export default function EntryForm() {
   const [successData, setSuccessData] = useState(null);
   const [error, setError] = useState('');
   const [showReview, setShowReview] = useState(false);
+  const [clientIp, setClientIp] = useState('');
   const roleStr = localStorage.getItem('role') || '';
   const userRoles = roleStr.split(',').map(r => r.trim());
 
   useEffect(() => {
     document.title = 'Pantau.Kantah Tangsel';
+    api.get('/my-ip').then(res => {
+      if (res.data?.ip) setClientIp(res.data.ip);
+    }).catch(() => {});
   }, []);
 
   const handlePrint = () => {
@@ -44,6 +48,9 @@ export default function EntryForm() {
         fullName 
       });
       setSuccessData(response.data);
+      if (response.data.client_ip) {
+        setClientIp(response.data.client_ip);
+      }
       setShowReview(false);
       setNomorBerkas('');
       setTahunBerkas(new Date().getFullYear().toString());
@@ -200,7 +207,12 @@ export default function EntryForm() {
             
             <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{successData.nomor_berkas} / {successData.tahun_berkas}</p>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{successData.nama_kegiatan}</p>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-main)' }}>Pemohon: {successData.nama_pemohon}</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-main)', marginBottom: '0.35rem' }}>Pemohon: {successData.nama_pemohon}</p>
+            {(clientIp || successData.client_ip) && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '0.02em', marginTop: '0.25rem' }}>
+                IP: {clientIp || successData.client_ip}
+              </p>
+            )}
             
             <button className="secondary no-print" style={{ marginTop: '1.5rem' }} onClick={handlePrint}>
               Cetak QR Code

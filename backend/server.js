@@ -227,6 +227,18 @@ const loginLimiter = rateLimit({
 
 // --- API Routes ---
 
+// Helper to extract clean client IP
+function getClientIp(req) {
+  const rawIp = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || '';
+  const firstIp = String(rawIp).split(',')[0].trim();
+  return firstIp.replace(/^::ffff:/, '') || '127.0.0.1';
+}
+
+// Endpoint to retrieve client IP
+app.get('/api/my-ip', (req, res) => {
+  res.json({ ip: getClientIp(req) });
+});
+
 // Login API
 app.post('/api/login', loginLimiter, (req, res) => {
   const { username, password } = req.body;
@@ -650,7 +662,7 @@ app.post('/api/files', authenticateJWT, (req, res) => {
     const initial_location = (req.user.role.includes('Petugas Entry Berkas PHP')) ? 'Petugas Entry Berkas PHP' : 'Loket Pendaftaran (Entry)';
     const effectiveFullName = fullName || req.user.full_name;
     const scannedBy = effectiveFullName ? `${effectiveFullName} (${req.user.role})` : req.user.role;
-    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || 'Unknown';
+    const clientIp = getClientIp(req);
 
     db.run(
       'INSERT INTO files (qr_code, nomor_berkas, tahun_berkas, nama_kegiatan, nama_pemohon, current_location) VALUES (?, ?, ?, ?, ?, ?)',
@@ -665,7 +677,7 @@ app.post('/api/files', authenticateJWT, (req, res) => {
           [fileId, scannedBy, req.user.username, initial_location, clientIp],
           (historyErr) => {
             if (historyErr) console.error(historyErr);
-            res.json({ id: fileId, qr_code, nomor_berkas, tahun_berkas, nama_kegiatan, nama_pemohon, current_location: initial_location });
+            res.json({ id: fileId, qr_code, nomor_berkas, tahun_berkas, nama_kegiatan, nama_pemohon, current_location: initial_location, client_ip: clientIp });
           }
         );
       }
@@ -753,6 +765,7 @@ app.get('/api/files/:qr_code', authenticateJWT, (req, res) => {
         }
         return h;
       });
+      file.client_ip = getClientIp(req);
       res.json(file);
     });
   });
