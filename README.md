@@ -87,7 +87,19 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 - **Ekspor Laporan Excel (`.xlsx`) 2 Sheet Otomatis:**
   - **Sheet 1 (`Daftar Berkas`):** Berisi daftar detail berkas sesuai filter yang sedang aktif (termasuk posisi transit, tanggal masuk, jatuh tempo, dan status pause SOP).
   - **Sheet 2 (`Rekap Bulanan Kegiatan`):** Tabel rekapitulasi otomatis per **Jenis Kegiatan** lengkap dengan baris **TOTAL KESELURUHAN** (*Total Masuk, Sedang Diproses, Selesai, Ditutup, Aman SLA, Terlambat/Overdue, dan % Kepatuhan SLA*).
-- **Aksi Administratif & Manajemen Pengguna (*CRUD*):** Administrator dapat menyelesaikan berkas manual (*Force Complete*), menutup berkas disertai alasan (*Close File with Reason*), menghapus berkas, serta mengelola akun dan multi-jabatan petugas.
+- **Aksi Administratif & Manajemen Pengguna (*CRUD*):** Administrator dapat menyelesaikan berkas manual (*Force Complete*), menutup berkas disertai alasan (*Close File with Reason*), menghapus berkas, serta mengelola akun dan multi-jabatan petugas (dilengkapi paginasi 10 pengguna per halaman).
+
+### 10. 👤 Halaman Profil Pengguna & 📐 Ruang Berkas DWG (AutoCAD) Bilateral
+- **Profil Pengguna Mandiri & Unggah Foto:**
+  - Pengguna dapat mengakses halaman profil dengan mengeklik *user pill* identitas di bilah navigasi utama (`Navbar.jsx`).
+  - Mendukung unggah, pratinjau, dan hapus foto profil pribadi (`avatar_url`) dengan validasi format gambar (JPG/PNG/WEBP hingga 5 MB).
+- **Ruang Berkas DWG Khusus (Asisten Surveyor Kadastral & Petugas Pemetaan):**
+  - Akses penyimpanan dan pertukaran berkas gambar format AutoCAD (`.dwg` hingga 100 MB) dibatasi secara ketat khusus bagi pengguna dengan peran **`Asisten Surveyor Kadastral`**, **`Petugas Pemetaan`**, dan **`Administrator`**. Akun selain ketiga role tersebut mendapatkan status terkunci (*restricted*).
+  - **Pertukaran File Bilateral (Dua Arah):** Petugas ASK dapat mengirim berkas gambar DWG langsung ke Petugas Pemetaan (dan Admin), dan sebaliknya Petugas Pemetaan dapat mengirim berkas ke ASK (dan Admin).
+  - **Tab Navigasi DWG Terorganisir:** Tab `Semua`, `Berkas Masuk (Inbox)`, `Folder Pribadi`, dan `Terkirim (Outbox)` memudahkan pemilahan arsip.
+  - **Fitur Kirim & Teruskan (*Forward*):** Mendukung pengunggahan file baru untuk langsung dikirim ke penerima, maupun meneruskan berkas yang sudah tersimpan di folder pribadi disertai catatan kendala/keterangan (*notes*).
+  - **Pemberitahuan Otomatis Bot Telegram:** Pengiriman dan penerusan berkas DWG otomatis memicu notifikasi pesan rincian file dan catatan langsung ke akun Telegram penerima secara *real-time*.
+  - **Penyimpanan Berkas Multi-Owner Cerdas:** File fisik `.dwg` di server dilindungi dengan sistem referensi multi-pengguna; file fisik hanya dihapus dari disk jika tidak ada lagi pihak (baik pengirim maupun penerima) yang menyimpannya.
 
 ---
 
@@ -142,7 +154,10 @@ Sistem mendukung 14 peran spesifik yang dapat dikombinasikan pada satu akun:
 ```text
 pantau-kantah-tangsel/
 ├── backend/                        # Server API Node.js & Express
-│   ├── uploads/surat/              # Direktori penyimpanan PDF surat masuk
+│   ├── uploads/
+│   │   ├── avatars/                # Direktori penyimpanan foto profil pengguna
+│   │   ├── dwg/                    # Direktori penyimpanan arsip berkas gambar AutoCAD (.dwg)
+│   │   └── surat/                  # Direktori penyimpanan PDF surat masuk
 │   ├── server.js                   # Entry point utama backend, skema DB, & seluruh endpoint API
 │   ├── database.sqlite             # File database utama SQLite (diabaikan oleh Git demi keamanan)
 │   └── package.json                # Dependensi backend
@@ -154,20 +169,21 @@ pantau-kantah-tangsel/
 │   │   │   ├── AdminRoute.jsx      # Guard rute khusus Administrator
 │   │   │   ├── CariBerkasPetugas.jsx
 │   │   │   ├── KPIDashboard.jsx    # Analitik kinerja petugas & grafik Recharts
-│   │   │   ├── Navbar.jsx          # Navigasi adaptif, lonceng notifikasi, & modal ubah sandi
+│   │   │   ├── Navbar.jsx          # Navigasi adaptif, akses profil cepat, lonceng notifikasi, & modal ubah sandi
 │   │   │   ├── NotificationBell.jsx# Lonceng notifikasi kiriman berkas (Transit) & Web Audio Chime
 │   │   │   ├── Top10Petugas.jsx
 │   │   │   └── Top50Berkas.jsx     # Tabel 50 berkas aktif terlama
 │   │   ├── pages/                  # Halaman aplikasi:
 │   │   │   ├── admin/
 │   │   │   │   ├── AdminDashboard.jsx  # Dasbor eksekutif, filter periode/kegiatan, & ekspor Excel 2-Sheet
-│   │   │   │   └── UserManagement.jsx  # CRUD pengguna & pengaturan multi-role
+│   │   │   │   └── UserManagement.jsx  # CRUD pengguna, paginasi per 10 baris, & pengaturan multi-role
 │   │   │   ├── Dashboard.jsx       # Monitoring berkas utama, kartu metrik, & filter
 │   │   │   ├── EntryForm.jsx       # Formulir registrasi berkas & cetak QR Code
 │   │   │   ├── FileDetails.jsx     # Detail berkas, transit, pause SOP, catatan, & disposisi
 │   │   │   ├── HomeHub.jsx         # Portal utama pemilihan modul layanan
 │   │   │   ├── Login.jsx           # Halaman autentikasi pengguna
 │   │   │   ├── PdfTools.jsx        # Utilitas manipulasi dokumen PDF in-browser (Gabung, Pisah, Kompres, dsb.)
+│   │   │   ├── Profile.jsx         # Profil pengguna, unggah avatar, & ruang pertukaran berkas DWG (ASK & Pemetaan)
 │   │   │   ├── Scanner.jsx         # Pemindai QR Code kamera & unggah gambar berkas
 │   │   │   ├── SuratDashboard.jsx  # Daftar agenda surat masuk, unduh PDF, & cetak slip QR
 │   │   │   ├── SuratDetails.jsx    # Detail riwayat perjalanan surat, transit, catatan, disposisi, & cetak slip QR
@@ -286,6 +302,11 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Penyederhanaan Halaman PDF Tools (`PdfTools.jsx`):** Menghilangkan blok hero header atas agar pengguna dapat langsung mengakses navigasi tab dan utilitas manipulasi berkas PDF tanpa distraksi visual.
   - **Standarisasi Cetak Slip QR Surat & Isolasi Media Cetak:** Menyelaraskan tata letak cetak slip QR surat agar 100% konsisten dengan slip berkas resmi (`No. Agenda`, `No. Surat`, `Asal`, `Perihal`, dan pencatatan alamat `IP` di baris terbawah melalui endpoint internal `/api/my-ip`), serta menerapkan aturan CSS `@media print` khusus (`.print-only-slip`) sehingga browser hanya mencetak slip bersih tanpa latar modal gelap maupun tombol aplikasi.
   - **Akses Universal Dashboard Kinerja & Dukungan Penuh Mobile:** Membuka akses Dashboard Kinerja bagi seluruh profil pengguna (menghapus batasan role di frontend `KpiRoute` dan backend `/api/reports/kpi`), menghilangkan pemblokir layar HP di `KPIDashboard.jsx`, mengoptimalkan tata letak tab navigasi dan kartu metrik secara responsif di ponsel, serta menambahkan menu pintas **Kinerja** pada bilah navigasi utama (Desktop & Mobile drawer menu) dan portal Home Hub.
+- **Tahap 14 — Halaman Profil Pengguna, Ruang Berkas DWG Bilateral, Paginasi Pengguna, & Restrukturisasi Navigasi Navbar:**
+  - **Halaman Profil Pengguna & Unggah Foto (`Profile.jsx`):** Penyediaan halaman profil pribadi yang dapat diakses langsung dengan mengeklik *user pill* identitas di bilah navigasi (Desktop & Mobile). Pengguna dapat mengunggah dan menghapus foto profil kustom (`avatar_url`), melihat peran/hak akses aktif, serta sinkronisasi visual instan ke navbar dan Home Hub.
+  - **Ruang Berkas DWG (AutoCAD) & Pertukaran Bilateral:** Integrasi penyimpanan dan transfer file `.dwg` kadastral yang dibatasi secara ketat khusus untuk **Asisten Surveyor Kadastral** dan **Petugas Pemetaan** (serta Administrator). Dilengkapi tab `Semua`, `Berkas Masuk (Inbox)`, `Folder Pribadi`, dan `Terkirim (Outbox)`, modal kirim langsung atau teruskan (*forward*) berkas dengan catatan, sistem *reference counting* multi-owner agar file fisik di server tidak terhapus sembarangan, serta notifikasi instan bot Telegram penerima.
+  - **Restrukturisasi Menu Navigasi Navbar (`Navbar.jsx`):** Menempatkan tombol pintas **Admin Panel** dan **Kelola Akun** langsung di bilah navbar atas bagi akun Administrator, mengalihkan akses menu **Kinerja** agar berfokus diakses melalui portal Home Hub, serta merapikan posisi menu kanan (`Sandi` & `Keluar`) agar tetap rapat kanan tanpa terpotong di layar laptop & desktop.
+  - **Paginasi Tabel Manajemen Pengguna (`UserManagement.jsx`):** Mengoptimalkan daftar akun pengguna di panel admin dengan paginasi 10 baris per halaman untuk mempercepat proses render antarmuka dan mempermudah navigasi data staf/petugas.
 
 ---
 
