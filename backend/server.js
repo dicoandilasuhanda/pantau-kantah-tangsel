@@ -1802,8 +1802,8 @@ app.get('/api/reports/files', authenticateJWT, requireAdminOrKasi, (req, res) =>
   });
 });
 
-// KPI Analytics
-app.get('/api/reports/kpi', authenticateJWT, requireAdminOrKasi, (req, res) => {
+// KPI Analytics (Dapat diakses seluruh profil pengguna)
+app.get('/api/reports/kpi', authenticateJWT, (req, res) => {
   db.all(`
     SELECT fh.file_id, fh.scanned_by_username, fh.scanned_by_role, fh.scanned_at, f.nama_kegiatan, fh.location, f.is_transit, f.transit_at, u.full_name as user_full_name
     FROM file_history fh
@@ -1931,8 +1931,8 @@ app.get('/api/reports/kpi', authenticateJWT, requireAdminOrKasi, (req, res) => {
   });
 });
 
-// KPI Kinerja Persuratan (Surat Masuk)
-app.get('/api/reports/kpi-surat', authenticateJWT, requireAdminOrKasi, (req, res) => {
+// KPI Kinerja Persuratan (Dapat diakses seluruh profil pengguna)
+app.get('/api/reports/kpi-surat', authenticateJWT, (req, res) => {
   db.all(`SELECT id, nomor_agenda, asal_surat, nomor_surat, tanggal_diterima, perihal, COALESCE(current_location, 'Petugas Entry Surat') as current_location, created_at FROM surat`, [], (sErr, suratRows) => {
     if (sErr) return res.status(500).json({ error: sErr.message });
 

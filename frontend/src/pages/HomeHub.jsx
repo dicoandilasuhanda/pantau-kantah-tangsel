@@ -17,7 +17,6 @@ export default function HomeHub() {
   }
 
   const isAdmin = userRoles.includes('Administrator');
-  const canAccessKpi = isAdmin || userRoles.some(r => r.includes('Koordinator')) || userRoles.some(r => r.includes('Kepala Seksi'));
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const topbarRef = useRef(null);
@@ -574,30 +573,28 @@ export default function HomeHub() {
             </div>
           </div>
 
-          {/* Card: Dashboard KPI */}
-          {canAccessKpi && (
-            <div
-              className="hub-card"
-              onClick={() => navigate('/kpi')}
-            >
-              <div>
-                <div className="hub-icon-box">
-                  <BarChart2 size={26} />
-                </div>
-                <div className="hub-card-badge">Analitik & KPI</div>
-                <h2 className="hub-card-title">Dashboard Kinerja</h2>
-                <p className="hub-card-desc">
-                  Pantau capaian SLA berkas permohonan, kinerja tindak lanjut persuratan pegawai, tren waktu pemrosesan, serta beban kerja seksi secara menyeluruh.
-                </p>
+          {/* Card: Dashboard KPI (Dapat diakses seluruh profil) */}
+          <div
+            className="hub-card"
+            onClick={() => navigate('/kpi')}
+          >
+            <div>
+              <div className="hub-icon-box">
+                <BarChart2 size={26} />
               </div>
-              <div className="hub-card-footer">
-                <span>Buka Dashboard</span>
-                <span className="hub-card-arrow">
-                  <ArrowRight size={15} />
-                </span>
-              </div>
+              <div className="hub-card-badge">Analitik & KPI</div>
+              <h2 className="hub-card-title">Dashboard Kinerja</h2>
+              <p className="hub-card-desc">
+                Pantau capaian SLA berkas permohonan, kinerja tindak lanjut persuratan pegawai, tren waktu pemrosesan, serta beban kerja seksi secara menyeluruh.
+              </p>
             </div>
-          )}
+            <div className="hub-card-footer">
+              <span>Buka Dashboard</span>
+              <span className="hub-card-arrow">
+                <ArrowRight size={15} />
+              </span>
+            </div>
+          </div>
 
           {/* Card: PDF Tools (iLovePDF) */}
           <div

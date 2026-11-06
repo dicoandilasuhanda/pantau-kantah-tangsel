@@ -49,19 +49,6 @@ export default function KPIDashboard() {
     fetchKPI();
   }, []);
 
-  if (isMobile) {
-    return (
-      <div className="container animate-fade-in" style={{ marginTop: '4rem', display: 'flex', justifyContent: 'center' }}>
-        <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem 2rem', maxWidth: '400px' }}>
-          <AlertTriangle size={48} color="var(--warning-color)" style={{ marginBottom: '1.5rem' }} />
-          <h2 style={{ color: 'var(--text-main)', marginBottom: '1rem' }}>Akses Dibatasi</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.5' }}>
-            Untuk membuka menu Dashboard silahkan akses dari PC/Mac Anda.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -128,20 +115,21 @@ export default function KPIDashboard() {
     <div className="container animate-fade-in" style={{ marginTop: '2rem' }}>
       
       {/* Tab Navigasi */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '0.65rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <button 
           type="button"
           onClick={() => setActiveTab('kpi')}
           style={{ 
-            flex: '1 1 220px', 
+            flex: isMobile ? '1 1 100%' : '1 1 200px', 
             background: activeTab === 'kpi' ? 'var(--primary-color)' : 'var(--surface-card)', 
             color: activeTab === 'kpi' ? '#fff' : 'var(--text-muted)',
             border: activeTab === 'kpi' ? '1px solid var(--primary-color)' : '1px solid var(--border-color)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            padding: '1rem', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.25s', fontWeight: 600
+            padding: isMobile ? '0.75rem 1rem' : '0.9rem 1.25rem', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.25s', fontWeight: 600,
+            fontSize: isMobile ? '0.85rem' : '0.92rem'
           }}
         >
-          <Activity size={20} />
+          <Activity size={18} />
           Kinerja Berkas Permohonan
         </button>
 
@@ -149,15 +137,16 @@ export default function KPIDashboard() {
           type="button"
           onClick={() => setActiveTab('kpi-surat')}
           style={{ 
-            flex: '1 1 220px', 
+            flex: isMobile ? '1 1 100%' : '1 1 200px', 
             background: activeTab === 'kpi-surat' ? 'var(--primary-color)' : 'var(--surface-card)', 
             color: activeTab === 'kpi-surat' ? '#fff' : 'var(--text-muted)',
             border: activeTab === 'kpi-surat' ? '1px solid var(--primary-color)' : '1px solid var(--border-color)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            padding: '1rem', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.25s', fontWeight: 600
+            padding: isMobile ? '0.75rem 1rem' : '0.9rem 1.25rem', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.25s', fontWeight: 600,
+            fontSize: isMobile ? '0.85rem' : '0.92rem'
           }}
         >
-          <Mail size={20} />
+          <Mail size={18} />
           Kinerja Persuratan
         </button>
 
@@ -165,15 +154,16 @@ export default function KPIDashboard() {
           type="button"
           onClick={() => setActiveTab('top50')}
           style={{ 
-            flex: '1 1 220px', 
+            flex: isMobile ? '1 1 100%' : '1 1 200px', 
             background: activeTab === 'top50' ? 'var(--warning-color)' : 'var(--surface-card)', 
             color: activeTab === 'top50' ? '#fff' : 'var(--text-muted)',
             border: activeTab === 'top50' ? '1px solid var(--warning-color)' : '1px solid var(--border-color)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            padding: '1rem', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.25s', fontWeight: 600
+            padding: isMobile ? '0.75rem 1rem' : '0.9rem 1.25rem', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.25s', fontWeight: 600,
+            fontSize: isMobile ? '0.85rem' : '0.92rem'
           }}
         >
-          <AlertTriangle size={20} />
+          <AlertTriangle size={18} />
           Top 50 Berkas Terlama
         </button>
       </div>
@@ -291,7 +281,7 @@ export default function KPIDashboard() {
       {activeTab === 'kpi-surat' && (
         <div className="animate-fade-in">
           {/* Summary Cards Persuratan */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(auto-fit, minmax(140px, 1fr))' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: isMobile ? '0.75rem' : '1.25rem', marginBottom: '1.5rem' }}>
             <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div style={{ background: 'rgba(37, 99, 235, 0.12)', padding: '0.85rem', borderRadius: '12px', color: 'var(--primary-color)' }}>
                 <Mail size={26} />

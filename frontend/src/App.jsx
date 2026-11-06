@@ -32,9 +32,8 @@ const PrivateRoute = ({ children }) => {
 };
 
 const KpiRoute = ({ children }) => {
-  const roleStr = localStorage.getItem('role') || '';
-  const userRoles = roleStr.split(',').map(r => r.trim());
-  return (userRoles.includes('Administrator') || userRoles.some(r => r.includes('Koordinator')) || userRoles.some(r => r.includes('Kepala Seksi'))) ? children : <Navigate to="/" />;
+  const token = localStorage.getItem('token');
+  return token ? children : <Navigate to="/login" />;
 };
 
 const SuratRoute = ({ children }) => {

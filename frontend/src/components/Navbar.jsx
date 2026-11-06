@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Scan, PlusSquare, Key, X, Home, Mail, FileText, Sun, Moon, Menu } from 'lucide-react';
+import { LogOut, Scan, PlusSquare, Key, X, Home, Mail, FileText, Sun, Moon, Menu, BarChart2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import NotificationBell from './NotificationBell';
@@ -480,6 +480,10 @@ export default function Navbar() {
           )}
 
 
+
+          <Link to="/kpi" className={location.pathname === '/kpi' ? 'active' : ''}>
+            <BarChart2 size={18} /> Kinerja
+          </Link>
 
           {/* Desktop Only Bell Notification */}
           <div className="desktop-only-notif">
