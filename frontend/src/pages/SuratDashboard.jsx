@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { MailPlus, Search, FileText, QrCode, Printer, X, Scan } from 'lucide-react';
+import { Mail, MailPlus, Search, FileText, QrCode, Printer, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 
@@ -56,27 +56,62 @@ export default function SuratDashboard() {
 
   return (
     <div className="container animate-fade-in dashboard-container" style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', boxSizing: 'border-box', paddingBottom: '3rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1>Monitoring Surat</h1>
-          <p>Daftar surat masuk dan arsip digital</p>
+      {/* Page Header - Identik dengan Monitoring Berkas */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{
+            background: '#EFF6FF',
+            border: '1px solid #DBEAFE',
+            padding: '0.55rem',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#1D4ED8'
+          }}>
+            <Mail size={20} />
+          </div>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.65rem', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+              Monitoring Surat
+            </h1>
+            <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              Daftar surat masuk dan arsip digital
+            </p>
+          </div>
         </div>
         {(userRoles.includes('Administrator') || userRoles.includes('Petugas Entry Surat')) && (
-          <button onClick={() => navigate('/surat/entry')} style={{ width: 'auto' }}>
-            <MailPlus size={18} /> Entry Surat Baru
+          <button
+            onClick={() => navigate('/surat/entry')}
+            style={{ width: 'auto', fontSize: '0.82rem', padding: '0.5rem 1rem', height: '38px' }}
+          >
+            <MailPlus size={16} /> Entry Surat Baru
           </button>
         )}
       </div>
 
-      <div className="glass-panel" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
-        <div style={{ position: 'relative' }}>
-          <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={20} />
+      {/* Search Bar - Identik dengan Monitoring Berkas */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <div style={{ position: 'relative', maxWidth: '440px', width: '100%' }}>
+          <Search style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} size={16} />
           <input 
             type="text" 
             placeholder="Cari berdasarkan Nomor Agenda, Asal Surat, atau Perihal..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ paddingLeft: '3rem', marginBottom: 0 }}
+            style={{
+              paddingLeft: '2.5rem',
+              paddingRight: '0.85rem',
+              marginBottom: 0,
+              width: '100%',
+              background: 'var(--surface-card)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              color: 'var(--text-main)',
+              height: '38px',
+              fontSize: '0.85rem'
+            }}
           />
         </div>
       </div>
@@ -91,22 +126,22 @@ export default function SuratDashboard() {
         ) : filteredSurat.length === 0 ? (
           <div className="empty-state-card" style={{ padding: '3.5rem 1rem' }}>
             <FileText size={44} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
-            <h3 style={{ margin: '0 0 0.4rem 0', color: 'var(--text-main)' }}>Tidak ada data surat</h3>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            <h3 style={{ margin: '0 0 0.4rem 0', color: 'var(--text-main)', fontSize: '1.05rem' }}>Tidak ada data surat</h3>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               {searchTerm ? `Tidak ditemukan surat dengan kata kunci "${searchTerm}".` : 'Belum ada surat masuk yang tercatat di sistem.'}
             </p>
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
-              <tr style={{ background: 'var(--surface-subtle)', textAlign: 'left' }}>
-                <th className="table-sticky-col" style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>No. Agenda</th>
-                <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Asal Surat</th>
-                <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Nomor Surat</th>
-                <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Tgl Diterima</th>
-                <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Perihal</th>
-                <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Posisi / Status</th>
-                <th style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>Berkas</th>
+              <tr style={{ background: 'var(--surface-subtle)', textAlign: 'left', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                <th className="table-sticky-col" style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap', fontWeight: 600 }}>No. Agenda</th>
+                <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', fontWeight: 600 }}>Asal Surat</th>
+                <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', fontWeight: 600 }}>Nomor Surat</th>
+                <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', fontWeight: 600 }}>Tgl Diterima</th>
+                <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', fontWeight: 600 }}>Perihal</th>
+                <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', fontWeight: 600 }}>Posisi / Status</th>
+                <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', fontWeight: 600 }}>Berkas</th>
               </tr>
             </thead>
             <tbody>
@@ -122,33 +157,34 @@ export default function SuratDashboard() {
                   key={surat.id} 
                   onClick={() => navigate(`/surat/detail/${surat.id}`)}
                   title="Klik untuk melihat detail & riwayat perjalanan surat"
-                  style={{ borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background 0.2s' }}
+                  style={{ borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background 0.2s', fontSize: '0.85rem' }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-subtle)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <td className="table-sticky-col" style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
+                  <td className="table-sticky-col" style={{ padding: '0.8rem 1rem', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
-                      <span className="badge" style={{ cursor: 'pointer' }}>{surat.nomor_agenda}</span>
+                      <span className="badge" style={{ cursor: 'pointer', fontSize: '0.76rem' }}>{surat.nomor_agenda}</span>
                       <button 
                         type="button" 
                         onClick={(e) => { e.stopPropagation(); setSelectedSuratQr(surat); }}
                         title="Lihat / Cetak QR Code Surat"
                         style={{ padding: '0.2rem 0.45rem', width: 'auto', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--primary-color)', borderRadius: '6px', cursor: 'pointer' }}
                       >
-                        <QrCode size={14} />
+                        <QrCode size={13} />
                       </button>
                     </div>
                   </td>
-                  <td style={{ padding: '1rem', fontWeight: 600 }}>{surat.asal_surat}</td>
-                  <td style={{ padding: '1rem' }}>{surat.nomor_surat}</td>
-                  <td style={{ padding: '1rem' }}>{surat.tanggal_diterima}</td>
-                  <td style={{ padding: '1rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <td style={{ padding: '0.8rem 1rem', fontWeight: 600, fontSize: '0.86rem' }}>{surat.asal_surat}</td>
+                  <td style={{ padding: '0.8rem 1rem', fontSize: '0.84rem' }}>{surat.nomor_surat}</td>
+                  <td style={{ padding: '0.8rem 1rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{surat.tanggal_diterima}</td>
+                  <td style={{ padding: '0.8rem 1rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.84rem' }}>
                     {surat.perihal}
                   </td>
-                  <td style={{ padding: '1rem' }}>
+                  <td style={{ padding: '0.8rem 1rem' }}>
                     <span 
                       className="badge" 
                       style={{ 
+                        fontSize: '0.76rem',
                         background: isDone ? 'rgba(16, 185, 129, 0.15)' : (isClosed ? 'rgba(239, 68, 68, 0.15)' : 'rgba(37, 99, 235, 0.12)'),
                         color: isDone ? '#10b981' : (isClosed ? '#ef4444' : 'var(--primary-color)')
                       }}
@@ -161,18 +197,18 @@ export default function SuratDashboard() {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '1rem' }} onClick={(e) => e.stopPropagation()}>
+                  <td style={{ padding: '0.8rem 1rem' }} onClick={(e) => e.stopPropagation()}>
                     {surat.file_path ? (
                       <a 
                         href={getSecureFileUrl(surat.file_path)} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-color)', textDecoration: 'none', fontSize: '0.9rem' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary-color)', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 600 }}
                       >
-                        <FileText size={16} /> Buka PDF
+                        <FileText size={15} /> Buka PDF
                       </a>
                     ) : (
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>-</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>-</span>
                     )}
                   </td>
                 </tr>
