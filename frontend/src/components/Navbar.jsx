@@ -118,6 +118,7 @@ export default function Navbar() {
   };
 
   const isSuratModule = location.pathname.startsWith('/surat');
+  const isHubOnlyModule = location.pathname.startsWith('/pdf-tools') || location.pathname.startsWith('/kpi');
 
   return (
     <>
@@ -449,33 +450,35 @@ export default function Navbar() {
             <Home size={18} /> Hub
           </Link>
 
-          {isSuratModule ? (
-            <>
-              <Link to="/surat" className={location.pathname === '/surat' ? 'active' : ''}>
-                <Mail size={18} /> Surat
-              </Link>
-              {userRoles.includes('Petugas Entry Surat') && (
-                <Link to="/surat/entry" className={location.pathname === '/surat/entry' ? 'active' : ''}>
-                  <PlusSquare size={18} /> Entri Baru
+          {!isHubOnlyModule && (
+            isSuratModule ? (
+              <>
+                <Link to="/surat" className={location.pathname === '/surat' ? 'active' : ''}>
+                  <Mail size={18} /> Surat
                 </Link>
-              )}
-            </>
-          ) : (
-            <>
-              <Link to="/berkas" className={location.pathname === '/berkas' ? 'active' : ''}>
-                <FileText size={18} /> Berkas
-              </Link>
-              
-              {(userRoles.includes('Petugas Entry Berkas') || userRoles.includes('Petugas Entry Berkas PHP')) && (
-                <Link to="/entry" className={location.pathname === '/entry' ? 'active' : ''}>
-                  <PlusSquare size={18} /> Entri Baru
+                {userRoles.includes('Petugas Entry Surat') && (
+                  <Link to="/surat/entry" className={location.pathname === '/surat/entry' ? 'active' : ''}>
+                    <PlusSquare size={18} /> Entri Baru
+                  </Link>
+                )}
+              </>
+            ) : (
+              <>
+                <Link to="/berkas" className={location.pathname === '/berkas' ? 'active' : ''}>
+                  <FileText size={18} /> Berkas
                 </Link>
-              )}
+                
+                {(userRoles.includes('Petugas Entry Berkas') || userRoles.includes('Petugas Entry Berkas PHP')) && (
+                  <Link to="/entry" className={location.pathname === '/entry' ? 'active' : ''}>
+                    <PlusSquare size={18} /> Entri Baru
+                  </Link>
+                )}
 
-              <Link to="/scan" className={location.pathname === '/scan' ? 'active' : ''}>
-                <Scan size={18} /> Scanner QR
-              </Link>
-            </>
+                <Link to="/scan" className={location.pathname === '/scan' ? 'active' : ''}>
+                  <Scan size={18} /> Scanner QR
+                </Link>
+              </>
+            )
           )}
 
 
