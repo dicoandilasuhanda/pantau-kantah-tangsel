@@ -214,6 +214,15 @@ export default function Navbar() {
           border-color: var(--primary-color);
           transform: translateY(-1px);
         }
+        [data-theme="dark"] .nav-user-pill:hover {
+          border-color: #38BDF8;
+        }
+        .nav-user-pill:hover .nav-user-name {
+          color: var(--primary-color);
+        }
+        [data-theme="dark"] .nav-user-pill:hover .nav-user-name {
+          color: #38BDF8;
+        }
         .nav-logout-btn {
           width: auto !important;
           display: inline-flex;
@@ -479,7 +488,7 @@ export default function Navbar() {
               />
             )}
             <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2 }}>
+              <span className="nav-user-name" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2, transition: 'color 0.2s ease' }}>
                 {fullNameState}
               </span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>

@@ -36,7 +36,7 @@ export default function HomeHub() {
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const topbarRef = useRef(null);
-  const [topbarHeight, setTopbarHeight] = useState(58);
+  const [topbarHeight, setTopbarHeight] = useState(56);
 
   useEffect(() => {
     const el = topbarRef.current;
@@ -139,19 +139,23 @@ export default function HomeHub() {
           left: 0 !important;
           right: 0 !important;
           width: 100% !important;
+          max-width: 100vw !important;
+          height: 56px !important;
           z-index: 1000 !important;
           background: var(--glass-bg);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           border-bottom: 1px solid var(--border-color);
-          padding: 0.65rem 1.5rem;
+          padding: 0 1.25rem 0 1rem !important;
           transition: background-color 0.25s ease;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-          box-sizing: border-box;
+          box-sizing: border-box !important;
+          display: flex !important;
+          align-items: center !important;
         }
 
         .hub-topbar-spacer {
-          height: 58px;
+          height: 56px;
           width: 100%;
           flex-shrink: 0;
         }
@@ -161,8 +165,7 @@ export default function HomeHub() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          flex-wrap: wrap;
-          gap: 1rem;
+          gap: 0.65rem;
           box-sizing: border-box;
         }
 
@@ -174,7 +177,25 @@ export default function HomeHub() {
           background: var(--surface-card);
           border: 1px solid var(--border-color);
           border-radius: 999px;
+          user-select: none;
           box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .hub-user-badge:hover {
+          background: var(--surface-hover);
+          border-color: var(--primary-color);
+          transform: translateY(-1px);
+        }
+        [data-theme="dark"] .hub-user-badge:hover {
+          border-color: #38BDF8;
+        }
+        .hub-user-badge:hover .hub-user-name {
+          color: var(--primary-color);
+        }
+        [data-theme="dark"] .hub-user-badge:hover .hub-user-name {
+          color: #38BDF8;
         }
 
         .hub-user-dot {
@@ -519,7 +540,6 @@ export default function HomeHub() {
               className="hub-user-badge" 
               onClick={() => navigate('/profile')}
               title="Buka Profil & Berkas DWG"
-              style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
             >
               {avatarUrl ? (
                 <img
@@ -538,7 +558,7 @@ export default function HomeHub() {
                 <span className="hub-user-dot" style={{ flexShrink: 0 }} />
               )}
               <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <span className="hub-user-name" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color 0.2s ease' }}>
                   {fullNameState}
                 </span>
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
