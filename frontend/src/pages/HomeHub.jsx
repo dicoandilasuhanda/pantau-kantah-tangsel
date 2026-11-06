@@ -520,9 +520,6 @@ export default function HomeHub() {
           <h1 className="hub-title">
             Portal Aplikasi Pantau<span className="hub-title-accent">.Kantah Tangsel</span>
           </h1>
-          <p className="hub-subtitle">
-            Silakan pilih modul layanan di bawah ini untuk memulai pemantauan berkas, pengelolaan surat masuk, atau administrasi sistem.
-          </p>
         </div>
 
         {/* Module Grid */}
