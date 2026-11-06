@@ -113,7 +113,7 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 - **Daftar & Detail Pengguna Online:** Tabel interaktif dengan avatar, nama lengkap, username, peran aktif, waktu aktivitas terakhir (*relative time*), alamat IP terakhir, serta status tautan Telegram.
 - **Manajemen Sesi & Disconnect (Kick):** Administrator memiliki wewenang untuk memutuskan (*kick*) sesi aktif pengguna tertentu jika terdeteksi aktivitas mencurigakan atau untuk pemeliharaan sesi.
 - **Auto-Refresh Cerdas:** Dilengkapi saklar *Auto-Refresh* berkala (15 detik) dengan indikator denyut hijau (*live pulse*) serta tombol penyegaran manual.
-- **Integrasi Terpadu & Desain Responsif Anti-Tumpuk:** Tautan langsung berlabel **Stats** terpasang di bilah navigasi admin (`Navbar.jsx`) dengan perlindungan flex anti-kompresi dan breakpoint judul cerdas (&le; 1550px) agar tidak menimpa lonceng notifikasi, serta tab navigasi **Web-app Stats** di `AdminDashboard.jsx`.
+- **Integrasi Terpadu & Desain Responsif Anti-Tumpuk:** Tautan langsung berlabel **Stats** terpasang di bilah navigasi admin (`Navbar.jsx`) dengan perlindungan flex anti-kompresi dan breakpoint judul cerdas (&le; 1550px) agar tidak menimpa lonceng notifikasi.
 
 ---
 

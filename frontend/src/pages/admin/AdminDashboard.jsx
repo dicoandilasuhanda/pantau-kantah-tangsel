@@ -717,27 +717,6 @@ export default function AdminDashboard() {
         >
           <Mail size={17} /> Kelola Persuratan ({suratList.length})
         </button>
-
-        <button
-          type="button"
-          onClick={() => navigate('/admin/stats')}
-          style={{
-            width: 'auto',
-            padding: '0.6rem 1.25rem',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-            background: 'rgba(255, 255, 255, 0.05)',
-            color: 'var(--text-muted)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '8px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            cursor: 'pointer'
-          }}
-        >
-          <Activity size={17} /> Web-app Stats &rarr;
-        </button>
       </div>
 
       {activeTab === 'berkas' && (
