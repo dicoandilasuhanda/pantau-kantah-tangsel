@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw, Clock, Calendar, Send, CheckSquare, Square, X, Check, Loader2, Users } from 'lucide-react';
+import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw, Clock, Calendar, Send, CheckSquare, Square, X, Loader2, QrCode } from 'lucide-react';
 import { getWorkingDays, calculateTotalElapsedDays, getStatusColor, SOP_DAYS } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 
