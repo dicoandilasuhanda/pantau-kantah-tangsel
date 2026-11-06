@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sun, Moon, Shield, User, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, HelpCircle, X, Mail } from 'lucide-react';
+import { Sun, Moon, Shield, User, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, HelpCircle, X } from 'lucide-react';
 
 // Helper Cookie
 function setCookie(name, value, days) {
@@ -208,61 +208,11 @@ export default function Login() {
       <div className="bpn-header-spacer" aria-hidden="true" />
 
       {/* =========================================================================
-          2. MAIN CONTENT SECTION (Hero Left + Login Card Right)
+          2. MAIN CONTENT SECTION (Centered Login Card)
          ========================================================================= */}
       <main className="bpn-main">
         <div className="bpn-main-container">
-          {/* SISI KIRI: Enterprise Context */}
-          <section className="bpn-hero-section">
-            <div className="bpn-headline-block">
-              <h1 className="bpn-main-title">
-                Pelacakan Berkas &amp; Monitoring Persuratan
-              </h1>
-              <p className="bpn-main-desc">
-                Sistem pemantauan alur fisik warkah permohonan, pencatatan agenda surat masuk &amp; disposisi, serta tertib administrasi serah terima di Kantor Pertanahan Kota Tangerang Selatan.
-              </p>
-            </div>
-
-            {/* Kartu Fitur Utama */}
-            <div className="bpn-feature-list">
-              <div className="bpn-feat-item">
-                <div className="bpn-feat-icon bpn-icon-blue">
-                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                    <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="bpn-feat-title">Pelacakan Posisi Berkas</h2>
-                  <p className="bpn-feat-desc">Pantau posisi berkas seketika di Seksi Penetapan Hak (PHP), Survei &amp; Pemetaan, maupun Sengketa secara real-time.</p>
-                </div>
-              </div>
-
-              <div className="bpn-feat-item">
-                <div className="bpn-feat-icon bpn-icon-indigo">
-                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                    <path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="bpn-feat-title">Serah Terima &amp; Scan QR Code</h2>
-                  <p className="bpn-feat-desc">Validasi perpindahan fisik dokumen antar meja dengan pemindaian barcode digital &amp; pencatatan riwayat sah.</p>
-                </div>
-              </div>
-
-              <div className="bpn-feat-item">
-                <div className="bpn-feat-icon bpn-icon-emerald">
-                  <Mail size={18} />
-                </div>
-                <div>
-                  <h2 className="bpn-feat-title">Administrasi &amp; Disposisi Surat</h2>
-                  <p className="bpn-feat-desc">Kelola agenda surat masuk, disposisi pimpinan, serta pemantauan tindak lanjut surat seksi secara akuntabel.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* SISI KANAN: Kartu Autentikasi */}
+          {/* Kartu Autentikasi (Di Tengah Layar) */}
           <section className="bpn-card-section">
             <div className="bpn-login-card">
               <div className="bpn-card-header">
@@ -771,10 +721,10 @@ export default function Login() {
 
         .bpn-main-container {
           width: 100%;
-          max-width: 1120px;
-          display: grid;
-          grid-template-columns: 1.15fr 0.95fr;
-          gap: 3.5rem;
+          max-width: 440px;
+          margin: 0 auto;
+          display: flex;
+          justify-content: center;
           align-items: center;
         }
         @media (max-width: 960px) {
@@ -789,13 +739,8 @@ export default function Login() {
             margin: 0 auto;
           }
           .bpn-card-section {
-            order: 1; /* Form login langsung muncul di atas di layar HP */
+            order: 1;
             width: 100%;
-          }
-          .bpn-hero-section {
-            order: 2; /* Penjelasan fitur & sistem di bawahnya */
-            width: 100%;
-            gap: 1.15rem;
           }
           .bpn-mobile-seal {
             display: none !important;
