@@ -204,6 +204,7 @@ export default function Navbar() {
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s ease;
+          white-space: nowrap;
         }
         .nav-logout-btn:hover {
           background: rgba(239, 68, 68, 0.2) !important;
@@ -229,9 +230,11 @@ export default function Navbar() {
           background: var(--surface-hover) !important;
           border-color: var(--text-muted) !important;
         }
-        @media (max-width: 1366px) {
-          .navbar-title-full { display: none; }
-          .navbar-title-short { display: inline; }
+        .navbar-brand {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-shrink: 0;
         }
         .nav-mobile-toggle {
           display: none;
@@ -249,6 +252,7 @@ export default function Navbar() {
           left: 0 !important;
           right: 0 !important;
           width: 100% !important;
+          height: 56px !important;
           z-index: 1000 !important;
           background: var(--glass-bg);
           backdrop-filter: blur(16px);
@@ -256,60 +260,108 @@ export default function Navbar() {
           border-bottom: 1px solid var(--border-color);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
           box-sizing: border-box !important;
-          flex-wrap: wrap;
-          gap: 0.5rem;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
+          flex-wrap: nowrap !important;
+          padding: 0 1.25rem !important;
+          gap: 0.75rem !important;
         }
         .navbar-spacer {
           height: 56px;
           width: 100%;
           flex-shrink: 0;
         }
+        .nav-links {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          flex-shrink: 1;
+        }
+        .nav-links a {
+          white-space: nowrap;
+        }
+        .nav-right-actions {
+          margin-left: auto !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 0.5rem !important;
+          flex-shrink: 0 !important;
+        }
+        .nav-mobile-actions-group {
+          display: none;
+        }
+        .nav-sandi-btn {
+          width: auto !important;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.45rem 0.85rem;
+          font-size: 0.85rem;
+          border-radius: 8px;
+          white-space: nowrap;
+        }
+        @media (max-width: 1280px) {
+          .navbar-title-full { display: none !important; }
+          .navbar-title-short { display: inline !important; }
+        }
+        @media (max-width: 1140px) {
+          .nav-user-pill { display: none !important; }
+        }
+        @media (max-width: 980px) {
+          .nav-btn-text { display: none !important; }
+          .nav-sandi-btn, .nav-logout-btn { padding: 0.45rem 0.6rem !important; }
+          .nav-links a { padding: 0.4rem 0.55rem !important; font-size: 0.82rem !important; gap: 0.3rem !important; }
+        }
+        @media (min-width: 861px) {
+          .nav-mobile-right-actions,
+          .nav-mobile-user-card,
+          .nav-mobile-actions-group {
+            display: none !important;
+          }
+        }
         @media (max-width: 860px) {
           .navbar {
-            padding: 0.55rem 0.85rem;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            border-bottom: 1px solid var(--border-color);
-            max-width: 100vw;
-            width: 100% !important;
-            box-sizing: border-box;
+            height: auto !important;
+            padding: 0.55rem 0.85rem !important;
+            flex-wrap: wrap !important;
+            justify-content: space-between !important;
           }
           .navbar-spacer {
             height: 48px;
           }
           .navbar-brand {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            width: 100% !important;
+            justify-content: space-between !important;
           }
           .nav-user-pill {
-            display: none !important; /* Di mobile, profil user dipindah ke dalam drawer menu */
+            display: none !important;
+          }
+          .nav-right-actions {
+            display: none !important;
           }
           .nav-mobile-right-actions {
-            display: flex;
+            display: flex !important;
             align-items: center;
             gap: 0.45rem;
           }
           .nav-mobile-toggle {
-            display: inline-flex;
+            display: inline-flex !important;
             align-items: center;
             justify-content: center;
           }
           .nav-links {
-            display: none;
-            width: 100%;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 0.5rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid var(--border-color);
-            margin-top: 0.5rem;
+            display: none !important;
+            width: 100% !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 0.5rem !important;
+            padding-top: 0.75rem !important;
+            border-top: 1px solid var(--border-color) !important;
+            margin-top: 0.5rem !important;
           }
           .nav-links.mobile-open {
-            display: flex;
+            display: flex !important;
             animation: fadeIn 0.2s ease forwards;
           }
           .nav-links a {
@@ -330,8 +382,8 @@ export default function Navbar() {
             border-radius: 8px;
             margin-bottom: 0.25rem;
           }
-          .nav-actions-group {
-            display: flex;
+          .nav-mobile-actions-group {
+            display: flex !important;
             align-items: center;
             justify-content: space-between;
             gap: 0.5rem;
@@ -340,33 +392,9 @@ export default function Navbar() {
             border-top: 1px solid var(--border-color);
             width: 100%;
           }
-          .nav-actions-group button,
-          .nav-actions-group .theme-switch-segmented {
+          .nav-mobile-actions-group button,
+          .nav-mobile-actions-group .theme-switch-segmented {
             flex: 1;
-          }
-        }
-        .nav-actions-group {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        .nav-sandi-btn {
-          width: auto !important;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.4rem;
-          padding: 0.45rem 0.85rem;
-          font-size: 0.85rem;
-          border-radius: 8px;
-        }
-        @media (min-width: 861px) {
-          .nav-mobile-user-card, .mobile-only-notif {
-            display: none !important;
-          }
-        }
-        @media (max-width: 860px) {
-          .desktop-only-notif {
-            display: none !important;
           }
         }
       `}</style>
@@ -485,12 +513,8 @@ export default function Navbar() {
             <BarChart2 size={18} /> Kinerja
           </Link>
 
-          {/* Desktop Only Bell Notification */}
-          <div className="desktop-only-notif">
-            <NotificationBell />
-          </div>
-
-          <div className="nav-actions-group">
+          {/* Mobile Drawer Actions (Hanya muncul di dalam drawer menu pada mobile) */}
+          <div className="nav-mobile-actions-group">
             <div className="theme-switch-segmented" role="group" aria-label="Pilihan Tema">
               <button
                 type="button"
@@ -523,6 +547,43 @@ export default function Navbar() {
               <LogOut size={15} /> Keluar
             </button>
           </div>
+        </div>
+
+        {/* Desktop Top-Right Actions: Tetap di atas rapat ke kanan */}
+        <div className="nav-right-actions">
+          <NotificationBell />
+
+          <div className="theme-switch-segmented" role="group" aria-label="Pilihan Tema">
+            <button
+              type="button"
+              onClick={() => setThemeMode('light')}
+              className={`theme-pill-btn ${theme === 'light' ? 'active' : ''}`}
+              title="Pilih Mode Terang"
+            >
+              <Sun size={13} color={theme === 'light' ? '#FFFFFF' : '#64748B'} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setThemeMode('dark')}
+              className={`theme-pill-btn ${theme === 'dark' ? 'active' : ''}`}
+              title="Pilih Mode Gelap"
+            >
+              <Moon size={13} color={theme === 'dark' ? '#FFFFFF' : '#64748B'} />
+            </button>
+          </div>
+
+          <button 
+            type="button"
+            className="secondary nav-sandi-btn" 
+            onClick={() => { setMobileMenuOpen(false); setShowPasswordModal(true); }} 
+            title="Ubah Kata Sandi"
+          >
+            <Key size={15} /> <span className="nav-btn-text">Sandi</span>
+          </button>
+          
+          <button type="button" className="nav-logout-btn" onClick={handleLogout} title="Keluar dari Aplikasi">
+            <LogOut size={15} /> <span className="nav-btn-text">Keluar</span>
+          </button>
         </div>
       </nav>
       <div className="navbar-spacer" style={{ height: `${navHeight}px` }} aria-hidden="true" />
