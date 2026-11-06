@@ -119,7 +119,8 @@ export default function Navbar() {
   };
 
   const isSuratModule = location.pathname.startsWith('/surat');
-  const isHubOnlyModule = location.pathname.startsWith('/pdf-tools') || location.pathname.startsWith('/kpi') || location.pathname.startsWith('/admin');
+  const isAdminModule = location.pathname.startsWith('/admin');
+  const isHubOnlyModule = location.pathname.startsWith('/pdf-tools') || location.pathname.startsWith('/kpi');
 
   return (
     <>
@@ -489,7 +490,18 @@ export default function Navbar() {
           </Link>
 
           {!isHubOnlyModule && (
-            isSuratModule ? (
+            isAdminModule ? (
+              isAdmin && (
+                <>
+                  <Link to="/admin" className={location.pathname === '/admin' ? 'active' : ''}>
+                    <Shield size={18} /> Admin Panel
+                  </Link>
+                  <Link to="/admin/users" className={location.pathname === '/admin/users' ? 'active' : ''}>
+                    <Users size={18} /> Kelola Akun
+                  </Link>
+                </>
+              )
+            ) : isSuratModule ? (
               <>
                 <Link to="/surat" className={location.pathname === '/surat' ? 'active' : ''}>
                   <Mail size={18} /> Surat
@@ -515,19 +527,6 @@ export default function Navbar() {
                 </Link>
               </>
             )
-          )}
-
-
-
-          {isAdmin && (
-            <>
-              <Link to="/admin" className={location.pathname === '/admin' ? 'active' : ''}>
-                <Shield size={18} /> Admin Panel
-              </Link>
-              <Link to="/admin/users" className={location.pathname === '/admin/users' ? 'active' : ''}>
-                <Users size={18} /> Kelola Akun
-              </Link>
-            </>
           )}
 
           {/* Mobile Drawer Actions (Hanya muncul di dalam drawer menu pada mobile) */}

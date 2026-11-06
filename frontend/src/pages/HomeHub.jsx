@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Mail, LogOut, ArrowRight, Sun, Moon, Files, BarChart2 } from 'lucide-react';
+import { FolderKanban, Mail, LogOut, ArrowRight, Shield, Sun, Moon, Files, BarChart2 } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
 
 export default function HomeHub() {
   const navigate = useNavigate();
+  const roleStr = localStorage.getItem('role') || '';
+  const userRoles = roleStr.split(',').map(r => r.trim()).filter(Boolean);
+  const isAdmin = userRoles.includes('Administrator');
 
   let fullName = localStorage.getItem('full_name') || localStorage.getItem('username') || 'Pengguna';
   try {
@@ -572,6 +575,33 @@ export default function HomeHub() {
               </span>
             </div>
           </div>
+
+          {/* Card 3: Admin Panel & Pengguna (Gabungan) */}
+          {isAdmin && (
+            <div
+              className="hub-card"
+              onClick={() => navigate('/admin')}
+            >
+              <div>
+                <div className="hub-icon-box">
+                  <Shield size={26} />
+                </div>
+                <div className="hub-card-badge">
+                  <Shield size={12} /> Khusus Administrator
+                </div>
+                <h2 className="hub-card-title">Admin Panel & Pengguna</h2>
+                <p className="hub-card-desc">
+                  Kelola seluruh berkas permohonan & persuratan sistem, ekspor laporan Excel, penutupan berkas/surat, serta manajemen akun dan hak akses petugas.
+                </p>
+              </div>
+              <div className="hub-card-footer">
+                <span>Buka Admin Panel & Pengguna</span>
+                <span className="hub-card-arrow">
+                  <ArrowRight size={15} />
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
