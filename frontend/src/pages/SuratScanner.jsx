@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
 import { 
   Upload, 
@@ -29,6 +29,7 @@ export default function SuratScanner() {
   const [selectedRole, setSelectedRole] = useState(() => userRoles[0] || 'Petugas');
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const scannerRef = useRef(null);
 
   const getApiBaseUrl = () => {
@@ -138,7 +139,23 @@ export default function SuratScanner() {
   };
 
   useEffect(() => {
+    const queryId = searchParams.get('id');
     scannerRef.current = new Html5Qrcode('surat-reader');
+
+    if (queryId) {
+      setStatus('processing');
+      api.get(`/surat/${queryId}`)
+        .then(res => {
+          setScannedSurat(res.data);
+          setStatus('found');
+        })
+        .catch(() => {
+          setStatus('not_found');
+          setMessage('Data surat tidak ditemukan.');
+        });
+      return;
+    }
+
     const config = { fps: 5, qrbox: { width: 250, height: 250 } };
 
     scannerRef.current.start({ facingMode: "environment" }, config, handleScanSuccess, () => {})

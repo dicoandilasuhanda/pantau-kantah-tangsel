@@ -158,7 +158,7 @@ export default function AdminDashboard() {
     }
     try {
       await api.put(`/surat/${selectedSuratToClose.id}/close`, { alasan: closeSuratReason });
-      toast.success(`Surat No. Agenda ${selectedSuratToClose.nomorAgenda} berhasil ditutup`);
+      toast.success(`Surat No. Agenda ${selectedSuratToClose.nomor_agenda} berhasil ditutup`);
       setSuratList(prev => prev.map(s => {
         if (s.id === selectedSuratToClose.id) {
           return { ...s, current_location: 'Ditutup', catatan: closeSuratReason };
@@ -334,12 +334,21 @@ export default function AdminDashboard() {
   }, [filteredFiles]);
 
   // ================= FILTER & ANALYTICS PERSURATAN =================
+  const getSecureFileUrl = (filePath) => {
+    if (!filePath) return '#';
+    const baseUrl = import.meta.env.VITE_API_URL || '/api';
+    const token = localStorage.getItem('token') || '';
+    const filename = filePath.split('/').pop();
+    return `${baseUrl}/surat/file/${encodeURIComponent(filename)}?token=${encodeURIComponent(token)}`;
+  };
+
   const parseSuratDate = (s) => {
-    if (s.tanggalTerima) {
-      const d = new Date(s.tanggalTerima + 'T00:00:00');
+    const tgl = s.tanggal_diterima || s.tanggalTerima;
+    if (tgl) {
+      const d = new Date(tgl + 'T00:00:00');
       if (!isNaN(d)) return d;
     }
-    return parseSQLiteDate(s.createdAt);
+    return parseSQLiteDate(s.created_at || s.createdAt);
   };
 
   const availableSuratYears = useMemo(() => {
@@ -405,10 +414,13 @@ export default function AdminDashboard() {
       // 5. Filter Pencarian Teks
       if (suratSearchTerm) {
         const q = suratSearchTerm.toLowerCase();
+        const noAgenda = s.nomor_agenda || s.nomorAgenda || '';
+        const noSurat = s.nomor_surat || s.nomorSurat || '';
+        const asal = s.asal_surat || s.asalSurat || '';
         const match =
-          (s.nomorAgenda && s.nomorAgenda.toLowerCase().includes(q)) ||
-          (s.nomorSurat && s.nomorSurat.toLowerCase().includes(q)) ||
-          (s.asalSurat && s.asalSurat.toLowerCase().includes(q)) ||
+          noAgenda.toLowerCase().includes(q) ||
+          noSurat.toLowerCase().includes(q) ||
+          asal.toLowerCase().includes(q) ||
           (s.perihal && s.perihal.toLowerCase().includes(q)) ||
           loc.toLowerCase().includes(q) ||
           (s.latest_scan_info && s.latest_scan_info.toLowerCase().includes(q));
@@ -556,24 +568,22 @@ export default function AdminDashboard() {
       const isClosed = loc === 'Ditutup';
       return {
         'No': index + 1,
-        'Nomor Agenda': s.nomorAgenda,
-        'Asal Surat / Instansi': s.asalSurat,
-        'Nomor Surat': s.nomorSurat,
-        'Tanggal Surat': formatDateDisplay(s.tanggalSurat),
-        'Tanggal Diterima': formatDateDisplay(s.tanggalTerima),
+        'Nomor Agenda': s.nomor_agenda || s.nomorAgenda || '-',
+        'Asal Surat / Instansi': s.asal_surat || s.asalSurat || '-',
+        'Nomor Surat': s.nomor_surat || s.nomorSurat || '-',
+        'Tanggal Diterima': formatDateDisplay(s.tanggal_diterima || s.tanggalTerima),
         'Perihal': s.perihal,
         'Posisi Terakhir': loc,
         'Riwayat Scan Terakhir': s.latest_scan_info || '-',
         'Status Surat': isDone ? 'Selesai' : (isClosed ? 'Ditutup / Diarsipkan' : 'Sedang Diproses'),
-        'Catatan': s.catatan || '-',
-        'Petugas Entry': s.createdBy || '-'
+        'Catatan': s.catatan || '-'
       };
     });
 
     // Sheet 2: Rekap per Asal Surat / Instansi
     const summaryMap = {};
     filteredSurat.forEach(s => {
-      const asal = s.asalSurat || 'Lainnya';
+      const asal = s.asal_surat || s.asalSurat || 'Lainnya';
       const loc = s.current_location || 'Petugas Entry Surat';
       if (!summaryMap[asal]) {
         summaryMap[asal] = { total: 0, selesai: 0, proses: 0, ditutup: 0 };
@@ -1214,9 +1224,14 @@ export default function AdminDashboard() {
                     const loc = s.current_location || 'Petugas Entry Surat';
                     const isDone = loc === 'Selesai';
                     const isClosed = loc === 'Ditutup';
-                    const tglTerimaDisplay = s.tanggalTerima
-                      ? new Date(s.tanggalTerima + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                    const noAgenda = s.nomor_agenda || s.nomorAgenda || '-';
+                    const asalSurat = s.asal_surat || s.asalSurat || '-';
+                    const noSurat = s.nomor_surat || s.nomorSurat || '-';
+                    const rawTglTerima = s.tanggal_diterima || s.tanggalTerima;
+                    const tglTerimaDisplay = rawTglTerima
+                      ? new Date(rawTglTerima + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })
                       : '-';
+                    const pdfPath = s.file_path || s.fileUrl;
 
                     return (
                       <tr key={s.id}>
@@ -1226,13 +1241,13 @@ export default function AdminDashboard() {
                           title="Klik untuk lihat riwayat & scan surat"
                           style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)', whiteSpace: 'nowrap', cursor: 'pointer', color: 'var(--primary-hover)', fontWeight: 700 }}
                         >
-                          #{s.nomorAgenda}
+                          #{noAgenda}
                         </td>
                         <td style={{ padding: '0.5rem', textAlign: 'left', border: '1px solid var(--border-color)', fontWeight: 600 }}>
-                          {s.asalSurat}
+                          {asalSurat}
                         </td>
                         <td style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)' }}>
-                          {s.nomorSurat}
+                          {noSurat}
                         </td>
                         <td style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>
                           {tglTerimaDisplay}
@@ -1263,9 +1278,9 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)' }}>
-                          {s.fileUrl ? (
+                          {pdfPath ? (
                             <a
-                              href={s.fileUrl}
+                              href={getSecureFileUrl(pdfPath)}
                               target="_blank"
                               rel="noopener noreferrer"
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: 'var(--primary-color)', fontWeight: 600, fontSize: '0.75rem', textDecoration: 'none' }}
@@ -1279,7 +1294,7 @@ export default function AdminDashboard() {
                         <td style={{ padding: '0.4rem', textAlign: 'center', border: '1px solid var(--border-color)' }}>
                           <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                             <button 
-                              onClick={() => handleCompleteSurat(s.id, s.nomorAgenda)}
+                              onClick={() => handleCompleteSurat(s.id, noAgenda)}
                               disabled={isDone || isClosed}
                               style={{ 
                                 padding: '0.3rem 0.6rem', 
@@ -1319,7 +1334,7 @@ export default function AdminDashboard() {
                             </button>
 
                             <button 
-                              onClick={() => handleDeleteSurat(s.id, s.nomorAgenda, s.nomorSurat)}
+                              onClick={() => handleDeleteSurat(s.id, noAgenda, noSurat)}
                               style={{ 
                                 padding: '0.3rem 0.6rem', 
                                 fontSize: '0.7rem',
@@ -1384,7 +1399,7 @@ export default function AdminDashboard() {
           <div className="glass-panel" style={{ width: '420px', padding: '2rem' }}>
             <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>Tutup / Arsipkan Surat</h3>
             <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
-              Masukkan alasan penutupan atau pengarsipan surat No. Agenda <strong>#{selectedSuratToClose?.nomorAgenda}</strong> ({selectedSuratToClose?.nomorSurat}):
+              Masukkan alasan penutupan atau pengarsipan surat No. Agenda <strong>#{selectedSuratToClose?.nomor_agenda || selectedSuratToClose?.nomorAgenda}</strong> ({selectedSuratToClose?.nomor_surat || selectedSuratToClose?.nomorSurat}):
             </p>
             <textarea
               value={closeSuratReason}
