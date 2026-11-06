@@ -400,14 +400,37 @@ export default function PdfTools() {
 
   // --- Handlers Tab 4: Image to PDF ---
   const handleImagesSelected = (e) => {
-    const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
+    const rawFiles = Array.from(e.target.files || []);
+    const files = rawFiles.filter(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|bmp|gif|jfif)$/i.test(f.name));
     if (files.length === 0) return;
-    const items = files.map(file => ({
-      id: Math.random().toString(36).substring(7),
-      file,
-      previewUrl: URL.createObjectURL(file)
-    }));
-    setImageFiles(prev => [...prev, ...items]);
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const previewUrl = ev.target.result;
+        setImageFiles(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(36).substring(7),
+            file,
+            previewUrl
+          }
+        ]);
+      };
+      reader.onerror = () => {
+        // Fallback to createObjectURL if FileReader fails
+        setImageFiles(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(36).substring(7),
+            file,
+            previewUrl: URL.createObjectURL(file)
+          }
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+
     if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
@@ -423,7 +446,10 @@ export default function PdfTools() {
 
   const removeImageFile = (index) => {
     setImageFiles(prev => {
-      URL.revokeObjectURL(prev[index].previewUrl);
+      const item = prev[index];
+      if (item?.previewUrl && item.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
       return prev.filter((_, i) => i !== index);
     });
   };
@@ -1175,7 +1201,7 @@ export default function PdfTools() {
             <input
               ref={imageInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/jpg"
+              accept="image/*,.jpg,.jpeg,.png,.webp,.bmp,.jfif"
               multiple
               style={{ display: 'none' }}
               onChange={handleImagesSelected}
@@ -1224,22 +1250,44 @@ export default function PdfTools() {
                     }}
                   >
                     <div 
-                      style={{ position: 'relative', width: '100%', height: '150px', background: '#000', borderRadius: '6px', overflow: 'hidden', marginBottom: '0.5rem', cursor: 'pointer' }}
+                      style={{ 
+                        position: 'relative', 
+                        width: '100%', 
+                        height: '160px', 
+                        background: 'var(--surface-subtle, #F8FAFC)', 
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '6px', 
+                        overflow: 'hidden', 
+                        marginBottom: '0.5rem', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
                       onClick={() => {
-                        setZoomPreviewUrl(item.previewUrl);
-                        setZoomPreviewTitle(item.file.name);
+                        if (item.previewUrl) {
+                          setZoomPreviewUrl(item.previewUrl);
+                          setZoomPreviewTitle(item.file.name);
+                        }
                       }}
                       title="Klik untuk perbesar foto"
                     >
-                      <img 
-                        src={item.previewUrl} 
-                        alt={item.file.name} 
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-                      />
-                      <span style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
+                      {item.previewUrl ? (
+                        <img 
+                          src={item.previewUrl} 
+                          alt={item.file.name} 
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                        />
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)' }}>
+                          <Loader2 size={20} className="spin" />
+                          <span style={{ fontSize: '0.7rem' }}>Memuat foto...</span>
+                        </div>
+                      )}
+                      <span style={{ position: 'absolute', top: '6px', left: '6px', background: 'var(--primary-color, #1D4ED8)', color: '#fff', fontSize: '0.7rem', fontWeight: 700, padding: '2px 7px', borderRadius: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
                         Hal {idx + 1}
                       </span>
-                      <div style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', color: '#fff', borderRadius: '4px', padding: '2px 5px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <div style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.65)', color: '#fff', borderRadius: '4px', padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <Eye size={11} /> Perbesar
                       </div>
                     </div>
@@ -1623,11 +1671,11 @@ export default function PdfTools() {
               </button>
             </div>
 
-            <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', borderRadius: '8px', padding: '0.5rem' }}>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(30, 41, 59, 0.75)', borderRadius: '8px', padding: '0.75rem' }}>
               <img 
                 src={zoomPreviewUrl} 
                 alt="Pratinjau Besar" 
-                style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }}
+                style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '4px', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
               />
             </div>
           </div>

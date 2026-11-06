@@ -33,6 +33,7 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       "upgrade-insecure-requests": null,
+      "img-src": ["'self'", "data:", "blob:"],
     },
   },
 }));
