@@ -37,10 +37,8 @@ const KpiRoute = ({ children }) => {
 
 const SuratRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  const roleStr = localStorage.getItem('role') || '';
-  const userRoles = roleStr.split(',').map(r => r.trim());
   if (!token) return <Navigate to="/login" />;
-  return (userRoles.includes('Administrator') || userRoles.includes('Petugas Entry Surat')) ? children : <Navigate to="/" />;
+  return children;
 };
 
 const SuratEntryRoute = ({ children }) => {
@@ -48,7 +46,7 @@ const SuratEntryRoute = ({ children }) => {
   const roleStr = localStorage.getItem('role') || '';
   const userRoles = roleStr.split(',').map(r => r.trim());
   if (!token) return <Navigate to="/login" />;
-  return userRoles.includes('Petugas Entry Surat') ? children : <Navigate to="/surat" />;
+  return (userRoles.includes('Administrator') || userRoles.includes('Petugas Entry Surat')) ? children : <Navigate to="/surat" />;
 };
 
 function AppContent() {

@@ -456,7 +456,7 @@ export default function Navbar() {
                 <Link to="/surat" className={location.pathname === '/surat' ? 'active' : ''}>
                   <Mail size={18} /> Surat
                 </Link>
-                {userRoles.includes('Petugas Entry Surat') && (
+                {(userRoles.includes('Administrator') || userRoles.includes('Petugas Entry Surat')) && (
                   <Link to="/surat/entry" className={location.pathname === '/surat/entry' ? 'active' : ''}>
                     <PlusSquare size={18} /> Entri Baru
                   </Link>

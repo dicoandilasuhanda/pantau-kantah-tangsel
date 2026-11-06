@@ -17,7 +17,6 @@ export default function HomeHub() {
   }
 
   const isAdmin = userRoles.includes('Administrator');
-  const canAccessSurat = isAdmin || userRoles.includes('Petugas Entry Surat');
   const canAccessKpi = isAdmin || userRoles.some(r => r.includes('Koordinator')) || userRoles.some(r => r.includes('Kepala Seksi'));
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
@@ -553,29 +552,27 @@ export default function HomeHub() {
           </div>
 
           {/* Card 2: Monitoring Surat */}
-          {canAccessSurat && (
-            <div
-              className="hub-card"
-              onClick={() => navigate('/surat')}
-            >
-              <div>
-                <div className="hub-icon-box">
-                  <Mail size={26} />
-                </div>
-                <div className="hub-card-badge">Administrasi Persuratan</div>
-                <h2 className="hub-card-title">Monitoring Surat</h2>
-                <p className="hub-card-desc">
-                  Kelola pencatatan surat masuk, disposisi, agenda pengaduan, serta pemantauan tindak lanjut surat di lingkungan Seksi Survei & Pemetaan.
-                </p>
+          <div
+            className="hub-card"
+            onClick={() => navigate('/surat')}
+          >
+            <div>
+              <div className="hub-icon-box">
+                <Mail size={26} />
               </div>
-              <div className="hub-card-footer">
-                <span>Buka Monitoring Surat</span>
-                <span className="hub-card-arrow">
-                  <ArrowRight size={15} />
-                </span>
-              </div>
+              <div className="hub-card-badge">Administrasi Persuratan</div>
+              <h2 className="hub-card-title">Monitoring Surat</h2>
+              <p className="hub-card-desc">
+                Kelola pencatatan surat masuk, disposisi, agenda pengaduan, serta pemantauan tindak lanjut surat di lingkungan Seksi Survei & Pemetaan.
+              </p>
             </div>
-          )}
+            <div className="hub-card-footer">
+              <span>Buka Monitoring Surat</span>
+              <span className="hub-card-arrow">
+                <ArrowRight size={15} />
+              </span>
+            </div>
+          </div>
 
           {/* Card: Dashboard KPI */}
           {canAccessKpi && (

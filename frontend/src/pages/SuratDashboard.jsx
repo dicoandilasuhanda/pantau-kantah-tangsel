@@ -54,7 +54,7 @@ export default function SuratDashboard() {
           <h1>Monitoring Surat</h1>
           <p>Daftar surat masuk dan arsip digital</p>
         </div>
-        {userRoles.includes('Petugas Entry Surat') && (
+        {(userRoles.includes('Administrator') || userRoles.includes('Petugas Entry Surat')) && (
           <button onClick={() => navigate('/surat/entry')} style={{ width: 'auto' }}>
             <MailPlus size={18} /> Entry Surat Baru
           </button>
