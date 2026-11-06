@@ -61,11 +61,16 @@ function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
   
   const filteredUsers = users.filter(u => 
     (u.username && u.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (u.full_name && u.full_name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedUsers = filteredUsers.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
   
   const [formData, setFormData] = useState({ username: '', full_name: '', password: '', role: 'Petugas Entry Berkas', telegram_chat_id: '' });
   const [editUserId, setEditUserId] = useState(null);
@@ -274,7 +279,7 @@ function UserManagement() {
                 type="text" 
                 placeholder="Cari nama atau username..." 
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 style={{ paddingLeft: '2.5rem', marginBottom: 0, width: '100%' }}
               />
             </div>
@@ -300,7 +305,7 @@ function UserManagement() {
                         Tidak ada pengguna yang sesuai pencarian.
                       </td>
                     </tr>
-                  ) : filteredUsers.map(u => (
+                  ) : paginatedUsers.map(u => (
                     <tr key={u.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                       <td style={{ padding: '1rem' }}><strong>{u.username}</strong></td>
                       <td style={{ padding: '1rem' }}>{u.full_name}</td>
@@ -365,6 +370,51 @@ function UserManagement() {
                   ))}
                 </tbody>
               </table>
+
+              {filteredUsers.length > ITEMS_PER_PAGE && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    Menampilkan {(safePage - 1) * ITEMS_PER_PAGE + 1}&ndash;{Math.min(safePage * ITEMS_PER_PAGE, filteredUsers.length)} dari {filteredUsers.length} pengguna
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={safePage === 1}
+                      onClick={() => setCurrentPage(safePage - 1)}
+                      style={{ width: 'auto', padding: '0.4rem 0.75rem', fontSize: '0.85rem', opacity: safePage === 1 ? 0.5 : 1, cursor: safePage === 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                      &larr; Sebelumnya
+                    </button>
+                    {Array.from({ length: totalPages }, (_, idx) => idx + 1).map(page => (
+                      <button
+                        key={page}
+                        type="button"
+                        className={page === safePage ? '' : 'secondary'}
+                        onClick={() => setCurrentPage(page)}
+                        style={{
+                          width: 'auto',
+                          minWidth: '34px',
+                          padding: '0.4rem 0.65rem',
+                          fontSize: '0.85rem',
+                          fontWeight: page === safePage ? 700 : 500
+                        }}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={safePage === totalPages}
+                      onClick={() => setCurrentPage(safePage + 1)}
+                      style={{ width: 'auto', padding: '0.4rem 0.75rem', fontSize: '0.85rem', opacity: safePage === totalPages ? 0.5 : 1, cursor: safePage === totalPages ? 'not-allowed' : 'pointer' }}
+                    >
+                      Berikutnya &rarr;
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
