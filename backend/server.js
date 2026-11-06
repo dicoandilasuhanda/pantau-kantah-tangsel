@@ -67,6 +67,86 @@ const upload = multer({
   }
 });
 
+// Setup multer for avatar upload
+const avatarDir = path.join(__dirname, 'uploads', 'avatars');
+if (!fs.existsSync(avatarDir)) {
+  fs.mkdirSync(avatarDir, { recursive: true });
+}
+
+const avatarStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, avatarDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const uniqueSuffix = 'avatar-' + req.user.id + '-' + Date.now() + ext;
+    cb(null, uniqueSuffix);
+  }
+});
+const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Maksimal 5 MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!allowed.includes(ext)) {
+      return cb(new Error('Hanya file gambar (JPG, JPEG, PNG, WEBP) yang diperbolehkan!'));
+    }
+    cb(null, true);
+  }
+});
+
+const handleAvatarUpload = (req, res, next) => {
+  avatarUpload.single('avatar')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Ukuran foto melebihi batas maksimal 5 MB.' });
+      }
+      return res.status(400).json({ error: err.message || 'Gagal memproses unggahan foto.' });
+    }
+    next();
+  });
+};
+
+// Setup multer for dwg upload
+const dwgDir = path.join(__dirname, 'uploads', 'dwg');
+if (!fs.existsSync(dwgDir)) {
+  fs.mkdirSync(dwgDir, { recursive: true });
+}
+
+const dwgStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, dwgDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = 'dwg-' + req.user.id + '-' + Date.now() + '-' + Math.round(Math.random() * 1E6) + '.dwg';
+    cb(null, uniqueSuffix);
+  }
+});
+const dwgUpload = multer({
+  storage: dwgStorage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // Maksimal 100 MB
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext !== '.dwg') {
+      return cb(new Error('Hanya file dokumen AutoCAD (.dwg) yang diperbolehkan!'));
+    }
+    cb(null, true);
+  }
+});
+
+const handleDwgUpload = (req, res, next) => {
+  dwgUpload.single('dwg_file')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Ukuran file DWG melebihi batas maksimal 100 MB.' });
+      }
+      return res.status(400).json({ error: err.message || 'Gagal memproses unggahan file DWG.' });
+    }
+    next();
+  });
+};
+
 // Proteksi folder uploads: Tidak lagi disajikan secara publik via express.static
 // Dokumen hanya dapat diunduh lewat endpoint terotentikasi /api/surat/file/:filename
 
@@ -90,6 +170,17 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
       // Try to alter table for existing databases (ignore error if column already exists)
       db.run(`ALTER TABLE users ADD COLUMN full_name TEXT`, (err) => {});
       db.run(`ALTER TABLE users ADD COLUMN session_id TEXT`, (err) => {});
+      db.run(`ALTER TABLE users ADD COLUMN avatar_url TEXT`, (err) => {});
+
+      db.run(`CREATE TABLE IF NOT EXISTS user_dwg_files (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        original_name TEXT,
+        file_name TEXT,
+        file_size INTEGER,
+        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      )`);
 
       db.run(`CREATE TABLE IF NOT EXISTS files (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -334,7 +425,14 @@ app.post('/api/login', loginLimiter, (req, res) => {
         { expiresIn: '2h' }
       );
 
-      res.json({ token, role: user.role, username: user.username, full_name: user.full_name, fullName: user.full_name });
+      res.json({
+        token,
+        role: user.role,
+        username: user.username,
+        full_name: user.full_name,
+        fullName: user.full_name,
+        avatar_url: user.avatar_url || null
+      });
     });
   });
 });
@@ -893,6 +991,189 @@ app.delete('/api/users/:id', authenticateJWT, requireAdmin, (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: 'User berhasil dihapus.' });
   });
+});
+
+// ==========================================
+// USER PROFILE & DWG WORKSPACE API
+// ==========================================
+
+// Get Current User Profile
+app.get('/api/user/profile', authenticateJWT, (req, res) => {
+  db.get(
+    'SELECT id, username, role, full_name, telegram_chat_id, avatar_url FROM users WHERE id = ?',
+    [req.user.id],
+    (err, user) => {
+      if (err) return res.status(500).json({ error: 'Gagal mengambil data profil' });
+      if (!user) return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
+      res.json(user);
+    }
+  );
+});
+
+// Update Profile Info (Full Name)
+app.put('/api/user/profile', authenticateJWT, (req, res) => {
+  const { full_name } = req.body;
+  if (!full_name || !full_name.trim()) {
+    return res.status(400).json({ error: 'Nama lengkap wajib diisi.' });
+  }
+
+  db.run(
+    'UPDATE users SET full_name = ? WHERE id = ?',
+    [full_name.trim(), req.user.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Gagal memperbarui profil' });
+      res.json({ message: 'Profil berhasil diperbarui.', full_name: full_name.trim() });
+    }
+  );
+});
+
+// Upload User Profile Avatar
+app.post('/api/user/profile/avatar', authenticateJWT, handleAvatarUpload, (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'File foto profil tidak ditemukan.' });
+  }
+  const avatarUrl = `/api/user/avatar/${req.file.filename}`;
+
+  db.get('SELECT avatar_url FROM users WHERE id = ?', [req.user.id], (err, user) => {
+    if (user && user.avatar_url) {
+      const oldFilename = path.basename(user.avatar_url);
+      const oldPath = path.join(avatarDir, oldFilename);
+      if (fs.existsSync(oldPath)) {
+        try { fs.unlinkSync(oldPath); } catch (_) {}
+      }
+    }
+
+    db.run(
+      'UPDATE users SET avatar_url = ? WHERE id = ?',
+      [avatarUrl, req.user.id],
+      (upErr) => {
+        if (upErr) return res.status(500).json({ error: 'Gagal menyimpan foto profil ke database.' });
+        res.json({ message: 'Foto profil berhasil diperbarui.', avatar_url: avatarUrl });
+      }
+    );
+  });
+});
+
+// Delete User Profile Avatar
+app.delete('/api/user/profile/avatar', authenticateJWT, (req, res) => {
+  db.get('SELECT avatar_url FROM users WHERE id = ?', [req.user.id], (err, user) => {
+    if (user && user.avatar_url) {
+      const oldFilename = path.basename(user.avatar_url);
+      const oldPath = path.join(avatarDir, oldFilename);
+      if (fs.existsSync(oldPath)) {
+        try { fs.unlinkSync(oldPath); } catch (_) {}
+      }
+    }
+
+    db.run(
+      'UPDATE users SET avatar_url = NULL WHERE id = ?',
+      [req.user.id],
+      (upErr) => {
+        if (upErr) return res.status(500).json({ error: 'Gagal menghapus foto profil.' });
+        res.json({ message: 'Foto profil berhasil dihapus.' });
+      }
+    );
+  });
+});
+
+// Serve User Profile Avatar
+app.get('/api/user/avatar/:filename', (req, res) => {
+  const safeFilename = path.basename(req.params.filename);
+  const filePath = path.join(avatarDir, safeFilename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('Foto profil tidak ditemukan');
+  }
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(filePath);
+});
+
+// Get User DWG Files List
+app.get('/api/user/dwg', authenticateJWT, (req, res) => {
+  db.all(
+    'SELECT id, original_name, file_name, file_size, uploaded_at FROM user_dwg_files WHERE user_id = ? ORDER BY uploaded_at DESC',
+    [req.user.id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Gagal mengambil daftar file DWG' });
+      res.json(rows || []);
+    }
+  );
+});
+
+// Upload DWG File
+app.post('/api/user/dwg', authenticateJWT, handleDwgUpload, (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'File DWG tidak ditemukan.' });
+  }
+
+  const originalName = req.file.originalname;
+  const fileName = req.file.filename;
+  const fileSize = req.file.size;
+
+  db.run(
+    'INSERT INTO user_dwg_files (user_id, original_name, file_name, file_size) VALUES (?, ?, ?, ?)',
+    [req.user.id, originalName, fileName, fileSize],
+    function (err) {
+      if (err) {
+        const uploadedPath = path.join(dwgDir, fileName);
+        if (fs.existsSync(uploadedPath)) {
+          try { fs.unlinkSync(uploadedPath); } catch (_) {}
+        }
+        return res.status(500).json({ error: 'Gagal mencatat file DWG ke database.' });
+      }
+
+      res.json({
+        id: this.lastID,
+        original_name: originalName,
+        file_name: fileName,
+        file_size: fileSize,
+        uploaded_at: new Date().toISOString(),
+        message: 'File DWG berhasil diunggah.'
+      });
+    }
+  );
+});
+
+// Download DWG File
+app.get('/api/user/dwg/:id/download', authenticateJWT, (req, res) => {
+  const dwgId = req.params.id;
+  db.get(
+    'SELECT * FROM user_dwg_files WHERE id = ? AND user_id = ?',
+    [dwgId, req.user.id],
+    (err, fileRecord) => {
+      if (err) return res.status(500).json({ error: 'Gagal mencari file' });
+      if (!fileRecord) return res.status(404).json({ error: 'File DWG tidak ditemukan atau bukan milik Anda' });
+
+      const filePath = path.join(dwgDir, fileRecord.file_name);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'Fisik file di server tidak ditemukan' });
+      }
+
+      res.download(filePath, fileRecord.original_name);
+    }
+  );
+});
+
+// Delete DWG File
+app.delete('/api/user/dwg/:id', authenticateJWT, (req, res) => {
+  const dwgId = req.params.id;
+  db.get(
+    'SELECT * FROM user_dwg_files WHERE id = ? AND user_id = ?',
+    [dwgId, req.user.id],
+    (err, fileRecord) => {
+      if (err) return res.status(500).json({ error: 'Gagal mencari file' });
+      if (!fileRecord) return res.status(404).json({ error: 'File tidak ditemukan atau bukan milik Anda' });
+
+      const filePath = path.join(dwgDir, fileRecord.file_name);
+      if (fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath); } catch (_) {}
+      }
+
+      db.run('DELETE FROM user_dwg_files WHERE id = ?', [dwgId], (delErr) => {
+        if (delErr) return res.status(500).json({ error: 'Gagal menghapus file dari database' });
+        res.json({ message: 'File DWG berhasil dihapus.' });
+      });
+    }
+  );
 });
 
 

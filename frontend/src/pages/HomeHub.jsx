@@ -13,9 +13,24 @@ export default function HomeHub() {
   try {
     const userObj = JSON.parse(localStorage.getItem('user') || '{}');
     if (userObj.full_name) fullName = userObj.full_name;
+    if (userObj.avatar_url && !localStorage.getItem('avatar_url')) {
+      localStorage.setItem('avatar_url', userObj.avatar_url);
+    }
   } catch {
     // ignore JSON parse error
   }
+
+  const [avatarUrl, setAvatarUrl] = useState(() => localStorage.getItem('avatar_url') || '');
+  const [fullNameState, setFullNameState] = useState(fullName);
+
+  useEffect(() => {
+    const handleProfileSync = () => {
+      setAvatarUrl(localStorage.getItem('avatar_url') || '');
+      setFullNameState(localStorage.getItem('full_name') || localStorage.getItem('fullName') || 'Pengguna');
+    };
+    window.addEventListener('profile-update', handleProfileSync);
+    return () => window.removeEventListener('profile-update', handleProfileSync);
+  }, []);
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const topbarRef = useRef(null);
@@ -433,11 +448,31 @@ export default function HomeHub() {
           </div>
 
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <div className="hub-user-badge">
-              <span className="hub-user-dot" style={{ flexShrink: 0 }} />
+            <div 
+              className="hub-user-badge" 
+              onClick={() => navigate('/profile')}
+              title="Buka Profil & Berkas DWG"
+              style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Avatar"
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    flexShrink: 0,
+                    border: '1.5px solid var(--border-color)'
+                  }}
+                />
+              ) : (
+                <span className="hub-user-dot" style={{ flexShrink: 0 }} />
+              )}
               <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {fullName}
+                  {fullNameState}
                 </span>
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {roleStr || 'Petugas'}

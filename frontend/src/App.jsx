@@ -17,6 +17,7 @@ import UserManagement from './pages/admin/UserManagement';
 import { Toaster } from 'react-hot-toast';
 import KPIDashboard from './components/KPIDashboard';
 import PdfTools from './pages/PdfTools';
+import Profile from './pages/Profile';
 
 // Pemeriksaan Ingat Sesi Saya: Jika tidak dicentang dan browser baru saja dibuka dari awal, reset sesi
 if (localStorage.getItem('remember_me') === 'false' && !sessionStorage.getItem('session_active')) {
@@ -168,6 +169,15 @@ function AppContent() {
               <>
                 <Navbar />
                 <PdfTools />
+              </>
+            </PrivateRoute>
+          } />
+
+          <Route path="/profile" element={
+            <PrivateRoute>
+              <>
+                <Navbar />
+                <Profile />
               </>
             </PrivateRoute>
           } />

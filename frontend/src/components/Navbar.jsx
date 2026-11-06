@@ -17,9 +17,24 @@ export default function Navbar() {
   try {
     const userObj = JSON.parse(localStorage.getItem('user') || '{}');
     if (userObj.full_name) fullName = userObj.full_name;
+    if (userObj.avatar_url && !localStorage.getItem('avatar_url')) {
+      localStorage.setItem('avatar_url', userObj.avatar_url);
+    }
   } catch {
     // ignore JSON parse error
   }
+
+  const [avatarUrl, setAvatarUrl] = useState(() => localStorage.getItem('avatar_url') || '');
+  const [fullNameState, setFullNameState] = useState(fullName);
+
+  useEffect(() => {
+    const handleProfileSync = () => {
+      setAvatarUrl(localStorage.getItem('avatar_url') || '');
+      setFullNameState(localStorage.getItem('full_name') || localStorage.getItem('fullName') || username);
+    };
+    window.addEventListener('profile-update', handleProfileSync);
+    return () => window.removeEventListener('profile-update', handleProfileSync);
+  }, [username]);
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -120,7 +135,7 @@ export default function Navbar() {
 
   const isSuratModule = location.pathname.startsWith('/surat');
   const isAdminModule = location.pathname.startsWith('/admin');
-  const isHubOnlyModule = location.pathname.startsWith('/pdf-tools') || location.pathname.startsWith('/kpi');
+  const isHubOnlyModule = location.pathname.startsWith('/pdf-tools') || location.pathname.startsWith('/kpi') || location.pathname.startsWith('/profile');
 
   return (
     <>
@@ -191,6 +206,13 @@ export default function Navbar() {
           border-radius: 999px;
           user-select: none;
           box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .nav-user-pill:hover {
+          background: var(--surface-hover);
+          border-color: var(--primary-color);
+          transform: translateY(-1px);
         }
         .nav-logout-btn {
           width: auto !important;
@@ -392,6 +414,7 @@ export default function Navbar() {
             border: 1px solid var(--border-color);
             border-radius: 8px;
             margin-bottom: 0.25rem;
+            cursor: pointer;
           }
           .nav-mobile-actions-group {
             display: flex !important;
@@ -425,20 +448,39 @@ export default function Navbar() {
           </div>
 
           {/* Desktop User profile pill */}
-          <div className="nav-user-pill">
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#10b981',
-                boxShadow: '0 0 8px #10b981',
-                flexShrink: 0
-              }}
-            />
+          <div 
+            className="nav-user-pill"
+            onClick={() => navigate('/profile')}
+            title="Buka Profil & Berkas DWG"
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  flexShrink: 0,
+                  border: '1.5px solid var(--border-color)'
+                }}
+              />
+            ) : (
+              <span
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#10b981',
+                  boxShadow: '0 0 8px #10b981',
+                  flexShrink: 0
+                }}
+              />
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2 }}>
-                {fullName}
+                {fullNameState}
               </span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                 {role || 'Petugas'}
@@ -464,23 +506,42 @@ export default function Navbar() {
         
         <div className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           {/* Mobile-only User Identity Card */}
-          <div className="nav-mobile-user-card">
-            <span
-              style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                background: '#10b981',
-                boxShadow: '0 0 8px #10b981',
-                flexShrink: 0
-              }}
-            />
+          <div 
+            className="nav-mobile-user-card"
+            onClick={() => { setMobileMenuOpen(false); navigate('/profile'); }}
+            title="Buka Profil & Berkas DWG"
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  flexShrink: 0,
+                  border: '1.5px solid var(--border-color)'
+                }}
+              />
+            ) : (
+              <span
+                style={{
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  background: '#10b981',
+                  boxShadow: '0 0 8px #10b981',
+                  flexShrink: 0
+                }}
+              />
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
               <strong style={{ fontSize: '0.86rem', color: 'var(--text-main)', lineHeight: 1.2 }}>
-                {fullName}
+                {fullNameState}
               </strong>
               <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                {role || 'Petugas'}
+                {role || 'Petugas'} &bull; <span style={{ color: 'var(--primary-color)' }}>Buka Profil &rarr;</span>
               </span>
             </div>
           </div>
