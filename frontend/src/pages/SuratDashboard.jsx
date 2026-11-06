@@ -55,7 +55,7 @@ export default function SuratDashboard() {
   const userRoles = roleStr.split(',').map(r => r.trim());
 
   return (
-    <div className="container animate-fade-in">
+    <div className="container animate-fade-in dashboard-container" style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', boxSizing: 'border-box', paddingBottom: '3rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1>Monitoring Surat</h1>

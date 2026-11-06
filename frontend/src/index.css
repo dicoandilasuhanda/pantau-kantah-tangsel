@@ -225,6 +225,20 @@ button.secondary:hover {
   width: 100%;
 }
 
+.dashboard-container {
+  max-width: 1100px !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 860px) {
+  .dashboard-container {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+}
+
 .auth-container {
   flex: 1;
   display: flex;
