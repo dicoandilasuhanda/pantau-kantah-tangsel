@@ -55,6 +55,10 @@ function AppContent() {
   const isLoginPage = location.pathname === '/login';
 
   useEffect(() => {
+    document.title = 'Pantau.Kantah Tangsel';
+  }, [location.pathname]);
+
+  useEffect(() => {
     const syncTheme = () => {
       const activeTheme = localStorage.getItem('theme') || 'light';
       document.documentElement.setAttribute('data-theme', activeTheme);

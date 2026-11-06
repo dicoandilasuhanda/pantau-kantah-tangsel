@@ -29,6 +29,10 @@ export default function FileDetails() {
   const userRoles = roleStr.split(',').map(r => r.trim());
 
   useEffect(() => {
+    document.title = 'Pantau.Kantah Tangsel';
+  }, []);
+
+  useEffect(() => {
     const fetchFileAndDisposisi = async () => {
       try {
         const fileRes = await api.get(`/files/${qrcode}`);
@@ -265,6 +269,11 @@ export default function FileDetails() {
     return file.current_location === r;
   }) || userRoles.includes('Administrator');
 
+  const handlePrint = () => {
+    document.title = 'Pantau.Kantah Tangsel';
+    window.print();
+  };
+
   return (
     <div className="container animate-fade-in print-container">
       <button className="secondary no-print" onClick={() => navigate(-1)} style={{ width: 'auto', marginBottom: '2rem' }}>
@@ -273,6 +282,14 @@ export default function FileDetails() {
 
       <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
         <div className="glass-panel print-target" style={{ flex: '1 1 300px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '0.85rem' }}>
+            <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 3px 0' }}>
+              Kantor Pertanahan Kota Tangerang Selatan
+            </p>
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 0.5rem 0', letterSpacing: '-0.01em' }}>
+              Pantau<span style={{ color: '#1D4ED8' }}>.Kantah Tangsel</span>
+            </h4>
+          </div>
           <h2>{file.nomor_berkas} / {file.tahun_berkas}</h2>
           <p style={{ color: 'var(--text-main)', marginBottom: '0.5rem', fontWeight: '500' }}>{file.nama_kegiatan}</p>
           <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)' }}>Pemohon: {file.nama_pemohon}</p>
@@ -409,7 +426,7 @@ export default function FileDetails() {
           </div>
 
           <div className="no-print" style={{ marginBottom: '1.5rem' }}>
-            <button className="secondary" onClick={() => window.print()} style={{ width: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button className="secondary" onClick={handlePrint} style={{ width: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               Cetak QR Code
             </button>
           </div>

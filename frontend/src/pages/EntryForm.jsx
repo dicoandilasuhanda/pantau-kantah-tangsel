@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../utils/api';
 import { CheckCircle } from 'lucide-react';
@@ -15,6 +15,15 @@ export default function EntryForm() {
   const [showReview, setShowReview] = useState(false);
   const roleStr = localStorage.getItem('role') || '';
   const userRoles = roleStr.split(',').map(r => r.trim());
+
+  useEffect(() => {
+    document.title = 'Pantau.Kantah Tangsel';
+  }, []);
+
+  const handlePrint = () => {
+    document.title = 'Pantau.Kantah Tangsel';
+    window.print();
+  };
 
   const handleInitialSubmit = (e) => {
     e.preventDefault();
@@ -176,6 +185,15 @@ export default function EntryForm() {
             </div>
             <h3 className="no-print" style={{ marginBottom: '1rem', color: 'var(--accent-color)' }}>Berhasil Didaftarkan!</h3>
             
+            <div style={{ textAlign: 'center', marginBottom: '0.85rem' }}>
+              <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '3px' }}>
+                Kantor Pertanahan Kota Tangerang Selatan
+              </p>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.01em' }}>
+                Pantau<span style={{ color: '#1D4ED8' }}>.Kantah Tangsel</span>
+              </h4>
+            </div>
+
             <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #ccc' }}>
               <QRCodeSVG value={successData.qr_code} size={200} />
             </div>
@@ -184,7 +202,7 @@ export default function EntryForm() {
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{successData.nama_kegiatan}</p>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-main)' }}>Pemohon: {successData.nama_pemohon}</p>
             
-            <button className="secondary no-print" style={{ marginTop: '1.5rem' }} onClick={() => window.print()}>
+            <button className="secondary no-print" style={{ marginTop: '1.5rem' }} onClick={handlePrint}>
               Cetak QR Code
             </button>
           </div>
