@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Mail, Users, LogOut, ArrowRight, Shield, LayoutDashboard, Sun, Moon, Files } from 'lucide-react';
+import { FolderKanban, Mail, Users, LogOut, ArrowRight, Shield, LayoutDashboard, Sun, Moon, Files, BarChart2 } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
 
 export default function HomeHub() {
@@ -18,6 +18,7 @@ export default function HomeHub() {
 
   const isAdmin = userRoles.includes('Administrator');
   const canAccessSurat = isAdmin || userRoles.includes('Petugas Entry Surat');
+  const canAccessKpi = isAdmin || userRoles.some(r => r.includes('Koordinator')) || userRoles.some(r => r.includes('Kepala Seksi'));
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const topbarRef = useRef(null);
@@ -569,6 +570,31 @@ export default function HomeHub() {
               </div>
               <div className="hub-card-footer">
                 <span>Buka Monitoring Surat</span>
+                <span className="hub-card-arrow">
+                  <ArrowRight size={15} />
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Card: Dashboard KPI */}
+          {canAccessKpi && (
+            <div
+              className="hub-card"
+              onClick={() => navigate('/kpi')}
+            >
+              <div>
+                <div className="hub-icon-box">
+                  <BarChart2 size={26} />
+                </div>
+                <div className="hub-card-badge">Analitik & KPI</div>
+                <h2 className="hub-card-title">Dashboard Kinerja</h2>
+                <p className="hub-card-desc">
+                  Pantau capaian SLA berkas, tren waktu pemrosesan, visualisasi beban kerja, serta statistik produktivitas seksi secara menyeluruh.
+                </p>
+              </div>
+              <div className="hub-card-footer">
+                <span>Buka Dashboard</span>
                 <span className="hub-card-arrow">
                   <ArrowRight size={15} />
                 </span>
