@@ -14,6 +14,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import { Toaster } from 'react-hot-toast';
 import KPIDashboard from './components/KPIDashboard';
+import PdfTools from './pages/PdfTools';
 
 // Pemeriksaan Ingat Sesi Saya: Jika tidak dicentang dan browser baru saja dibuka dari awal, reset sesi
 if (localStorage.getItem('remember_me') === 'false' && !sessionStorage.getItem('session_active')) {
@@ -143,6 +144,15 @@ function AppContent() {
                 </div>
               </>
             </KpiRoute>
+          } />
+
+          <Route path="/pdf-tools" element={
+            <PrivateRoute>
+              <>
+                <Navbar />
+                <PdfTools />
+              </>
+            </PrivateRoute>
           } />
 
           {/* Admin Routes */}

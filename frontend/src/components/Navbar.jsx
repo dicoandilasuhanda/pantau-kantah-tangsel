@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Scan, PlusSquare, Key, X, BarChart2, Home, Mail, FileText, Sun, Moon, Menu } from 'lucide-react';
+import { LogOut, Scan, PlusSquare, Key, X, BarChart2, Home, Mail, FileText, Sun, Moon, Menu, Files } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import NotificationBell from './NotificationBell';
@@ -483,6 +483,10 @@ export default function Navbar() {
               <BarChart2 size={18} /> Dashboard
             </Link>
           )}
+
+          <Link to="/pdf-tools" className={location.pathname === '/pdf-tools' ? 'active' : ''}>
+            <Files size={18} /> PDF Tools
+          </Link>
 
           {/* Desktop Only Bell Notification */}
           <div className="desktop-only-notif">

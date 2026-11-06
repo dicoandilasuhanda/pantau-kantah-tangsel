@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Mail, Users, LogOut, ArrowRight, Shield, LayoutDashboard, Sun, Moon } from 'lucide-react';
+import { FolderKanban, Mail, Users, LogOut, ArrowRight, Shield, LayoutDashboard, Sun, Moon, Files, Sparkles } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
 
 export default function HomeHub() {
@@ -575,6 +575,31 @@ export default function HomeHub() {
               </div>
             </div>
           )}
+
+          {/* Card: PDF Tools (iLovePDF) */}
+          <div
+            className="hub-card"
+            onClick={() => navigate('/pdf-tools')}
+          >
+            <div>
+              <div className="hub-icon-box" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.25)' }}>
+                <Files size={26} />
+              </div>
+              <div className="hub-card-badge" style={{ background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+                <Sparkles size={12} /> Utilitas Dokumen
+              </div>
+              <h2 className="hub-card-title">PDF Tools Kantah</h2>
+              <p className="hub-card-desc">
+                Gabungkan berkas PDF, pisahkan halaman, kompresi ukuran, putar orientasi, serta konversi scan gambar ke PDF secara instan dan 100% aman di peramban.
+              </p>
+            </div>
+            <div className="hub-card-footer">
+              <span>Buka PDF Tools</span>
+              <span className="hub-card-arrow">
+                <ArrowRight size={15} />
+              </span>
+            </div>
+          </div>
 
           {/* Card 3: Admin Panel & Pengguna (Gabungan) */}
           {isAdmin && (
