@@ -230,32 +230,34 @@ export default function HomeHub() {
 
         .hub-floating-saran {
           position: fixed !important;
-          bottom: 1.5rem !important;
+          bottom: calc(44px + 1.25rem) !important;
           right: 1.5rem !important;
-          z-index: 990 !important;
+          z-index: 10001 !important;
           display: inline-flex !important;
           align-items: center !important;
           gap: 0.65rem !important;
-          padding: 0.6rem 1.15rem !important;
+          padding: 0.55rem 1.15rem !important;
           background: var(--surface-card) !important;
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border: 1px solid var(--border-color) !important;
+          border: 1.5px solid var(--border-color) !important;
           border-radius: 999px !important;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06) !important;
           color: var(--text-main) !important;
           font-size: 0.84rem;
           font-weight: 500;
+          line-height: 1.4 !important;
           cursor: pointer;
           transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
           user-select: none;
-          max-width: calc(100vw - 2.5rem);
+          white-space: nowrap !important;
+          box-sizing: border-box !important;
         }
 
         .hub-floating-saran:hover {
           transform: translateY(-3px);
           border-color: #f59e0b !important;
-          box-shadow: 0 12px 28px rgba(245, 158, 11, 0.22), 0 4px 10px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 10px 28px rgba(245, 158, 11, 0.25), 0 4px 12px rgba(0, 0, 0, 0.1) !important;
           background: var(--surface-hover) !important;
         }
 
@@ -279,12 +281,25 @@ export default function HomeHub() {
           color: #38BDF8;
         }
 
+        @media (min-width: 641px) {
+          .hub-floating-saran-short {
+            display: none !important;
+          }
+        }
+
         @media (max-width: 640px) {
           .hub-floating-saran {
-            bottom: 1rem !important;
-            right: 1rem !important;
-            padding: 0.5rem 0.95rem !important;
+            bottom: calc(44px + 0.75rem) !important;
+            right: 0.75rem !important;
+            padding: 0.45rem 0.95rem !important;
             font-size: 0.78rem !important;
+            gap: 0.45rem !important;
+          }
+          .hub-floating-saran-long {
+            display: none !important;
+          }
+          .hub-floating-saran-short {
+            display: inline !important;
           }
         }
 
@@ -732,8 +747,11 @@ export default function HomeHub() {
         <span className="hub-floating-saran-icon">
           <Lightbulb size={16} color="#f59e0b" />
         </span>
-        <span className="hub-floating-saran-text">
+        <span className="hub-floating-saran-text hub-floating-saran-long">
           Punya Ide pengembangan fitur baru ? <strong>Kirim Saran di Sini &rarr;</strong>
+        </span>
+        <span className="hub-floating-saran-text hub-floating-saran-short">
+          Ide Fitur Baru ? <strong>Kirim Saran &rarr;</strong>
         </span>
       </button>
 
