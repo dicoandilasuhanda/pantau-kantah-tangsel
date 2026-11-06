@@ -6,6 +6,7 @@ import HomeHub from './pages/HomeHub';
 import Dashboard from './pages/Dashboard';
 import SuratDashboard from './pages/SuratDashboard';
 import SuratEntryForm from './pages/SuratEntryForm';
+import SuratScanner from './pages/SuratScanner';
 import EntryForm from './pages/EntryForm';
 import Scanner from './pages/Scanner';
 import FileDetails from './pages/FileDetails';
@@ -104,6 +105,15 @@ function AppContent() {
                 <SuratEntryForm />
               </>
             </SuratEntryRoute>
+          } />
+
+          <Route path="/surat/scan" element={
+            <SuratRoute>
+              <>
+                <Navbar />
+                <SuratScanner />
+              </>
+            </SuratRoute>
           } />
 
           <Route path="/entry" element={

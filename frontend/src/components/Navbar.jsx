@@ -456,11 +456,9 @@ export default function Navbar() {
                 <Link to="/surat" className={location.pathname === '/surat' ? 'active' : ''}>
                   <Mail size={18} /> Surat
                 </Link>
-                {(userRoles.includes('Administrator') || userRoles.includes('Petugas Entry Surat')) && (
-                  <Link to="/surat/entry" className={location.pathname === '/surat/entry' ? 'active' : ''}>
-                    <PlusSquare size={18} /> Entri Baru
-                  </Link>
-                )}
+                <Link to="/surat/scan" className={location.pathname === '/surat/scan' ? 'active' : ''}>
+                  <Scan size={18} /> Scan QR Surat
+                </Link>
               </>
             ) : (
               <>
