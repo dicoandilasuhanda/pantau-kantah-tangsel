@@ -66,9 +66,11 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 - **Filter Ganda & Grafik Interaktif:** Visualisasi *Bar Chart* (`Recharts`) dengan filter per nama petugas dan per jenis kegiatan permohonan.
 - **Top 50 Berkas Terlama (Khusus Berkas Aktif):** Daftar peringkat 50 berkas yang masih sedang berjalan (*in-progress*) dengan durasi pemrosesan terlama untuk menjadi prioritas penyelesaian pimpinan.
 
-### 7. ✉️ Modul Monitoring Surat Masuk & Arsip PDF
-- **Penomoran Agenda Otomatis:** Setiap surat masuk yang dientri oleh *Petugas Entry Surat* otomatis mendapatkan Nomor Agenda 5 digit berurutan (`00001`, `00002`, dst.).
-- **Unggah & Pratinjau PDF:** Mendukung pengunggahan dokumen fisik surat dalam format PDF (`Multer`) yang langsung dapat dibuka atau diunduh dari tabel monitoring surat.
+### 7. ✉️ Modul Monitoring Persuratan, Detail Perjalanan Surat, & Arsip PDF
+- **Penomoran Agenda Otomatis & Cetak Slip QR Berstandar:** Setiap surat masuk yang dientri oleh *Petugas Entry Surat* otomatis mendapatkan Nomor Agenda 5 digit berurutan (`00001`, `00002`, dst.) lengkap dengan QR Code agenda surat yang dapat dicetak bersih dan terstandar (dilengkapi nomor surat, asal, perihal, dan alamat IP petugas di baris terbawah).
+- **Unggah & Pratinjau PDF:** Mendukung pengunggahan dokumen fisik surat dalam format PDF (`Multer`) yang langsung dapat dibuka atau diunduh dari tabel monitoring surat maupun panel admin.
+- **Detail Perjalanan Surat & Transit Antar Meja (`SuratDetails.jsx`):** Melacak riwayat perjalanan fisik surat secara akuntabel (`surat_history`), mekanisme pengiriman surat antar meja (*Transit Surat*), pembatalan transit, pencatatan catatan dinamis, dan disposisi pimpinan.
+- **Analitik Kinerja Persuratan & Pengelolaan Admin:** Integrasi metrik penanganan surat per petugas di `KPIDashboard` serta tab khusus "Kelola Persuratan" di `AdminDashboard` untuk aksi administratif surat (*force complete*, penutupan berkas surat, dan penghapusan).
 
 ### 8. 🛡️ Keamanan, Multi-Role, & Manajemen Sesi
 - **Multi-Role & Konfirmasi Pintar (*Smart Role Selection*):** Satu akun pengguna dapat memiliki lebih dari satu jabatan/peran. Saat melakukan *scan*, sistem otomatis mendeteksi riwayat scan dan menyarankan peran berikutnya atau menampilkan pilihan jabatan aktif.
@@ -165,9 +167,12 @@ pantau-kantah-tangsel/
 │   │   │   ├── FileDetails.jsx     # Detail berkas, transit, pause SOP, catatan, & disposisi
 │   │   │   ├── HomeHub.jsx         # Portal utama pemilihan modul layanan
 │   │   │   ├── Login.jsx           # Halaman autentikasi pengguna
-│   │   │   ├── Scanner.jsx         # Pemindai QR Code kamera & unggah gambar
-│   │   │   ├── SuratDashboard.jsx  # Daftar agenda surat masuk & unduh PDF
-│   │   │   └── SuratEntryForm.jsx  # Formulir input surat masuk & unggah PDF
+│   │   │   ├── PdfTools.jsx        # Utilitas manipulasi dokumen PDF in-browser (Gabung, Pisah, Kompres, dsb.)
+│   │   │   ├── Scanner.jsx         # Pemindai QR Code kamera & unggah gambar berkas
+│   │   │   ├── SuratDashboard.jsx  # Daftar agenda surat masuk, unduh PDF, & cetak slip QR
+│   │   │   ├── SuratDetails.jsx    # Detail riwayat perjalanan surat, transit, catatan, disposisi, & cetak slip QR
+│   │   │   ├── SuratEntryForm.jsx  # Formulir input surat masuk & unggah PDF
+│   │   │   └── SuratScanner.jsx    # Pemindai QR agenda surat untuk terima kiriman surat
 │   │   ├── utils/
 │   │   │   ├── api.js              # Konfigurasi instance Axios & interceptor JWT
 │   │   │   └── dateUtils.js        # Kalkulator hari kerja, kalender libur, & target SOP
@@ -273,6 +278,13 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Tombol Pintas Ganti Tema (*Theme Toggle Button*):** Terpasang di bilah navigasi utama (`Navbar.jsx`) dan portal gerbang utama (`HomeHub.jsx`) dengan ikon Matahari (*Sun*) dan Bulan (*Moon*).
   - **Sinkronisasi Otomatis Antar Tab & Anti-Flicker:** Menggunakan event sinkronisasi `theme-change`, penyimpanan persisten `localStorage`, serta skrip inisialisasi anti-flicker (*zero FOUC*) langsung di `<head>` dokumen HTML.
   - **Desain Bebas Tabrakan Warna (*No White-on-White*):** Seluruh variabel token warna (`--bg-color`, `--surface-card`, `--text-main`, `--text-muted`, `--border-color`, `--card-shadow`, dll.) diintegrasikan ke seluruh dasbor, kartu metrik, modal notifikasi, dan tabel berkas sehingga kontras dan kenyamanan visual tetap tajam dan sempurna di kedua mode.
+- **Tahap 13 — Pelacakan Siklus Penuh Persuratan, Kinerja KPI Persuratan, Penyempurnaan Tampilan, & Standarisasi Cetak Slip QR:**
+  - **Detail Perjalanan Surat & Transit Antar Meja (`SuratDetails.jsx`):** Pembuatan halaman detail perjalanan surat (`/surat/detail/:id`) yang setara dengan berkas fisik, lengkap dengan garis waktu riwayat pergerakan surat (`surat_history`), pengiriman surat antar meja (*Transit Surat*), pembatalan transit, catatan petugas dinamis, serta instruksi disposisi pimpinan.
+  - **Analitik Kinerja Persuratan di KPIDashboard & Pengelolaan Admin Panel:** Penambahan tab **Kinerja Persuratan** pada `KPIDashboard` ditenagai endpoint `GET /api/reports/kpi-surat` untuk mengukur durasi dan volume penanganan surat per petugas, serta penambahan tab **Kelola Persuratan** di `AdminDashboard` untuk aksi administratif surat (*force complete*, tutup surat, hapus surat, dan akses file PDF).
+  - **Optimalisasi Antarmuka Login & Mobile Viewport Lock:** Pemusatan posisi kartu login (`Login.jsx`) ke tengah layar (*centered*) tanpa panel hero samping, serta penguncian viewport mobile (`100dvh` dengan `overflow: hidden`) agar halaman login pada smartphone tidak dapat digeser atau di-scroll.
+  - **Penyelarasan Desain & Tipografi Monitoring Surat:** Menyamakan lebar kontainer (`max-width: 1100px`), ukuran font judul `h1` (`1.65rem`), kotak ikon header biru muda, tombol aksi, serta dimensi kotak pencarian dengan antarmuka Monitoring Berkas. Memperbaiki warna kolom `No. Agenda` (`.table-sticky-col`) agar harmonis dan menyatu dengan permukaan tabel di desktop.
+  - **Penyederhanaan Halaman PDF Tools (`PdfTools.jsx`):** Menghilangkan blok hero header atas agar pengguna dapat langsung mengakses navigasi tab dan utilitas manipulasi berkas PDF tanpa distraksi visual.
+  - **Standarisasi Cetak Slip QR Surat & Isolasi Media Cetak:** Menyelaraskan tata letak cetak slip QR surat agar 100% konsisten dengan slip berkas resmi (`No. Agenda`, `No. Surat`, `Asal`, `Perihal`, dan pencatatan alamat `IP` di baris terbawah melalui endpoint internal `/api/my-ip`), serta menerapkan aturan CSS `@media print` khusus (`.print-only-slip`) sehingga browser hanya mencetak slip bersih tanpa latar modal gelap maupun tombol aplikasi.
 
 ---
 
