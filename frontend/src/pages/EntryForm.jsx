@@ -50,6 +50,12 @@ export default function EntryForm() {
       setSuccessData(response.data);
       if (response.data.client_ip) {
         setClientIp(response.data.client_ip);
+      } else {
+        try {
+          const detailRes = await api.get(`/files/${response.data.qr_code}`);
+          const histIp = detailRes.data?.client_ip || (detailRes.data?.history && detailRes.data.history[0]?.scanned_ip);
+          if (histIp && histIp !== 'Unknown') setClientIp(histIp);
+        } catch {}
       }
       setShowReview(false);
       setNomorBerkas('');

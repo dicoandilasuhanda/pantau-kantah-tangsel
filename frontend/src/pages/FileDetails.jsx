@@ -305,11 +305,14 @@ export default function FileDetails() {
         <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{file.nomor_berkas} / {file.tahun_berkas}</p>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{file.nama_kegiatan}</p>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-main)', marginBottom: '0.35rem' }}>Pemohon: {file.nama_pemohon}</p>
-        {(clientIp || file.client_ip) && (
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '0.02em', marginTop: '0.25rem' }}>
-            IP: {clientIp || file.client_ip}
-          </p>
-        )}
+        {(() => {
+          const displayIp = clientIp || file.client_ip || (file.history && file.history.find(h => h.scanned_ip && h.scanned_ip !== 'Unknown')?.scanned_ip) || (file.history && file.history[0]?.scanned_ip);
+          return displayIp ? (
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '0.02em', marginTop: '0.25rem' }}>
+              IP: {displayIp}
+            </p>
+          ) : null;
+        })()}
       </div>
 
       <div className="screen-only-details" style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
