@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FolderKanban, Mail, Users, LogOut, ArrowRight, Shield, LayoutDashboard, Sun, Moon } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
@@ -20,6 +20,29 @@ export default function HomeHub() {
   const canAccessSurat = isAdmin || userRoles.includes('Petugas Entry Surat');
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const topbarRef = useRef(null);
+  const [topbarHeight, setTopbarHeight] = useState(58);
+
+  useEffect(() => {
+    const el = topbarRef.current;
+    if (!el) return;
+    const updateHeight = () => {
+      if (el.offsetHeight > 0) {
+        setTopbarHeight(el.offsetHeight);
+      }
+    };
+    updateHeight();
+    let observer;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(updateHeight);
+      observer.observe(el);
+    }
+    window.addEventListener('resize', updateHeight);
+    return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, []);
 
   const setThemeMode = (mode) => {
     setTheme(mode);
@@ -390,13 +413,32 @@ export default function HomeHub() {
         [data-theme="dark"] .hub-app-sub {
           color: #38BDF8;
         }
+        .hub-brand-full {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--text-main);
+          letter-spacing: -0.01em;
+        }
+        .hub-brand-short {
+          display: none;
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--text-main);
+          letter-spacing: -0.01em;
+        }
+
+        @media (max-width: 1024px) {
+          .hub-brand-full {
+            display: none;
+          }
+          .hub-brand-short {
+            display: inline;
+          }
+        }
 
         @media (max-width: 640px) {
           .hub-topbar {
             padding: 0.75rem 1rem;
-          }
-          .hub-topbar-spacer {
-            height: 50px;
           }
           .hub-topbar-inner {
             gap: 0.65rem;
@@ -411,15 +453,18 @@ export default function HomeHub() {
       `}</style>
 
       {/* Top Navigation Bar */}
-      <header className="hub-topbar">
+      <header ref={topbarRef} className="hub-topbar">
         <div className="hub-topbar-inner">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div className="hub-seal-box" title="Kementerian ATR/BPN RI">
               <img src="/logo-atr-bpn.png" alt="Logo Kementerian ATR/BPN" className="hub-seal-img" />
             </div>
             <div>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
+              <span className="hub-brand-full">
                 Kantor Pertanahan Kota Tangerang Selatan
+              </span>
+              <span className="hub-brand-short">
+                Kantah Tangsel
               </span>
               <span style={{ margin: '0 0.35rem', color: 'var(--text-muted)', opacity: 0.5 }}>|</span>
               <span className="hub-app-name">
@@ -468,7 +513,7 @@ export default function HomeHub() {
           </div>
         </div>
       </header>
-      <div className="hub-topbar-spacer" aria-hidden="true" />
+      <div className="hub-topbar-spacer" style={{ height: `${topbarHeight}px` }} aria-hidden="true" />
 
       <div className="hub-container">
         {/* Hero Header */}

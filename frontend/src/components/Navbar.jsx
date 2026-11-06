@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, Scan, PlusSquare, Key, X, BarChart2, Home, Mail, FileText, Sun, Moon, Menu } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -28,6 +28,29 @@ export default function Navbar() {
   const [savingPassword, setSavingPassword] = useState(false);
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const navRef = useRef(null);
+  const [navHeight, setNavHeight] = useState(56);
+
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const updateHeight = () => {
+      if (!mobileMenuOpen && el.offsetHeight > 0) {
+        setNavHeight(el.offsetHeight);
+      }
+    };
+    updateHeight();
+    let observer;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(updateHeight);
+      observer.observe(el);
+    }
+    window.addEventListener('resize', updateHeight);
+    return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [mobileMenuOpen]);
 
   // Tutup menu mobile ketika navigasi berpindah
   useEffect(() => {
@@ -232,6 +255,8 @@ export default function Navbar() {
           border-bottom: 1px solid var(--border-color);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
           box-sizing: border-box !important;
+          flex-wrap: wrap;
+          gap: 0.5rem;
         }
         .navbar-spacer {
           height: 56px;
@@ -345,7 +370,7 @@ export default function Navbar() {
         }
       `}</style>
 
-      <nav className="navbar">
+      <nav ref={navRef} className="navbar">
         <div className="navbar-brand">
           <div className="navbar-brand-info">
             <div className="navbar-seal-box" title="Kementerian ATR/BPN RI">
@@ -499,7 +524,7 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
-      <div className="navbar-spacer" aria-hidden="true" />
+      <div className="navbar-spacer" style={{ height: `${navHeight}px` }} aria-hidden="true" />
 
       {showPasswordModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
