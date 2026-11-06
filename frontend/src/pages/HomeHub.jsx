@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FolderKanban, Mail, LogOut, ArrowRight, Shield, Sun, Moon, Files, BarChart2, Lightbulb } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
 import SuggestionModal from '../components/SuggestionModal';
+import api from '../utils/api';
 
 export default function HomeHub() {
   const navigate = useNavigate();
@@ -79,7 +80,8 @@ export default function HomeHub() {
     return () => window.removeEventListener('theme-change', handleThemeSync);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await api.post('/logout'); } catch (_) {}
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('user');

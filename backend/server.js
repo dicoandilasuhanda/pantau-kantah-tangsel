@@ -171,6 +171,8 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
       db.run(`ALTER TABLE users ADD COLUMN full_name TEXT`, (err) => {});
       db.run(`ALTER TABLE users ADD COLUMN session_id TEXT`, (err) => {});
       db.run(`ALTER TABLE users ADD COLUMN avatar_url TEXT`, (err) => {});
+      db.run(`ALTER TABLE users ADD COLUMN last_active_at DATETIME`, (err) => {});
+      db.run(`ALTER TABLE users ADD COLUMN last_ip TEXT`, (err) => {});
 
       db.run(`CREATE TABLE IF NOT EXISTS user_dwg_files (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -439,7 +441,10 @@ app.post('/api/login', loginLimiter, (req, res) => {
     activeSessions.push(sessionId);
     const newSessionString = activeSessions.join(',');
 
-    db.run('UPDATE users SET session_id = ? WHERE id = ?', [newSessionString, user.id], (updateErr) => {
+    const rawIp = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
+    const clientIp = rawIp.split(',')[0].trim();
+
+    db.run('UPDATE users SET session_id = ?, last_active_at = CURRENT_TIMESTAMP, last_ip = ? WHERE id = ?', [newSessionString, clientIp || null, user.id], (updateErr) => {
       if (updateErr) {
         return res.status(500).json({ error: 'Gagal membuat sesi login' });
       }
@@ -462,6 +467,9 @@ app.post('/api/login', loginLimiter, (req, res) => {
   });
 });
 
+// Cache throttle last_active_at update (max 1 update per 30s per user)
+const userLastActiveMap = new Map();
+
 // Middleware to verify JWT and Multi-Device Session
 const authenticateJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -483,6 +491,20 @@ const authenticateJWT = (req, res, next) => {
         // Pastikan full_name terbaru dari DB selalu tersedia di req.user
         user.full_name = row.full_name || user.full_name;
         req.user = user;
+
+        // Throttle pembaruan waktu aktif user
+        const now = Date.now();
+        const lastUpdated = userLastActiveMap.get(user.id) || 0;
+        if (now - lastUpdated > 30000) {
+          userLastActiveMap.set(user.id, now);
+          const rawClientIp = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
+          const clientIp = rawClientIp.split(',')[0].trim();
+          db.run(
+            'UPDATE users SET last_active_at = CURRENT_TIMESTAMP, last_ip = ? WHERE id = ?',
+            [clientIp || null, user.id]
+          );
+        }
+
         next();
       });
     });
@@ -1525,6 +1547,101 @@ app.delete('/api/suggestions/:id', authenticateJWT, (req, res) => {
       res.json({ message: 'Saran berhasil dihapus' });
     });
   });
+});
+
+// Logout endpoint to immediately mark user offline
+app.post('/api/logout', authenticateJWT, (req, res) => {
+  userLastActiveMap.delete(req.user.id);
+  const currentSessions = (req.user.session_id ? req.user.session_id.split(',') : []).filter(s => s !== req.user.session_id);
+  db.run(
+    "UPDATE users SET session_id = ?, last_active_at = datetime('now', '-10 minutes') WHERE id = ?",
+    [currentSessions.join(',') || null, req.user.id],
+    () => res.json({ message: 'Berhasil keluar.' })
+  );
+});
+
+
+// ==========================================
+// WEB-APP STATS & ONLINE USERS API
+// ==========================================
+
+// Get web-app stats & online user list (Admin only)
+app.get('/api/admin/stats', authenticateJWT, requireAdmin, (req, res) => {
+  // Batas toleransi user dianggap online: 5 menit terakhir
+  const onlineThresholdMinutes = 5;
+
+  db.all(
+    `SELECT 
+      id, 
+      username, 
+      full_name, 
+      role, 
+      avatar_url, 
+      last_active_at, 
+      last_ip, 
+      session_id, 
+      telegram_chat_id,
+      CASE 
+        WHEN last_active_at IS NOT NULL AND last_active_at >= datetime('now', '-${onlineThresholdMinutes} minutes') 
+        THEN 1 
+        ELSE 0 
+      END AS is_online
+     FROM users
+     ORDER BY is_online DESC, last_active_at DESC, username ASC`,
+    [],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Gagal mengambil data statistik: ' + err.message });
+
+      const users = (rows || []).map(u => {
+        const sessionCount = u.session_id ? u.session_id.split(',').filter(Boolean).length : 0;
+        return {
+          id: u.id,
+          username: u.username,
+          full_name: u.full_name || u.username,
+          role: u.role,
+          avatar_url: u.avatar_url,
+          last_active_at: u.last_active_at,
+          last_ip: u.last_ip,
+          session_count: sessionCount,
+          telegram_connected: !!(u.telegram_chat_id && u.telegram_chat_id.trim()),
+          is_online: Boolean(u.is_online)
+        };
+      });
+
+      const totalUsers = users.length;
+      const onlineUsers = users.filter(u => u.is_online).length;
+      const telegramUsers = users.filter(u => u.telegram_connected).length;
+      const activeSessions = users.reduce((acc, u) => acc + (u.is_online ? u.session_count : 0), 0);
+
+      res.json({
+        summary: {
+          total_users: totalUsers,
+          online_users: onlineUsers,
+          offline_users: totalUsers - onlineUsers,
+          active_sessions: activeSessions,
+          telegram_connected_users: telegramUsers,
+          server_time: new Date().toISOString()
+        },
+        users
+      });
+    }
+  );
+});
+
+// Force logout / kick session for a user (Admin only)
+app.post('/api/admin/users/:id/kick', authenticateJWT, requireAdmin, (req, res) => {
+  const targetId = req.params.id;
+  userLastActiveMap.delete(parseInt(targetId));
+  
+  db.run(
+    "UPDATE users SET session_id = NULL, last_active_at = datetime('now', '-10 minutes') WHERE id = ?",
+    [targetId],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Gagal memutuskan sesi: ' + err.message });
+      if (this.changes === 0) return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
+      res.json({ message: 'Sesi pengguna berhasil diputuskan. Pengguna akan diminta login kembali.' });
+    }
+  );
 });
 
 

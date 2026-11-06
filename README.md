@@ -102,11 +102,18 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
   - **Penyimpanan Berkas Multi-Owner Cerdas:** File fisik `.dwg` di server dilindungi dengan sistem referensi multi-pengguna; file fisik hanya dihapus dari disk jika tidak ada lagi pihak (baik pengirim maupun penerima) yang menyimpannya.
 
 ### 11. 💡 Kotak Saran & Ide Fitur Pengguna (Community Feedback Hub)
-- **Akses Langsung di Home Hub:** Tombol saran terpasang di *Topbar* (`hub-saran-btn`) dan banner interaktif *Hero* (`hub-hero-saran-pill`) portal gerbang utama.
+- **Akses Langsung di Home Hub:** Tombol saran melayang (*floating pill*) interaktif di pojok kanan bawah Home Hub dengan animasi lembut dan status adaptif desktop/mobile.
 - **Formulir Pengajuan Terstruktur:** Pengguna dapat mengirimkan usulan ide fitur, peningkatan alur kerja SOP, perbaikan UI/UX, maupun integrasi/otomasi sistem disertai judul dan rincian kebutuhan.
 - **Notifikasi Bot Telegram Otomatis ke Administrator:** Setiap saran yang dikirimkan langsung diteruskan ke akun Telegram para Administrator secara *real-time*.
 - **Riwayat & Pelacakan Status:** Pengguna dapat memantau status saran mereka (*Menunggu Review*, *Ditinjau*, *Diterima*, *Selesai*, atau *Ditolak*) serta membaca catatan tanggapan dari tim administrator.
 - **Panel Manajemen Review (Administrator):** Administrator dapat melihat seluruh saran masuk dari staf/petugas, memperbarui status, memberikan catatan tanggapan, maupun menghapus saran.
+
+### 12. 📈 Web-App Stats & Pemantauan Pengguna Online Real-Time
+- **Metrik Kehadiran Langsung:** Menampilkan total pengguna terdaftar, jumlah pengguna yang sedang aktif/online (berdasarkan aktivitas 5 menit terakhir), jumlah pengguna offline, total sesi aktif, dan akun terhubung ke Telegram.
+- **Daftar & Detail Pengguna Online:** Tabel interaktif dengan avatar, nama lengkap, username, peran aktif, waktu aktivitas terakhir (*relative time*), alamat IP terakhir, serta status tautan Telegram.
+- **Manajemen Sesi & Disconnect (Kick):** Administrator memiliki wewenang untuk memutuskan (*kick*) sesi aktif pengguna tertentu jika terdeteksi aktivitas mencurigakan atau untuk pemeliharaan sesi.
+- **Auto-Refresh Cerdas:** Dilengkapi saklar *Auto-Refresh* berkala (15 detik) dengan indikator denyut hijau (*live pulse*) serta tombol penyegaran manual.
+- **Integrasi Terpadu:** Tautan langsung tersedia di bilah navigasi admin (`Navbar.jsx`) dan tab navigasi `AdminDashboard.jsx`.
 
 ---
 

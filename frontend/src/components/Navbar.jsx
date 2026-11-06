@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Scan, PlusSquare, Key, X, Home, Mail, FileText, Sun, Moon, Menu, Shield, Users } from 'lucide-react';
+import { LogOut, Scan, PlusSquare, Key, X, Home, Mail, FileText, Sun, Moon, Menu, Shield, Users, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import NotificationBell from './NotificationBell';
@@ -93,7 +93,8 @@ export default function Navbar() {
     return () => window.removeEventListener('theme-change', handleThemeSync);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await api.post('/logout'); } catch (_) {}
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('user');
@@ -568,6 +569,9 @@ export default function Navbar() {
                   </Link>
                   <Link to="/admin/users" className={location.pathname === '/admin/users' ? 'active' : ''}>
                     <Users size={18} /> Kelola Akun
+                  </Link>
+                  <Link to="/admin/stats" className={location.pathname === '/admin/stats' ? 'active' : ''}>
+                    <Activity size={18} /> Web-app Stats
                   </Link>
                 </>
               )

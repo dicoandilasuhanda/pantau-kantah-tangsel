@@ -14,6 +14,7 @@ import FileDetails from './pages/FileDetails';
 import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
+import WebAppStats from './pages/admin/WebAppStats';
 import { Toaster } from 'react-hot-toast';
 import KPIDashboard from './components/KPIDashboard';
 import PdfTools from './pages/PdfTools';
@@ -197,6 +198,15 @@ function AppContent() {
               <>
                 <Navbar />
                 <UserManagement />
+              </>
+            </AdminRoute>
+          } />
+
+          <Route path="/admin/stats" element={
+            <AdminRoute>
+              <>
+                <Navbar />
+                <WebAppStats />
               </>
             </AdminRoute>
           } />
