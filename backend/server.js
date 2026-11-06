@@ -315,6 +315,25 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
       db.run(`CREATE INDEX IF NOT EXISTS idx_files_nomor_tahun ON files(nomor_berkas, tahun_berkas)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_files_transit ON files(is_transit, transit_to_username)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_users_telegram ON users(telegram_chat_id)`);
+
+      // Tabel Saran & Ide Fitur Pengguna
+      db.run(`CREATE TABLE IF NOT EXISTS suggestions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        username TEXT,
+        full_name TEXT,
+        role TEXT,
+        title TEXT NOT NULL,
+        category TEXT DEFAULT 'Fitur Baru',
+        description TEXT NOT NULL,
+        status TEXT DEFAULT 'Menunggu Review',
+        admin_notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_suggestions_user_id ON suggestions(user_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_suggestions_created_at ON suggestions(created_at)`);
+
       db.run(`PRAGMA foreign_keys = ON`);
 
       // One-time patch for Syahrul's orphaned history (flexible matching)
@@ -1390,6 +1409,122 @@ app.delete('/api/user/dwg/:id', authenticateJWT, requireDwgAccess, (req, res) =>
       });
     }
   );
+});
+
+
+// ==========================================
+// KOTAK SARAN & IDE FITUR (SUGGESTIONS API)
+// ==========================================
+
+// Submit new suggestion
+app.post('/api/suggestions', authenticateJWT, (req, res) => {
+  const { title, category, description } = req.body;
+  if (!title || !title.trim()) {
+    return res.status(400).json({ error: 'Judul saran tidak boleh kosong' });
+  }
+  if (!description || !description.trim()) {
+    return res.status(400).json({ error: 'Rincian saran tidak boleh kosong' });
+  }
+
+  const cleanTitle = title.trim();
+  const cleanCat = (category || 'Fitur Baru').trim();
+  const cleanDesc = description.trim();
+  const userId = req.user.id;
+  const username = req.user.username;
+  const fullName = req.user.full_name || username;
+  const role = req.user.role || 'Petugas';
+
+  const insertSql = `INSERT INTO suggestions (user_id, username, full_name, role, title, category, description, status) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, 'Menunggu Review')`;
+  
+  db.run(insertSql, [userId, username, fullName, role, cleanTitle, cleanCat, cleanDesc], function (err) {
+    if (err) return res.status(500).json({ error: 'Gagal menyimpan saran: ' + err.message });
+    
+    const newId = this.lastID;
+
+    // Kirim notifikasi bot Telegram ke akun Administrator yang terhubung
+    db.all("SELECT telegram_chat_id FROM users WHERE role LIKE '%Administrator%' AND telegram_chat_id IS NOT NULL AND telegram_chat_id != ''", (adminErr, admins) => {
+      if (!adminErr && admins && admins.length > 0) {
+        const notifMsg = `💡 <b>Saran Fitur Baru Masuk!</b>\n\n` +
+          `👤 <b>Pengirim:</b> ${fullName} (@${username})\n` +
+          `🛡️ <b>Role:</b> ${role}\n` +
+          `🏷️ <b>Kategori:</b> ${cleanCat}\n` +
+          `📌 <b>Judul:</b> ${cleanTitle}\n\n` +
+          `📝 <b>Detail Saran:</b>\n${cleanDesc}\n\n` +
+          `📅 <i>${new Date().toLocaleString('id-ID')}</i>`;
+        admins.forEach(adm => {
+          sendTelegramMessage(adm.telegram_chat_id, notifMsg);
+        });
+      }
+    });
+
+    res.status(201).json({
+      message: 'Saran berhasil dikirimkan. Terima kasih atas masukan Anda!',
+      id: newId
+    });
+  });
+});
+
+// Get suggestions (Admin sees all, non-admin sees their own)
+app.get('/api/suggestions', authenticateJWT, (req, res) => {
+  const userRoles = (req.user.role || '').split(',').map(r => r.trim());
+  const isAdmin = userRoles.includes('Administrator');
+
+  let sql = 'SELECT * FROM suggestions ORDER BY created_at DESC';
+  let params = [];
+
+  if (!isAdmin) {
+    sql = 'SELECT * FROM suggestions WHERE user_id = ? ORDER BY created_at DESC';
+    params = [req.user.id];
+  }
+
+  db.all(sql, params, (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Gagal mengambil daftar saran' });
+    res.json(rows || []);
+  });
+});
+
+// Update suggestion status & admin notes (Admin only)
+app.put('/api/suggestions/:id/status', authenticateJWT, requireAdmin, (req, res) => {
+  const { status, admin_notes } = req.body;
+  const suggestionId = req.params.id;
+
+  if (!status) return res.status(400).json({ error: 'Status harus ditentukan' });
+
+  db.run(
+    'UPDATE suggestions SET status = ?, admin_notes = ? WHERE id = ?',
+    [status, admin_notes || null, suggestionId],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Gagal memperbarui status saran' });
+      if (this.changes === 0) return res.status(404).json({ error: 'Saran tidak ditemukan' });
+      res.json({ message: 'Status saran berhasil diperbarui' });
+    }
+  );
+});
+
+// Delete suggestion (Admin or creator)
+app.delete('/api/suggestions/:id', authenticateJWT, (req, res) => {
+  const suggestionId = req.params.id;
+  const userRoles = (req.user.role || '').split(',').map(r => r.trim());
+  const isAdmin = userRoles.includes('Administrator');
+
+  let checkSql = 'SELECT * FROM suggestions WHERE id = ?';
+  let checkParams = [suggestionId];
+
+  if (!isAdmin) {
+    checkSql += ' AND user_id = ?';
+    checkParams.push(req.user.id);
+  }
+
+  db.get(checkSql, checkParams, (err, row) => {
+    if (err) return res.status(500).json({ error: 'Gagal memeriksa saran' });
+    if (!row) return res.status(404).json({ error: 'Saran tidak ditemukan atau Anda tidak memiliki akses' });
+
+    db.run('DELETE FROM suggestions WHERE id = ?', [suggestionId], (delErr) => {
+      if (delErr) return res.status(500).json({ error: 'Gagal menghapus saran' });
+      res.json({ message: 'Saran berhasil dihapus' });
+    });
+  });
 });
 
 

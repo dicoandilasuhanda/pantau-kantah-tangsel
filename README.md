@@ -101,6 +101,13 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
   - **Pemberitahuan Otomatis Bot Telegram:** Pengiriman dan penerusan berkas DWG otomatis memicu notifikasi pesan rincian file dan catatan langsung ke akun Telegram penerima secara *real-time*.
   - **Penyimpanan Berkas Multi-Owner Cerdas:** File fisik `.dwg` di server dilindungi dengan sistem referensi multi-pengguna; file fisik hanya dihapus dari disk jika tidak ada lagi pihak (baik pengirim maupun penerima) yang menyimpannya.
 
+### 11. 💡 Kotak Saran & Ide Fitur Pengguna (Community Feedback Hub)
+- **Akses Langsung di Home Hub:** Tombol saran terpasang di *Topbar* (`hub-saran-btn`) dan banner interaktif *Hero* (`hub-hero-saran-pill`) portal gerbang utama.
+- **Formulir Pengajuan Terstruktur:** Pengguna dapat mengirimkan usulan ide fitur, peningkatan alur kerja SOP, perbaikan UI/UX, maupun integrasi/otomasi sistem disertai judul dan rincian kebutuhan.
+- **Notifikasi Bot Telegram Otomatis ke Administrator:** Setiap saran yang dikirimkan langsung diteruskan ke akun Telegram para Administrator secara *real-time*.
+- **Riwayat & Pelacakan Status:** Pengguna dapat memantau status saran mereka (*Menunggu Review*, *Ditinjau*, *Diterima*, *Selesai*, atau *Ditolak*) serta membaca catatan tanggapan dari tim administrator.
+- **Panel Manajemen Review (Administrator):** Administrator dapat melihat seluruh saran masuk dari staf/petugas, memperbarui status, memberikan catatan tanggapan, maupun menghapus saran.
+
 ---
 
 ## 👥 Daftar Peran (*Roles*) dalam Sistem
@@ -171,6 +178,7 @@ pantau-kantah-tangsel/
 │   │   │   ├── KPIDashboard.jsx    # Analitik kinerja petugas & grafik Recharts
 │   │   │   ├── Navbar.jsx          # Navigasi adaptif, akses profil cepat, lonceng notifikasi, & modal ubah sandi
 │   │   │   ├── NotificationBell.jsx# Lonceng notifikasi kiriman berkas (Transit) & Web Audio Chime
+│   │   │   ├── SuggestionModal.jsx # Modal kotak saran fitur baru, riwayat pengajuan, & review admin
 │   │   │   ├── Top10Petugas.jsx
 │   │   │   └── Top50Berkas.jsx     # Tabel 50 berkas aktif terlama
 │   │   ├── pages/                  # Halaman aplikasi:
@@ -307,6 +315,7 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Ruang Berkas DWG (AutoCAD) & Pertukaran Bilateral:** Integrasi penyimpanan dan transfer file `.dwg` kadastral yang dibatasi secara ketat khusus untuk **Asisten Surveyor Kadastral** dan **Petugas Pemetaan** (serta Administrator). Dilengkapi tab `Semua`, `Berkas Masuk (Inbox)`, `Folder Pribadi`, dan `Terkirim (Outbox)`, modal kirim langsung atau teruskan (*forward*) berkas dengan catatan, sistem *reference counting* multi-owner agar file fisik di server tidak terhapus sembarangan, serta notifikasi instan bot Telegram penerima.
   - **Restrukturisasi Menu Navigasi Navbar (`Navbar.jsx`):** Menempatkan tombol pintas **Admin Panel** dan **Kelola Akun** langsung di bilah navbar atas bagi akun Administrator, mengalihkan akses menu **Kinerja** agar berfokus diakses melalui portal Home Hub, serta merapikan posisi menu kanan (`Sandi` & `Keluar`) agar tetap rapat kanan tanpa terpotong di layar laptop & desktop.
   - **Paginasi Tabel Manajemen Pengguna (`UserManagement.jsx`):** Mengoptimalkan daftar akun pengguna di panel admin dengan paginasi 10 baris per halaman untuk mempercepat proses render antarmuka dan mempermudah navigasi data staf/petugas.
+  - **Kotak Saran & Ide Fitur Pengguna (`SuggestionModal.jsx`):** Penyediaan tombol saran di *Topbar* dan banner interaktif *Hero* portal Home Hub untuk menampung ide dan aspirasi staf demi pengembangan berkelanjutan aplikasi, dilengkapi notifikasi bot Telegram otomatis ke Administrator serta panel review status usulan (*Menunggu Review*, *Ditinjau*, *Diterima*, *Selesai*, *Ditolak*).
 
 ---
 

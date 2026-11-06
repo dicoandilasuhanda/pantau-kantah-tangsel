@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Mail, LogOut, ArrowRight, Shield, Sun, Moon, Files, BarChart2 } from 'lucide-react';
+import { FolderKanban, Mail, LogOut, ArrowRight, Shield, Sun, Moon, Files, BarChart2, Lightbulb } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
+import SuggestionModal from '../components/SuggestionModal';
 
 export default function HomeHub() {
   const navigate = useNavigate();
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const roleStr = localStorage.getItem('role') || '';
   const userRoles = roleStr.split(',').map(r => r.trim()).filter(Boolean);
   const isAdmin = userRoles.includes('Administrator');
@@ -203,6 +205,61 @@ export default function HomeHub() {
           background: rgba(239, 68, 68, 0.2) !important;
           border-color: rgba(239, 68, 68, 0.45) !important;
           transform: translateY(-1px);
+        }
+
+        .hub-saran-btn {
+          width: auto !important;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          padding: 0.4rem 0.85rem;
+          background: var(--surface-card) !important;
+          border: 1px solid var(--border-color) !important;
+          border-radius: 999px !important;
+          color: var(--text-main) !important;
+          font-size: 0.83rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+        }
+
+        .hub-saran-btn:hover {
+          background: var(--surface-hover) !important;
+          border-color: #f59e0b !important;
+          color: #f59e0b !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+        }
+
+        .hub-hero-saran-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.55rem;
+          padding: 0.45rem 1.15rem;
+          border-radius: 999px;
+          background: var(--surface-card);
+          border: 1px solid var(--border-color);
+          color: var(--text-muted);
+          font-size: 0.86rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .hub-hero-saran-pill:hover {
+          border-color: #f59e0b;
+          color: var(--text-main);
+          background: var(--surface-hover);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(245, 158, 11, 0.18);
+        }
+
+        .hub-hero-saran-pill strong {
+          color: #1D4ED8;
+        }
+        [data-theme="dark"] .hub-hero-saran-pill strong {
+          color: #38BDF8;
         }
 
         .hub-hero {
@@ -448,6 +505,16 @@ export default function HomeHub() {
           </div>
 
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setShowSuggestionModal(true)}
+              className="hub-saran-btn"
+              title="Sumbang Saran & Ide Fitur Baru"
+            >
+              <Lightbulb size={15} color="#f59e0b" />
+              <span>Saran Fitur</span>
+            </button>
+
             <div 
               className="hub-user-badge" 
               onClick={() => navigate('/profile')}
@@ -515,6 +582,16 @@ export default function HomeHub() {
           <h1 className="hub-title">
             Portal Aplikasi Pantau<span className="hub-title-accent">.Kantah Tangsel</span>
           </h1>
+          <div style={{ marginTop: '0.85rem', display: 'flex', justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={() => setShowSuggestionModal(true)}
+              className="hub-hero-saran-pill"
+            >
+              <Lightbulb size={16} color="#f59e0b" />
+              <span>Punya ide pengembangan fitur baru? <strong>Kirim Saran di Sini &rarr;</strong></span>
+            </button>
+          </div>
         </div>
 
         {/* Module Grid */}
@@ -639,6 +716,11 @@ export default function HomeHub() {
           )}
         </div>
       </div>
+
+      <SuggestionModal
+        isOpen={showSuggestionModal}
+        onClose={() => setShowSuggestionModal(false)}
+      />
     </div>
   );
 }
