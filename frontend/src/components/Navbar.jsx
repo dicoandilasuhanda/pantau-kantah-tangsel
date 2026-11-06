@@ -570,8 +570,8 @@ export default function Navbar() {
                   <Link to="/admin/users" className={location.pathname === '/admin/users' ? 'active' : ''}>
                     <Users size={18} /> Kelola Akun
                   </Link>
-                  <Link to="/admin/stats" className={location.pathname === '/admin/stats' ? 'active' : ''}>
-                    <Activity size={18} /> Web-app Stats
+                  <Link to="/admin/stats" className={location.pathname === '/admin/stats' ? 'active' : ''} title="Web-app Stats & Pengguna Online">
+                    <Activity size={18} /> Stats
                   </Link>
                 </>
               )
