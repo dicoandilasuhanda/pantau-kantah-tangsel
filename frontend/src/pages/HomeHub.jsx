@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Mail, Users, LogOut, ArrowRight, Shield, LayoutDashboard, Sun, Moon, Files, BarChart2 } from 'lucide-react';
+import { FolderKanban, Mail, LogOut, ArrowRight, Sun, Moon, Files, BarChart2 } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
 
 export default function HomeHub() {
   const navigate = useNavigate();
-  const roleStr = localStorage.getItem('role') || '';
-  const userRoles = roleStr.split(',').map(r => r.trim()).filter(Boolean);
 
   let fullName = localStorage.getItem('full_name') || localStorage.getItem('username') || 'Pengguna';
   try {
@@ -15,8 +13,6 @@ export default function HomeHub() {
   } catch {
     // ignore JSON parse error
   }
-
-  const isAdmin = userRoles.includes('Administrator');
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const topbarRef = useRef(null);
@@ -361,45 +357,6 @@ export default function HomeHub() {
           color: #07182D;
         }
 
-        .hub-admin-actions {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.65rem;
-          padding-top: 1rem;
-          border-top: 1px solid var(--border-color);
-        }
-
-        .hub-admin-btn {
-          width: 100%;
-          padding: 0.55rem 0.75rem;
-          border-radius: 8px;
-          font-size: 0.82rem;
-          font-weight: 600;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.4rem;
-          background: #0B2545;
-          color: #FFFFFF;
-          border: 1px solid #0B2545;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        .hub-admin-btn:hover {
-          background: #134074;
-          border-color: #134074;
-          transform: translateY(-1px);
-        }
-        [data-theme="dark"] .hub-admin-btn {
-          background: rgba(29, 78, 216, 0.2);
-          color: #93C5FD;
-          border-color: rgba(59, 130, 246, 0.35);
-        }
-        [data-theme="dark"] .hub-admin-btn:hover {
-          background: rgba(29, 78, 216, 0.35);
-          border-color: #38BDF8;
-        }
-
         .hub-app-name {
           font-size: 0.85rem;
           font-weight: 700;
@@ -615,45 +572,6 @@ export default function HomeHub() {
               </span>
             </div>
           </div>
-
-          {/* Card 3: Admin Panel & Pengguna (Gabungan) */}
-          {isAdmin && (
-            <div
-              className="hub-card"
-              onClick={() => navigate('/admin')}
-            >
-              <div>
-                <div className="hub-icon-box">
-                  <Shield size={26} />
-                </div>
-                <div className="hub-card-badge">
-                  <Shield size={12} /> Khusus Administrator
-                </div>
-                <h2 className="hub-card-title">Admin Panel & Pengguna</h2>
-                <p className="hub-card-desc">
-                  Kelola seluruh berkas permohonan & persuratan sistem, ekspor laporan Excel, penutupan berkas/surat, serta manajemen akun dan hak akses petugas.
-                </p>
-              </div>
-              <div className="hub-admin-actions" onClick={(e) => e.stopPropagation()}>
-                <button
-                  type="button"
-                  className="hub-admin-btn"
-                  onClick={() => navigate('/admin')}
-                >
-                  <LayoutDashboard size={15} />
-                  Admin Panel
-                </button>
-                <button
-                  type="button"
-                  className="hub-admin-btn"
-                  onClick={() => navigate('/admin/users')}
-                >
-                  <Users size={15} />
-                  Kelola Akun
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

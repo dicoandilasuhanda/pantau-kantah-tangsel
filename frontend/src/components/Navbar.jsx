@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Scan, PlusSquare, Key, X, Home, Mail, FileText, Sun, Moon, Menu } from 'lucide-react';
+import { LogOut, Scan, PlusSquare, Key, X, Home, Mail, FileText, Sun, Moon, Menu, Shield, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import NotificationBell from './NotificationBell';
@@ -10,6 +10,7 @@ export default function Navbar() {
   const location = useLocation();
   const role = localStorage.getItem('role') || '';
   const userRoles = role ? role.split(',').map(r => r.trim()) : [];
+  const isAdmin = userRoles.includes('Administrator');
   const username = localStorage.getItem('username') || 'Pengguna';
 
   let fullName = localStorage.getItem('full_name') || localStorage.getItem('fullName') || username;
@@ -314,10 +315,10 @@ export default function Navbar() {
           .navbar-title-full { display: none !important; }
           .navbar-title-short { display: inline !important; }
         }
-        @media (max-width: 1220px) {
+        @media (max-width: 1260px) {
           .nav-user-pill { display: none !important; }
         }
-        @media (max-width: 1060px) {
+        @media (max-width: 1080px) {
           .nav-btn-text { display: none !important; }
           .nav-sandi-btn, .nav-logout-btn { padding: 0.45rem 0.65rem !important; }
           .nav-links a { padding: 0.38rem 0.5rem !important; font-size: 0.82rem !important; gap: 0.25rem !important; }
@@ -517,6 +518,17 @@ export default function Navbar() {
           )}
 
 
+
+          {isAdmin && (
+            <>
+              <Link to="/admin" className={location.pathname === '/admin' ? 'active' : ''}>
+                <Shield size={18} /> Admin Panel
+              </Link>
+              <Link to="/admin/users" className={location.pathname === '/admin/users' ? 'active' : ''}>
+                <Users size={18} /> Kelola Akun
+              </Link>
+            </>
+          )}
 
           {/* Mobile Drawer Actions (Hanya muncul di dalam drawer menu pada mobile) */}
           <div className="nav-mobile-actions-group">
