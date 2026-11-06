@@ -160,6 +160,10 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
 
       db.run(`ALTER TABLE surat ADD COLUMN current_location TEXT DEFAULT 'Petugas Entry Surat'`, (err) => {});
       db.run(`ALTER TABLE surat ADD COLUMN catatan TEXT`, (err) => {});
+      db.run(`ALTER TABLE surat ADD COLUMN is_transit INTEGER DEFAULT 0`, (err) => {});
+      db.run(`ALTER TABLE surat ADD COLUMN transit_to_username TEXT`, (err) => {});
+      db.run(`ALTER TABLE surat ADD COLUMN transit_by_username TEXT`, (err) => {});
+      db.run(`ALTER TABLE surat ADD COLUMN transit_at DATETIME`, (err) => {});
       db.run(`UPDATE surat SET current_location = 'Petugas Entry Surat' WHERE current_location IS NULL OR current_location = ''`, (err) => {});
 
       db.run(`CREATE TABLE IF NOT EXISTS surat_history (
@@ -172,6 +176,26 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
         scanned_ip TEXT,
         FOREIGN KEY(surat_id) REFERENCES surat(id)
       )`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS surat_disposisi (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        surat_id INTEGER,
+        isi_disposisi TEXT,
+        dibuat_oleh TEXT,
+        dibuat_pada DATETIME DEFAULT CURRENT_TIMESTAMP,
+        status TEXT DEFAULT 'Menunggu Tindak Lanjut',
+        dilaksanakan_oleh TEXT,
+        dilaksanakan_pada DATETIME,
+        FOREIGN KEY(surat_id) REFERENCES surat(id)
+      )`);
+
+      // Backfill surat_history untuk surat lama yang belum memiliki histori awal
+      db.run(`
+        INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_at)
+        SELECT s.id, 'Petugas Entry Surat', 'admin', COALESCE(s.current_location, 'Petugas Entry Surat'), COALESCE(s.created_at, CURRENT_TIMESTAMP)
+        FROM surat s
+        WHERE NOT EXISTS (SELECT 1 FROM surat_history sh WHERE sh.surat_id = s.id)
+      `, (err) => {});
 
       // Index performa query SQLite
       db.run(`CREATE INDEX IF NOT EXISTS idx_file_history_file_id ON file_history(file_id)`);
@@ -404,11 +428,15 @@ app.post('/api/surat', authenticateJWT, handlePdfUpload, (req, res) => {
 app.get('/api/surat', authenticateJWT, (req, res) => {
   const query = `
     SELECT s.*,
+           u_to.full_name as transit_to_fullname,
+           u_by.full_name as transit_by_fullname,
            COALESCE(s.current_location, 'Petugas Entry Surat') as current_location,
            (SELECT scanned_at FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as updated_at,
            (SELECT scanned_by_username FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as latest_scanned_by_username,
            (SELECT scanned_by_role FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as latest_scan_info
     FROM surat s
+    LEFT JOIN users u_to ON s.transit_to_username = u_to.username
+    LEFT JOIN users u_by ON s.transit_by_username = u_by.username
     ORDER BY s.id DESC
   `;
   db.all(query, (err, rows) => {
@@ -448,7 +476,7 @@ app.post('/api/surat/scan', authenticateJWT, (req, res) => {
     }
 
     db.run(
-      `UPDATE surat SET current_location = ?, catatan = ? WHERE id = ?`,
+      `UPDATE surat SET current_location = ?, catatan = ?, is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?`,
       [newLocation, updatedCatatan, surat.id],
       (updateErr) => {
         if (updateErr) return res.status(500).json({ error: updateErr.message });
@@ -472,6 +500,10 @@ app.post('/api/surat/scan', authenticateJWT, (req, res) => {
                     ...surat,
                     current_location: newLocation,
                     catatan: updatedCatatan,
+                    is_transit: 0,
+                    transit_to_username: null,
+                    transit_by_username: null,
+                    transit_at: null,
                     latest_scan_info: scannedBy,
                     history: historyRows || []
                   }
@@ -496,7 +528,7 @@ app.put('/api/surat/:id/complete', authenticateJWT, requireAdmin, (req, res) => 
     if (err) return res.status(500).json({ error: err.message });
     if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
 
-    db.run('UPDATE surat SET current_location = ? WHERE id = ?', ['Selesai', suratId], (uErr) => {
+    db.run('UPDATE surat SET current_location = ?, is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?', ['Selesai', suratId], (uErr) => {
       if (uErr) return res.status(500).json({ error: uErr.message });
       db.run(
         `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
@@ -529,7 +561,7 @@ app.put('/api/surat/:id/close', authenticateJWT, requireAdmin, (req, res) => {
     const closeNote = `-- Surat ditutup/diarsipkan oleh ${fullName} pada ${timestamp}:\nAlasan: ${alasan.trim()}`;
     const finalCatatan = surat.catatan ? `${surat.catatan}\n\n${closeNote}` : closeNote;
 
-    db.run('UPDATE surat SET current_location = ?, catatan = ? WHERE id = ?', ['Ditutup', finalCatatan, suratId], (uErr) => {
+    db.run('UPDATE surat SET current_location = ?, catatan = ?, is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?', ['Ditutup', finalCatatan, suratId], (uErr) => {
       if (uErr) return res.status(500).json({ error: uErr.message });
       db.run(
         `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
@@ -549,11 +581,13 @@ app.delete('/api/surat/:id', authenticateJWT, requireAdmin, (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
 
-    db.run('DELETE FROM surat_history WHERE surat_id = ?', [suratId], (hErr) => {
-      if (hErr) return res.status(500).json({ error: hErr.message });
-      db.run('DELETE FROM surat WHERE id = ?', [suratId], (dErr) => {
-        if (dErr) return res.status(500).json({ error: dErr.message });
-        res.json({ message: `Surat Agenda ${surat.nomor_agenda} berhasil dihapus.` });
+    db.run('DELETE FROM surat_disposisi WHERE surat_id = ?', [suratId], () => {
+      db.run('DELETE FROM surat_history WHERE surat_id = ?', [suratId], (hErr) => {
+        if (hErr) return res.status(500).json({ error: hErr.message });
+        db.run('DELETE FROM surat WHERE id = ?', [suratId], (dErr) => {
+          if (dErr) return res.status(500).json({ error: dErr.message });
+          res.json({ message: `Surat Agenda ${surat.nomor_agenda} berhasil dihapus.` });
+        });
       });
     });
   });
@@ -561,17 +595,127 @@ app.delete('/api/surat/:id', authenticateJWT, requireAdmin, (req, res) => {
 
 // Get surat detail & history
 app.get('/api/surat/:id', authenticateJWT, (req, res) => {
-  db.get('SELECT * FROM surat WHERE id = ?', [req.params.id], (err, row) => {
+  const query = `
+    SELECT s.*,
+           u_to.full_name as transit_to_fullname,
+           u_by.full_name as transit_by_fullname
+    FROM surat s
+    LEFT JOIN users u_to ON s.transit_to_username = u_to.username
+    LEFT JOIN users u_by ON s.transit_by_username = u_by.username
+    WHERE s.id = ?
+  `;
+  db.get(query, [req.params.id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(404).json({ error: 'Surat tidak ditemukan' });
     db.all('SELECT * FROM surat_history WHERE surat_id = ? ORDER BY scanned_at DESC, id DESC', [row.id], (hErr, history) => {
       res.json({
         ...row,
         current_location: row.current_location || 'Petugas Entry Surat',
+        client_ip: getClientIp(req),
         history: history || []
       });
     });
   });
+});
+
+// Update catatan surat
+app.put('/api/surat/:id/note', authenticateJWT, (req, res) => {
+  const suratId = req.params.id;
+  const { catatan } = req.body;
+
+  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
+
+    let finalCatatan = catatan;
+    if (catatan && catatan !== surat.catatan) {
+      const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+      const fullName = req.user.full_name || req.user.username;
+      const cleanCatatan = catatan.replace(/\n\n-- Terakhir diubah oleh.*?$/s, '');
+      finalCatatan = cleanCatatan + `\n\n-- Terakhir diubah oleh ${fullName} pada ${timestamp}`;
+    }
+
+    db.run('UPDATE surat SET catatan = ? WHERE id = ?', [finalCatatan, suratId], (uErr) => {
+      if (uErr) return res.status(500).json({ error: uErr.message });
+      res.json({ message: 'Catatan surat berhasil disimpan', catatan: finalCatatan });
+    });
+  });
+});
+
+// Kirim Surat (Transit)
+app.post('/api/surat/:id/transit', authenticateJWT, (req, res) => {
+  const suratId = req.params.id;
+  const { target_username } = req.body;
+  if (!target_username) return res.status(400).json({ error: 'Pilih petugas tujuan terlebih dahulu.' });
+
+  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
+
+    db.run(
+      'UPDATE surat SET is_transit = 1, transit_to_username = ?, transit_by_username = ?, transit_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [target_username, req.user.username, suratId],
+      (uErr) => {
+        if (uErr) return res.status(500).json({ error: uErr.message });
+        res.json({ message: 'Surat berhasil dikirim (Transit).' });
+      }
+    );
+  });
+});
+
+// Batal Kirim Surat (Cancel Transit)
+app.post('/api/surat/:id/cancel-transit', authenticateJWT, (req, res) => {
+  const suratId = req.params.id;
+  db.run(
+    'UPDATE surat SET is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?',
+    [suratId],
+    (uErr) => {
+      if (uErr) return res.status(500).json({ error: uErr.message });
+      res.json({ message: 'Pengiriman surat berhasil dibatalkan.' });
+    }
+  );
+});
+
+// GET Disposisi Surat
+app.get('/api/surat/:id/disposisi', authenticateJWT, (req, res) => {
+  db.all('SELECT * FROM surat_disposisi WHERE surat_id = ? ORDER BY dibuat_pada DESC, id DESC', [req.params.id], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Gagal mengambil disposisi surat' });
+    res.json(rows || []);
+  });
+});
+
+// POST Disposisi Surat
+app.post('/api/surat/:id/disposisi', authenticateJWT, (req, res) => {
+  const isPimpinan = req.user.role.includes('Koordinator') || req.user.role.includes('Kepala Seksi') || req.user.role.includes('Administrator');
+  if (!isPimpinan) {
+    return res.status(403).json({ error: 'Akses ditolak. Hanya pimpinan yang dapat membuat disposisi.' });
+  }
+  const { isi_disposisi } = req.body;
+  if (!isi_disposisi || !isi_disposisi.trim()) {
+    return res.status(400).json({ error: 'Isi disposisi tidak boleh kosong' });
+  }
+  const fullName = req.user.full_name || req.user.username;
+  db.run(
+    `INSERT INTO surat_disposisi (surat_id, isi_disposisi, dibuat_oleh) VALUES (?, ?, ?)`,
+    [req.params.id, isi_disposisi.trim(), fullName],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Gagal menyimpan disposisi surat' });
+      res.json({ message: 'Disposisi surat berhasil ditambahkan', id: this.lastID });
+    }
+  );
+});
+
+// PUT Selesaikan Disposisi Surat
+app.put('/api/surat-disposisi/:id/selesai', authenticateJWT, (req, res) => {
+  const fullName = req.user.full_name || req.user.username;
+  db.run(
+    `UPDATE surat_disposisi SET status = 'Sudah Dilaksanakan', dilaksanakan_oleh = ?, dilaksanakan_pada = CURRENT_TIMESTAMP WHERE id = ?`,
+    [fullName, req.params.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Gagal mengupdate disposisi surat' });
+      res.json({ message: 'Disposisi surat telah ditandai selesai' });
+    }
+  );
 });
 
 // Endpoint aman untuk streaming/download dokumen surat (hanya untuk pengguna yang login)

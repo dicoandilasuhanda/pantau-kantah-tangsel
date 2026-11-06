@@ -114,14 +114,24 @@ export default function SuratDashboard() {
                 const pos = surat.current_location || 'Petugas Entry Surat';
                 const isDone = pos === 'Selesai';
                 const isClosed = pos === 'Ditutup';
+                const posLabel = (!isDone && !isClosed && surat.is_transit === 1)
+                  ? `Sedang Transit ke ${surat.transit_to_fullname || surat.transit_to_username}`
+                  : pos;
                 return (
-                <tr key={surat.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                <tr 
+                  key={surat.id} 
+                  onClick={() => navigate(`/surat/detail/${surat.id}`)}
+                  title="Klik untuk melihat detail & riwayat perjalanan surat"
+                  style={{ borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background 0.2s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-subtle)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                >
                   <td className="table-sticky-col" style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
-                      <span className="badge">{surat.nomor_agenda}</span>
+                      <span className="badge" style={{ cursor: 'pointer' }}>{surat.nomor_agenda}</span>
                       <button 
                         type="button" 
-                        onClick={() => setSelectedSuratQr(surat)}
+                        onClick={(e) => { e.stopPropagation(); setSelectedSuratQr(surat); }}
                         title="Lihat / Cetak QR Code Surat"
                         style={{ padding: '0.2rem 0.45rem', width: 'auto', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--primary-color)', borderRadius: '6px', cursor: 'pointer' }}
                       >
@@ -129,7 +139,7 @@ export default function SuratDashboard() {
                       </button>
                     </div>
                   </td>
-                  <td style={{ padding: '1rem' }}>{surat.asal_surat}</td>
+                  <td style={{ padding: '1rem', fontWeight: 600 }}>{surat.asal_surat}</td>
                   <td style={{ padding: '1rem' }}>{surat.nomor_surat}</td>
                   <td style={{ padding: '1rem' }}>{surat.tanggal_diterima}</td>
                   <td style={{ padding: '1rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -143,7 +153,7 @@ export default function SuratDashboard() {
                         color: isDone ? '#10b981' : (isClosed ? '#ef4444' : 'var(--primary-color)')
                       }}
                     >
-                      {pos}
+                      {posLabel}
                     </span>
                     {surat.latest_scan_info && (
                       <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
@@ -151,7 +161,7 @@ export default function SuratDashboard() {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '1rem' }}>
+                  <td style={{ padding: '1rem' }} onClick={(e) => e.stopPropagation()}>
                     {surat.file_path ? (
                       <a 
                         href={getSecureFileUrl(surat.file_path)} 

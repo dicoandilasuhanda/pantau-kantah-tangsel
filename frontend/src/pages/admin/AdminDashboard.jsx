@@ -1237,8 +1237,8 @@ export default function AdminDashboard() {
                       <tr key={s.id}>
                         <td
                           className="table-sticky-col"
-                          onClick={() => navigate(`/surat/scan?id=${s.id}`)}
-                          title="Klik untuk lihat riwayat & scan surat"
+                          onClick={() => navigate(`/surat/detail/${s.id}`)}
+                          title="Klik untuk lihat detail & riwayat perjalanan surat"
                           style={{ padding: '0.5rem', textAlign: 'center', border: '1px solid var(--border-color)', whiteSpace: 'nowrap', cursor: 'pointer', color: 'var(--primary-hover)', fontWeight: 700 }}
                         >
                           #{noAgenda}

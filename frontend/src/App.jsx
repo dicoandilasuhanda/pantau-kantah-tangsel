@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import SuratDashboard from './pages/SuratDashboard';
 import SuratEntryForm from './pages/SuratEntryForm';
 import SuratScanner from './pages/SuratScanner';
+import SuratDetails from './pages/SuratDetails';
 import EntryForm from './pages/EntryForm';
 import Scanner from './pages/Scanner';
 import FileDetails from './pages/FileDetails';
@@ -112,6 +113,15 @@ function AppContent() {
               <>
                 <Navbar />
                 <SuratScanner />
+              </>
+            </SuratRoute>
+          } />
+
+          <Route path="/surat/detail/:id" element={
+            <SuratRoute>
+              <>
+                <Navbar />
+                <SuratDetails />
               </>
             </SuratRoute>
           } />
