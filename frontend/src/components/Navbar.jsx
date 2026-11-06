@@ -118,7 +118,7 @@ export default function Navbar() {
   };
 
   const isSuratModule = location.pathname.startsWith('/surat');
-  const isHubOnlyModule = location.pathname.startsWith('/pdf-tools') || location.pathname.startsWith('/kpi');
+  const isHubOnlyModule = location.pathname.startsWith('/pdf-tools') || location.pathname.startsWith('/kpi') || location.pathname.startsWith('/admin');
 
   return (
     <>
