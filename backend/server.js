@@ -175,12 +175,18 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
       db.run(`CREATE TABLE IF NOT EXISTS user_dwg_files (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
+        sender_id INTEGER,
+        recipient_id INTEGER,
         original_name TEXT,
         file_name TEXT,
         file_size INTEGER,
+        notes TEXT,
         uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
       )`);
+      db.run(`ALTER TABLE user_dwg_files ADD COLUMN sender_id INTEGER`, (err) => {});
+      db.run(`ALTER TABLE user_dwg_files ADD COLUMN recipient_id INTEGER`, (err) => {});
+      db.run(`ALTER TABLE user_dwg_files ADD COLUMN notes TEXT`, (err) => {});
 
       db.run(`CREATE TABLE IF NOT EXISTS files (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1087,20 +1093,89 @@ app.get('/api/user/avatar/:filename', (req, res) => {
   res.sendFile(filePath);
 });
 
-// Get User DWG Files List
-app.get('/api/user/dwg', authenticateJWT, (req, res) => {
-  db.all(
-    'SELECT id, original_name, file_name, file_size, uploaded_at FROM user_dwg_files WHERE user_id = ? ORDER BY uploaded_at DESC',
-    [req.user.id],
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Gagal mengambil daftar file DWG' });
-      res.json(rows || []);
-    }
-  );
+// Helper: Cek hak akses DWG (Asisten Surveyor Kadastral, Petugas Pemetaan, Administrator)
+function canAccessDwg(userRoles) {
+  if (!userRoles) return false;
+  const roles = Array.isArray(userRoles) ? userRoles : String(userRoles).split(',').map(r => r.trim());
+  return roles.includes('Asisten Surveyor Kadastral') ||
+         roles.includes('Petugas Pemetaan') ||
+         roles.includes('Administrator');
+}
+
+// Middleware pelindung akses DWG
+const requireDwgAccess = (req, res, next) => {
+  if (!canAccessDwg(req.user.role)) {
+    return res.status(403).json({ 
+      error: 'Akses ditolak. Fitur penyimpanan & pertukaran file DWG hanya untuk Asisten Surveyor Kadastral dan Petugas Pemetaan.' 
+    });
+  }
+  next();
+};
+
+// Get Eligible DWG Recipients (ASK -> Pemetaan; Pemetaan -> ASK; Admin -> Keduanya)
+app.get('/api/user/dwg/recipients', authenticateJWT, requireDwgAccess, (req, res) => {
+  const userRoles = String(req.user.role || '').split(',').map(r => r.trim());
+  const isASK = userRoles.includes('Asisten Surveyor Kadastral');
+  const isPemetaan = userRoles.includes('Petugas Pemetaan');
+  const isAdmin = userRoles.includes('Administrator');
+
+  let roleFilter = [];
+  if (isAdmin || (isASK && isPemetaan)) {
+    roleFilter = ['%Petugas Pemetaan%', '%Asisten Surveyor Kadastral%'];
+  } else if (isASK) {
+    roleFilter = ['%Petugas Pemetaan%', '%Administrator%'];
+  } else if (isPemetaan) {
+    roleFilter = ['%Asisten Surveyor Kadastral%', '%Administrator%'];
+  }
+
+  const whereClauses = roleFilter.map(() => 'role LIKE ?').join(' OR ');
+  const sql = `
+    SELECT id, username, full_name, role 
+    FROM users 
+    WHERE id != ? AND (${whereClauses})
+    ORDER BY full_name ASC
+  `;
+
+  db.all(sql, [req.user.id, ...roleFilter], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Gagal mengambil daftar penerima.' });
+    res.json(rows || []);
+  });
 });
 
-// Upload DWG File
-app.post('/api/user/dwg', authenticateJWT, handleDwgUpload, (req, res) => {
+// Get User DWG Files List (Inbox, My Files, Sent)
+app.get('/api/user/dwg', authenticateJWT, requireDwgAccess, (req, res) => {
+  const sql = `
+    SELECT 
+      f.id,
+      f.user_id,
+      f.sender_id,
+      f.recipient_id,
+      f.original_name,
+      f.file_name,
+      f.file_size,
+      f.notes,
+      f.uploaded_at,
+      s.full_name AS sender_name,
+      s.role AS sender_role,
+      s.username AS sender_username,
+      r.full_name AS recipient_name,
+      r.role AS recipient_role,
+      r.username AS recipient_username
+    FROM user_dwg_files f
+    LEFT JOIN users s ON f.sender_id = s.id
+    LEFT JOIN users r ON f.recipient_id = r.id
+    WHERE f.user_id = ?
+    ORDER BY f.uploaded_at DESC
+  `;
+
+  db.all(sql, [req.user.id], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Gagal mengambil daftar file DWG' });
+    res.json(rows || []);
+  });
+});
+
+// Upload DWG File to Own Storage
+app.post('/api/user/dwg', authenticateJWT, requireDwgAccess, handleDwgUpload, (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'File DWG tidak ditemukan.' });
   }
@@ -1108,10 +1183,11 @@ app.post('/api/user/dwg', authenticateJWT, handleDwgUpload, (req, res) => {
   const originalName = req.file.originalname;
   const fileName = req.file.filename;
   const fileSize = req.file.size;
+  const notes = req.body.notes ? String(req.body.notes).trim() : null;
 
   db.run(
-    'INSERT INTO user_dwg_files (user_id, original_name, file_name, file_size) VALUES (?, ?, ?, ?)',
-    [req.user.id, originalName, fileName, fileSize],
+    'INSERT INTO user_dwg_files (user_id, sender_id, recipient_id, original_name, file_name, file_size, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [req.user.id, req.user.id, req.user.id, originalName, fileName, fileSize, notes],
     function (err) {
       if (err) {
         const uploadedPath = path.join(dwgDir, fileName);
@@ -1126,15 +1202,148 @@ app.post('/api/user/dwg', authenticateJWT, handleDwgUpload, (req, res) => {
         original_name: originalName,
         file_name: fileName,
         file_size: fileSize,
+        notes,
         uploaded_at: new Date().toISOString(),
-        message: 'File DWG berhasil diunggah.'
+        message: 'File DWG berhasil disimpan ke folder pribadi.'
       });
     }
   );
 });
 
+// Upload and Send DWG File Directly to Recipient
+app.post('/api/user/dwg/send', authenticateJWT, requireDwgAccess, handleDwgUpload, (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'File DWG tidak ditemukan.' });
+  }
+
+  const recipientId = parseInt(req.body.recipient_id, 10);
+  const notes = req.body.notes ? String(req.body.notes).trim() : null;
+
+  if (!recipientId || isNaN(recipientId)) {
+    return res.status(400).json({ error: 'Penerima berkas DWG wajib dipilih.' });
+  }
+
+  // Cek apakah penerima valid & memenuhi syarat role
+  db.get('SELECT id, username, full_name, role, telegram_chat_id FROM users WHERE id = ?', [recipientId], (err, recipient) => {
+    if (err || !recipient) {
+      const uploadedPath = path.join(dwgDir, req.file.filename);
+      if (fs.existsSync(uploadedPath)) {
+        try { fs.unlinkSync(uploadedPath); } catch (_) {}
+      }
+      return res.status(400).json({ error: 'Penerima tidak ditemukan di sistem.' });
+    }
+
+    if (!canAccessDwg(recipient.role)) {
+      const uploadedPath = path.join(dwgDir, req.file.filename);
+      if (fs.existsSync(uploadedPath)) {
+        try { fs.unlinkSync(uploadedPath); } catch (_) {}
+      }
+      return res.status(400).json({ error: 'Penerima tidak memiliki hak akses berkas DWG.' });
+    }
+
+    const originalName = req.file.originalname;
+    const fileName = req.file.filename;
+    const fileSize = req.file.size;
+    const now = new Date().toISOString();
+
+    // Buat 2 record: 1 untuk Inbox penerima, 1 untuk Outbox pengirim
+    const insertSql = 'INSERT INTO user_dwg_files (user_id, sender_id, recipient_id, original_name, file_name, file_size, notes, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+
+    db.run(insertSql, [recipientId, req.user.id, recipientId, originalName, fileName, fileSize, notes, now], function (err1) {
+      if (err1) {
+        return res.status(500).json({ error: 'Gagal mengirim berkas ke penerima.' });
+      }
+
+      // Record outbox pengirim
+      db.run(insertSql, [req.user.id, req.user.id, recipientId, originalName, fileName, fileSize, notes, now], function () {
+        // Kirim notifikasi Telegram jika penerima terhubung bot
+        if (recipient.telegram_chat_id) {
+          const senderName = req.user.full_name || req.user.username;
+          const sizeText = (fileSize / (1024 * 1024)).toFixed(2) + ' MB';
+          const tgMsg = 
+            `📥 <b>BERKAS DWG MASUK</b>\n\n` +
+            `Halo <b>${recipient.full_name}</b>,\n` +
+            `Anda menerima kiriman berkas AutoCAD (.dwg) baru:\n\n` +
+            `📁 Berkas: <b>${originalName}</b> (${sizeText})\n` +
+            `👤 Pengirim: <b>${senderName}</b> (${req.user.role})\n` +
+            (notes ? `📝 Catatan: <i>${notes}</i>\n\n` : `\n`) +
+            `<i>Buka menu <b>Profil</b> di web Pantau.Kantah Tangsel untuk mengunduh berkas.</i>`;
+          sendTelegramMessage(recipient.telegram_chat_id, tgMsg);
+        }
+
+        res.json({
+          message: `Berkas DWG berhasil dikirim kepada ${recipient.full_name}!`,
+          original_name: originalName,
+          recipient_name: recipient.full_name
+        });
+      });
+    });
+  });
+});
+
+// Forward/Send Existing DWG File to Recipient
+app.post('/api/user/dwg/:id/forward', authenticateJWT, requireDwgAccess, (req, res) => {
+  const dwgId = req.params.id;
+  const recipientId = parseInt(req.body.recipient_id, 10);
+  const notes = req.body.notes ? String(req.body.notes).trim() : null;
+
+  if (!recipientId || isNaN(recipientId)) {
+    return res.status(400).json({ error: 'Penerima berkas DWG wajib dipilih.' });
+  }
+
+  db.get('SELECT * FROM user_dwg_files WHERE id = ? AND user_id = ?', [dwgId, req.user.id], (err, fileRecord) => {
+    if (err || !fileRecord) {
+      return res.status(404).json({ error: 'Berkas DWG tidak ditemukan di ruang penyimpanan Anda.' });
+    }
+
+    db.get('SELECT id, username, full_name, role, telegram_chat_id FROM users WHERE id = ?', [recipientId], (err2, recipient) => {
+      if (err2 || !recipient) {
+        return res.status(400).json({ error: 'Penerima tidak ditemukan di sistem.' });
+      }
+
+      if (!canAccessDwg(recipient.role)) {
+        return res.status(400).json({ error: 'Penerima tidak memiliki hak akses berkas DWG.' });
+      }
+
+      const now = new Date().toISOString();
+      const insertSql = 'INSERT INTO user_dwg_files (user_id, sender_id, recipient_id, original_name, file_name, file_size, notes, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+
+      // Record untuk inbox penerima
+      db.run(insertSql, [recipientId, req.user.id, recipientId, fileRecord.original_name, fileRecord.file_name, fileRecord.file_size, notes, now], function (err3) {
+        if (err3) {
+          return res.status(500).json({ error: 'Gagal mengirim berkas ke penerima.' });
+        }
+
+        // Record untuk outbox pengirim
+        db.run(insertSql, [req.user.id, req.user.id, recipientId, fileRecord.original_name, fileRecord.file_name, fileRecord.file_size, notes, now], function () {
+          // Kirim notifikasi Telegram jika ada
+          if (recipient.telegram_chat_id) {
+            const senderName = req.user.full_name || req.user.username;
+            const sizeText = (fileRecord.file_size / (1024 * 1024)).toFixed(2) + ' MB';
+            const tgMsg = 
+              `📥 <b>BERKAS DWG MASUK</b>\n\n` +
+              `Halo <b>${recipient.full_name}</b>,\n` +
+              `Anda menerima kiriman berkas AutoCAD (.dwg) baru:\n\n` +
+              `📁 Berkas: <b>${fileRecord.original_name}</b> (${sizeText})\n` +
+              `👤 Pengirim: <b>${senderName}</b> (${req.user.role})\n` +
+              (notes ? `📝 Catatan: <i>${notes}</i>\n\n` : `\n`) +
+              `<i>Buka menu <b>Profil</b> di web Pantau.Kantah Tangsel untuk mengunduh berkas.</i>`;
+            sendTelegramMessage(recipient.telegram_chat_id, tgMsg);
+          }
+
+          res.json({
+            message: `Berkas DWG berhasil diteruskan kepada ${recipient.full_name}!`,
+            original_name: fileRecord.original_name,
+            recipient_name: recipient.full_name
+          });
+        });
+      });
+    });
+  });
+});
+
 // Download DWG File
-app.get('/api/user/dwg/:id/download', authenticateJWT, (req, res) => {
+app.get('/api/user/dwg/:id/download', authenticateJWT, requireDwgAccess, (req, res) => {
   const dwgId = req.params.id;
   db.get(
     'SELECT * FROM user_dwg_files WHERE id = ? AND user_id = ?',
@@ -1154,7 +1363,7 @@ app.get('/api/user/dwg/:id/download', authenticateJWT, (req, res) => {
 });
 
 // Delete DWG File
-app.delete('/api/user/dwg/:id', authenticateJWT, (req, res) => {
+app.delete('/api/user/dwg/:id', authenticateJWT, requireDwgAccess, (req, res) => {
   const dwgId = req.params.id;
   db.get(
     'SELECT * FROM user_dwg_files WHERE id = ? AND user_id = ?',
@@ -1163,14 +1372,21 @@ app.delete('/api/user/dwg/:id', authenticateJWT, (req, res) => {
       if (err) return res.status(500).json({ error: 'Gagal mencari file' });
       if (!fileRecord) return res.status(404).json({ error: 'File tidak ditemukan atau bukan milik Anda' });
 
-      const filePath = path.join(dwgDir, fileRecord.file_name);
-      if (fs.existsSync(filePath)) {
-        try { fs.unlinkSync(filePath); } catch (_) {}
-      }
+      const fileName = fileRecord.file_name;
 
-      db.run('DELETE FROM user_dwg_files WHERE id = ?', [dwgId], (delErr) => {
+      db.run('DELETE FROM user_dwg_files WHERE id = ? AND user_id = ?', [dwgId, req.user.id], (delErr) => {
         if (delErr) return res.status(500).json({ error: 'Gagal menghapus file dari database' });
-        res.json({ message: 'File DWG berhasil dihapus.' });
+
+        // Periksa apakah masih ada record lain (pengirim atau penerima) yang merujuk file fisik ini
+        db.get('SELECT COUNT(*) AS cnt FROM user_dwg_files WHERE file_name = ?', [fileName], (cntErr, cntRow) => {
+          if (!cntErr && cntRow && cntRow.cnt === 0) {
+            const filePath = path.join(dwgDir, fileName);
+            if (fs.existsSync(filePath)) {
+              try { fs.unlinkSync(filePath); } catch (_) {}
+            }
+          }
+          res.json({ message: 'File DWG berhasil dihapus.' });
+        });
       });
     }
   );
