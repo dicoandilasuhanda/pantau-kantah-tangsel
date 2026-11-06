@@ -9,7 +9,6 @@ import {
   ArrowLeft, 
   Shield, 
   Folder, 
-  CheckCircle,
   Search,
   HardDrive,
   Send,
@@ -53,8 +52,6 @@ export default function Profile() {
 
   const [profile, setProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [fullName, setFullName] = useState('');
-  const [savingName, setSavingName] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // DWG state
@@ -82,7 +79,6 @@ export default function Profile() {
     try {
       const res = await api.get('/user/profile');
       setProfile(res.data);
-      setFullName(res.data.full_name || '');
       if (res.data.avatar_url) {
         localStorage.setItem('avatar_url', res.data.avatar_url);
       } else {
@@ -134,25 +130,6 @@ export default function Profile() {
       setLoadingDwg(false);
     }
   }, [hasDwgAccess]);
-
-  // Update Full Name
-  const handleSaveName = async (e) => {
-    e.preventDefault();
-    if (!fullName.trim()) return toast.error('Nama lengkap tidak boleh kosong');
-    setSavingName(true);
-    try {
-      const res = await api.put('/user/profile', { full_name: fullName.trim() });
-      toast.success(res.data.message || 'Profil berhasil diperbarui');
-      localStorage.setItem('full_name', fullName.trim());
-      localStorage.setItem('fullName', fullName.trim());
-      window.dispatchEvent(new Event('profile-update'));
-      fetchProfile();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Gagal menyimpan profil');
-    } finally {
-      setSavingName(false);
-    }
-  };
 
   // Avatar Upload
   const handleAvatarChange = async (e) => {
@@ -501,30 +478,6 @@ export default function Profile() {
               </div>
             </div>
           </div>
-
-          {/* Form Ubah Nama Lengkap */}
-          <form onSubmit={handleSaveName} style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div style={{ flex: 1, minWidth: '220px' }}>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                Nama Lengkap Petugas
-              </label>
-              <input 
-                type="text" 
-                value={fullName} 
-                onChange={(e) => setFullName(e.target.value)} 
-                placeholder="Masukkan nama lengkap Anda"
-                style={{ marginBottom: 0, width: '100%' }}
-                required 
-              />
-            </div>
-            <button 
-              type="submit" 
-              disabled={savingName || loadingProfile} 
-              style={{ width: 'auto', padding: '0.65rem 1.25rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-            >
-              <CheckCircle size={16} /> {savingName ? 'Menyimpan...' : 'Simpan Nama'}
-            </button>
-          </form>
         </div>
 
         {/* Section 2: Ruang Penyimpanan & Pertukaran Berkas DWG */}
