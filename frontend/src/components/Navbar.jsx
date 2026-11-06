@@ -268,7 +268,8 @@ export default function Navbar() {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          flex-shrink: 0;
+          flex-shrink: 1;
+          min-width: 0;
         }
         .nav-mobile-toggle {
           display: none;
@@ -312,8 +313,7 @@ export default function Navbar() {
           display: flex;
           align-items: center;
           gap: 0.35rem;
-          flex-shrink: 1;
-          min-width: 0;
+          flex-shrink: 0 !important;
         }
         .nav-links a {
           white-space: nowrap;
@@ -344,16 +344,18 @@ export default function Navbar() {
         .nav-logout-btn {
           flex-shrink: 0 !important;
         }
-        @media (max-width: 1440px) {
+        @media (max-width: 1550px) {
           .navbar-title-full { display: none !important; }
           .navbar-title-short { display: inline !important; }
         }
-        @media (max-width: 1260px) {
-          .nav-user-pill { display: none !important; }
-        }
-        @media (max-width: 1080px) {
+        @media (max-width: 1280px) {
           .nav-btn-text { display: none !important; }
           .nav-sandi-btn, .nav-logout-btn { padding: 0.45rem 0.65rem !important; }
+        }
+        @media (max-width: 1140px) {
+          .nav-user-pill { display: none !important; }
+        }
+        @media (max-width: 980px) {
           .nav-links a { padding: 0.38rem 0.5rem !important; font-size: 0.82rem !important; gap: 0.25rem !important; }
         }
         @media (min-width: 861px) {
