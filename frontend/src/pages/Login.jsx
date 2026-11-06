@@ -409,14 +409,19 @@ export default function Login() {
          ========================================================================= */}
       <style>{`
         .bpn-login-wrapper {
-          min-height: 100vh;
+          height: 100vh;
+          height: 100dvh;
+          max-height: 100dvh;
           width: 100%;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
           font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           box-sizing: border-box;
-          position: relative;
+          position: fixed;
+          inset: 0;
+          overflow: hidden;
+          overscroll-behavior: none;
           transition: background-color 0.25s ease, color 0.25s ease;
         }
 
@@ -711,11 +716,13 @@ export default function Login() {
 
         /* ==================== 2. MAIN SECTION ==================== */
         .bpn-main {
-          flex: 1 0 auto;
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 2.5rem 1.25rem 4rem 1.25rem;
+          padding: 1rem 1.25rem 3rem 1.25rem;
           box-sizing: border-box;
         }
 
@@ -729,12 +736,12 @@ export default function Login() {
         }
         @media (max-width: 960px) {
           .bpn-main {
-            padding: 1.25rem 1rem 4.5rem 1rem !important;
+            padding: 0.5rem 1rem 2.75rem 1rem !important;
           }
           .bpn-main-container {
             display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 0;
             max-width: 440px;
             margin: 0 auto;
           }
