@@ -252,6 +252,7 @@ export default function Navbar() {
           left: 0 !important;
           right: 0 !important;
           width: 100% !important;
+          max-width: 100vw !important;
           height: 56px !important;
           z-index: 1000 !important;
           background: var(--glass-bg);
@@ -264,8 +265,9 @@ export default function Navbar() {
           align-items: center !important;
           justify-content: flex-start !important;
           flex-wrap: nowrap !important;
-          padding: 0 1.25rem !important;
-          gap: 0.75rem !important;
+          padding: 0 1.25rem 0 1rem !important;
+          gap: 0.65rem !important;
+          overflow: hidden !important;
         }
         .navbar-spacer {
           height: 56px;
@@ -277,9 +279,12 @@ export default function Navbar() {
           align-items: center;
           gap: 0.35rem;
           flex-shrink: 1;
+          min-width: 0;
         }
         .nav-links a {
           white-space: nowrap;
+          padding: 0.4rem 0.65rem !important;
+          font-size: 0.84rem !important;
         }
         .nav-right-actions {
           margin-left: auto !important;
@@ -300,18 +305,22 @@ export default function Navbar() {
           font-size: 0.85rem;
           border-radius: 8px;
           white-space: nowrap;
+          flex-shrink: 0 !important;
         }
-        @media (max-width: 1280px) {
+        .nav-logout-btn {
+          flex-shrink: 0 !important;
+        }
+        @media (max-width: 1440px) {
           .navbar-title-full { display: none !important; }
           .navbar-title-short { display: inline !important; }
         }
-        @media (max-width: 1140px) {
+        @media (max-width: 1220px) {
           .nav-user-pill { display: none !important; }
         }
-        @media (max-width: 980px) {
+        @media (max-width: 1060px) {
           .nav-btn-text { display: none !important; }
-          .nav-sandi-btn, .nav-logout-btn { padding: 0.45rem 0.6rem !important; }
-          .nav-links a { padding: 0.4rem 0.55rem !important; font-size: 0.82rem !important; gap: 0.3rem !important; }
+          .nav-sandi-btn, .nav-logout-btn { padding: 0.45rem 0.65rem !important; }
+          .nav-links a { padding: 0.38rem 0.5rem !important; font-size: 0.82rem !important; gap: 0.25rem !important; }
         }
         @media (min-width: 861px) {
           .nav-mobile-right-actions,
