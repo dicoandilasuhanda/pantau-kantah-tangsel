@@ -89,13 +89,13 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
   - **Sheet 2 (`Rekap Bulanan Kegiatan`):** Tabel rekapitulasi otomatis per **Jenis Kegiatan** lengkap dengan baris **TOTAL KESELURUHAN** (*Total Masuk, Sedang Diproses, Selesai, Ditutup, Aman SLA, Terlambat/Overdue, dan % Kepatuhan SLA*).
 - **Aksi Administratif & Manajemen Pengguna (*CRUD*):** Administrator dapat menyelesaikan berkas manual (*Force Complete*), menutup berkas disertai alasan (*Close File with Reason*), menghapus berkas, serta mengelola akun dan multi-jabatan petugas (dilengkapi paginasi 10 pengguna per halaman).
 
-### 10. 👤 Halaman Profil Pengguna & 📐 Ruang Berkas DWG (AutoCAD) Bilateral
+### 10. 👤 Halaman Profil Pengguna & 📐 Ruang Berkas DWG (AutoCAD) Antar-Petugas Teknis
 - **Profil Pengguna Mandiri & Unggah Foto:**
   - Pengguna dapat mengakses halaman profil dengan mengeklik *user pill* identitas di bilah navigasi utama (`Navbar.jsx`).
   - Mendukung unggah, pratinjau, dan hapus foto profil pribadi (`avatar_url`) dengan validasi format gambar (JPG/PNG/WEBP hingga 5 MB).
-- **Ruang Berkas DWG Khusus (Asisten Surveyor Kadastral & Petugas Pemetaan):**
-  - Akses penyimpanan dan pertukaran berkas gambar format AutoCAD (`.dwg` hingga 100 MB) dibatasi secara ketat khusus bagi pengguna dengan peran **`Asisten Surveyor Kadastral`**, **`Petugas Pemetaan`**, dan **`Administrator`**. Akun selain ketiga role tersebut mendapatkan status terkunci (*restricted*).
-  - **Pertukaran File Bilateral (Dua Arah):** Petugas ASK dapat mengirim berkas gambar DWG langsung ke Petugas Pemetaan (dan Admin), dan sebaliknya Petugas Pemetaan dapat mengirim berkas ke ASK (dan Admin).
+- **Ruang Berkas DWG Khusus (Petugas Ukur, Asisten Surveyor Kadastral & Petugas Pemetaan):**
+  - Akses penyimpanan dan pertukaran berkas gambar format AutoCAD (`.dwg` hingga 100 MB) terbuka bagi pengguna dengan peran **`Petugas Ukur`**, **`Asisten Surveyor Kadastral`**, **`Petugas Pemetaan`**, dan **`Administrator`**. Akun selain keempat role tersebut mendapatkan status terkunci (*restricted*).
+  - **Pertukaran File Fleksibel (Multi-Arah):** Petugas Ukur, ASK, dan Petugas Pemetaan dapat saling bertukar dan mengirimkan berkas gambar DWG hasil pengukuran/pemetaan (serta ke Administrator).
   - **Tab Navigasi DWG Terorganisir:** Tab `Semua`, `Berkas Masuk (Inbox)`, `Folder Pribadi`, dan `Terkirim (Outbox)` memudahkan pemilahan arsip.
   - **Fitur Kirim & Teruskan (*Forward*):** Mendukung pengunggahan file baru untuk langsung dikirim ke penerima, maupun meneruskan berkas yang sudah tersimpan di folder pribadi disertai catatan kendala/keterangan (*notes*).
   - **Pemberitahuan Otomatis Bot Telegram:** Pengiriman dan penerusan berkas DWG otomatis memicu notifikasi pesan rincian file dan catatan langsung ke akun Telegram penerima secara *real-time*.
@@ -198,7 +198,7 @@ pantau-kantah-tangsel/
 │   │   │   ├── HomeHub.jsx         # Portal utama pemilihan modul layanan
 │   │   │   ├── Login.jsx           # Halaman autentikasi pengguna
 │   │   │   ├── PdfTools.jsx        # Utilitas manipulasi dokumen PDF in-browser (Gabung, Pisah, Kompres, dsb.)
-│   │   │   ├── Profile.jsx         # Profil pengguna, unggah avatar, & ruang pertukaran berkas DWG (ASK & Pemetaan)
+│   │   │   ├── Profile.jsx         # Profil pengguna, unggah avatar, & ruang pertukaran berkas DWG (Petugas Ukur, ASK, & Pemetaan)
 │   │   │   ├── Scanner.jsx         # Pemindai QR Code kamera & unggah gambar berkas
 │   │   │   ├── SuratDashboard.jsx  # Daftar agenda surat masuk, unduh PDF, & cetak slip QR
 │   │   │   ├── SuratDetails.jsx    # Detail riwayat perjalanan surat, transit, catatan, disposisi, & cetak slip QR

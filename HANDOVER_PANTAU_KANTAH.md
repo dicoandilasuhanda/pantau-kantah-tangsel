@@ -153,14 +153,13 @@ Ketika berkas dipindai (*scan*), backend menerapkan aturan bisnis spesifik berda
   - Perintah `/cek` atau `/status` untuk memeriksa jumlah berkas transit aktif, serta `/stop` atau `/putus` untuk melepas tautan.
   - Mengirimkan notifikasi otomatis pada 4 peristiwa: **(1) Berkas Masuk (Transit)**, **(2) Pembatalan Transit**, **(3) Kiriman File AutoCAD DWG Masuk**, dan **(4) Saran Fitur Baru Masuk (khusus ke Telegram Admin)**.
 
-### 5.3. Profil Pengguna & Ruang Kerja DWG Bilateral (`Profile.jsx`)
+### 5.3. Profil Pengguna & Ruang Kerja DWG Antar-Petugas Teknis (`Profile.jsx`)
 - **Profil & Avatar:** Pengguna dapat mengunggah/menghapus foto profil (`POST / DELETE /api/user/profile/avatar`, JPG/JPEG/PNG/WEBP maks 5 MB). Nama lengkap ditampilkan *read-only* di halaman profil pengguna untuk menjaga integritas nama pada histori.
 - **Ruang Pertukaran Berkas DWG (AutoCAD):**
-  - **Pembatasan Role Ketat (`requireDwgAccess`):** Hanya dapat diakses oleh `Asisten Surveyor Kadastral`, `Petugas Pemetaan`, dan `Administrator`.
-  - **Pertukaran Bilateral (`GET /api/user/dwg/recipients`):**
-    - `Asisten Surveyor Kadastral` dapat mengirim ke `Petugas Pemetaan` (dan `Administrator`).
-    - `Petugas Pemetaan` dapat mengirim ke `Asisten Surveyor Kadastral` (dan `Administrator`).
-    - `Administrator` (atau pemilik kedua role) dapat mengirim ke keduanya.
+  - **Pembatasan Role Ketat (`requireDwgAccess`):** Dapat diakses oleh `Petugas Ukur`, `Asisten Surveyor Kadastral`, `Petugas Pemetaan`, dan `Administrator`.
+  - **Pertukaran Berkas Multi-Arah (`GET /api/user/dwg/recipients`):**
+    - `Petugas Ukur`, `Asisten Surveyor Kadastral`, dan `Petugas Pemetaan` dapat saling mengirim dan meneruskan berkas DWG hasil pengukuran dan pemetaan (serta ke `Administrator`).
+    - `Administrator` dapat mengirim berkas DWG ke seluruh petugas teknis (`Petugas Ukur`, `ASK`, `Pemetaan`).
   - **Mekanisme Multi-Record & Referensi File Fisik:**
     - Saat file DWG (maks 100 MB) dikirim atau diteruskan (*forward*), sistem menyimpan **1 file fisik** di `backend/uploads/dwg/` dan membuat **2 baris record** di tabel `user_dwg_files` (1 baris dengan `user_id = recipientId` sebagai *Inbox* penerima, dan 1 baris dengan `user_id = senderId` sebagai *Outbox* pengirim).
     - Saat pengguna menghapus berkas DWG dari daftarnya, sistem menghapus baris milik `user_id` tersebut lalu mengecek `SELECT COUNT(*) FROM user_dwg_files WHERE file_name = ?`. File fisik `.dwg` di disk **hanya dihapus jika `count === 0`**.
@@ -190,9 +189,9 @@ Berikut adalah ke-14 nama peran eksak sebagaimana terdaftar pada `AVAILABLE_ROLE
 | 4 | `Petugas Entry Surat` | Mendaftarkan surat masuk baru (`/surat/entry`), unggah PDF surat, cetak slip QR agenda 5 digit, mengirim transit surat. |
 | 5 | `Petugas Entry Berkas` | Mendaftarkan berkas baru **Kelompok 1** (5 kegiatan SP), cetak slip QR berkas, lokasi awal otomatis tercatat sebagai `Loket Pendaftaran (Entry)`. |
 | 6 | `Petugas Entry Berkas PHP` | Mendaftarkan berkas baru **Kelompok 2** (9 kegiatan PHP), cetak slip QR berkas, lokasi awal tercatat sebagai `Petugas Entry Berkas PHP`. |
-| 7 | `Petugas Ukur` | Menerima kiriman transit berkas pengukuran (`K1`) dan memproses pengukuran lapangan. |
-| 8 | `Asisten Surveyor Kadastral` | Memproses berkas pengukuran/pemetaan (`K1`) serta memiliki akses khusus **Ruang Berkas DWG** untuk mengirim/menerima file `.dwg` dengan `Petugas Pemetaan`. |
-| 9 | `Petugas Pemetaan` | Memetakan bidang tanah pada alur `K1` maupun `K2`, serta memiliki akses khusus **Ruang Berkas DWG** untuk bertukar file `.dwg` dengan `Asisten Surveyor Kadastral`. |
+| 7 | `Petugas Ukur` | Menerima kiriman transit berkas pengukuran (`K1`), memproses pengukuran lapangan, serta memiliki akses **Ruang Berkas DWG** untuk menyimpan dan saling bertukar file `.dwg` dengan ASK dan Petugas Pemetaan. |
+| 8 | `Asisten Surveyor Kadastral` | Memproses berkas pengukuran/pemetaan (`K1`) serta memiliki akses khusus **Ruang Berkas DWG** untuk mengirim/menerima file `.dwg` dengan `Petugas Pemetaan` dan `Petugas Ukur`. |
+| 9 | `Petugas Pemetaan` | Memetakan bidang tanah pada alur `K1` maupun `K2`, serta memiliki akses khusus **Ruang Berkas DWG** untuk bertukar file `.dwg` dengan `Asisten Surveyor Kadastral` dan `Petugas Ukur`. |
 | 10 | `Petugas Alih Media` | Memproses digitalisasi/alih media warkah pada alur `FLOWS.K1`. |
 | 11 | `Petugas Penyelesaian Berkas` | Memproses tahap penyelesaian akhir berkas pada alur `FLOWS.K1` dan `FLOWS.K2`. |
 | 12 | `Petugas Distribusi Berkas Ke Seksi PHP` | Menjembatani penyerahan fisik berkas dari Seksi SP menuju Seksi PHP. |
@@ -362,7 +361,7 @@ erDiagram
 | | `POST /api/user/profile/avatar` | `authenticateJWT` | Unggah & ganti foto profil (JPG/JPEG/PNG/WEBP, maks 5 MB). |
 | | `DELETE /api/user/profile/avatar`| `authenticateJWT` | Hapus foto profil pengguna. |
 | | `GET /api/user/avatar/:filename` | Publik (Sanitized) | Menyajikan gambar foto profil dengan cache 24 jam. |
-| | `GET /api/user/dwg/recipients` | `requireDwgAccess` | Daftar penerima DWG yang sah (ASK &harr; Petugas Pemetaan &harr; Admin). |
+| | `GET /api/user/dwg/recipients` | `requireDwgAccess` | Daftar penerima DWG yang sah (Petugas Ukur &harr; ASK &harr; Petugas Pemetaan &harr; Admin). |
 | | `GET /api/user/dwg` | `requireDwgAccess` | Daftar seluruh file DWG milik pengguna (Inbox, Folder Pribadi, Outbox). |
 | | `POST /api/user/dwg` | `requireDwgAccess` | Unggah file `.dwg` (maks 100 MB) ke Folder Pribadi. |
 | | `POST /api/user/dwg/send` | `requireDwgAccess` | Unggah & langsung kirim file `.dwg` ke penerima + notifikasi Telegram. |

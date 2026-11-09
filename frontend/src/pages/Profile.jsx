@@ -72,6 +72,7 @@ export default function Profile() {
   const rolesList = profile?.role ? profile.role.split(',').map(r => r.trim()).filter(Boolean) : [];
   const hasDwgAccess = rolesList.includes('Asisten Surveyor Kadastral') || 
                        rolesList.includes('Petugas Pemetaan') || 
+                       rolesList.includes('Petugas Ukur') || 
                        rolesList.includes('Administrator');
 
   // Fetch Profile
@@ -488,7 +489,7 @@ export default function Profile() {
                 <Folder size={22} color="var(--primary-color)" /> Ruang Berkas DWG (AutoCAD)
               </h2>
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                Arsip & pertukaran file gambar peta kadastral antara <strong>Asisten Surveyor Kadastral</strong> dan <strong>Petugas Pemetaan</strong>
+                Arsip & pertukaran file gambar peta kadastral antara <strong>Petugas Ukur</strong>, <strong>Asisten Surveyor Kadastral</strong>, dan <strong>Petugas Pemetaan</strong>
               </p>
             </div>
 
@@ -568,7 +569,7 @@ export default function Profile() {
                 Akses Berkas DWG Dibatasi
               </h3>
               <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '480px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
-                Ruang penyimpanan dan pertukaran berkas format <strong>.dwg (AutoCAD)</strong> ini khusus diperuntukkan bagi petugas dengan peran <strong>Asisten Surveyor Kadastral</strong> dan <strong>Petugas Pemetaan</strong>.
+                Ruang penyimpanan dan pertukaran berkas format <strong>.dwg (AutoCAD)</strong> ini khusus diperuntukkan bagi petugas dengan peran <strong>Petugas Ukur</strong>, <strong>Asisten Surveyor Kadastral</strong>, dan <strong>Petugas Pemetaan</strong>.
               </p>
             </div>
           ) : (

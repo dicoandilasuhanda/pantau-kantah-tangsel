@@ -1134,12 +1134,13 @@ app.get('/api/user/avatar/:filename', (req, res) => {
   res.sendFile(filePath);
 });
 
-// Helper: Cek hak akses DWG (Asisten Surveyor Kadastral, Petugas Pemetaan, Administrator)
+// Helper: Cek hak akses DWG (Petugas Ukur, Asisten Surveyor Kadastral, Petugas Pemetaan, Administrator)
 function canAccessDwg(userRoles) {
   if (!userRoles) return false;
   const roles = Array.isArray(userRoles) ? userRoles : String(userRoles).split(',').map(r => r.trim());
   return roles.includes('Asisten Surveyor Kadastral') ||
          roles.includes('Petugas Pemetaan') ||
+         roles.includes('Petugas Ukur') ||
          roles.includes('Administrator');
 }
 
@@ -1147,26 +1148,39 @@ function canAccessDwg(userRoles) {
 const requireDwgAccess = (req, res, next) => {
   if (!canAccessDwg(req.user.role)) {
     return res.status(403).json({ 
-      error: 'Akses ditolak. Fitur penyimpanan & pertukaran file DWG hanya untuk Asisten Surveyor Kadastral dan Petugas Pemetaan.' 
+      error: 'Akses ditolak. Fitur penyimpanan & pertukaran file DWG hanya untuk Petugas Ukur, Asisten Surveyor Kadastral, dan Petugas Pemetaan.' 
     });
   }
   next();
 };
 
-// Get Eligible DWG Recipients (ASK -> Pemetaan; Pemetaan -> ASK; Admin -> Keduanya)
+// Get Eligible DWG Recipients (Petugas Ukur, ASK, Pemetaan, Admin)
 app.get('/api/user/dwg/recipients', authenticateJWT, requireDwgAccess, (req, res) => {
   const userRoles = String(req.user.role || '').split(',').map(r => r.trim());
   const isASK = userRoles.includes('Asisten Surveyor Kadastral');
   const isPemetaan = userRoles.includes('Petugas Pemetaan');
+  const isUkur = userRoles.includes('Petugas Ukur');
   const isAdmin = userRoles.includes('Administrator');
 
   let roleFilter = [];
-  if (isAdmin || (isASK && isPemetaan)) {
-    roleFilter = ['%Petugas Pemetaan%', '%Asisten Surveyor Kadastral%'];
-  } else if (isASK) {
-    roleFilter = ['%Petugas Pemetaan%', '%Administrator%'];
-  } else if (isPemetaan) {
-    roleFilter = ['%Asisten Surveyor Kadastral%', '%Administrator%'];
+  if (isAdmin) {
+    roleFilter = ['%Petugas Pemetaan%', '%Asisten Surveyor Kadastral%', '%Petugas Ukur%'];
+  } else {
+    const targets = new Set();
+    targets.add('%Administrator%');
+    if (isUkur) {
+      targets.add('%Petugas Pemetaan%');
+      targets.add('%Asisten Surveyor Kadastral%');
+    }
+    if (isASK) {
+      targets.add('%Petugas Pemetaan%');
+      targets.add('%Petugas Ukur%');
+    }
+    if (isPemetaan) {
+      targets.add('%Asisten Surveyor Kadastral%');
+      targets.add('%Petugas Ukur%');
+    }
+    roleFilter = Array.from(targets);
   }
 
   const whereClauses = roleFilter.map(() => 'role LIKE ?').join(' OR ');
