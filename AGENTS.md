@@ -1,4 +1,4 @@
-﻿# Aturan Kerja Otomatis & Tim Subagent (PC Kantor & Mac Pribadi)
+# Aturan Kerja Otomatis & Tim Subagent (PC Kantor & Mac Pribadi)
 
 Setiap kali bekerja pada proyek **Pantau SP Tangsel (`file-tracker`)**, Agent **WAJIB** langsung menjalankan langkah-langkah berikut secara otomatis tanpa menunggu perintah dari pengguna:
 
@@ -14,8 +14,11 @@ Setiap kali bekerja pada proyek **Pantau SP Tangsel (`file-tracker`)**, Agent **
    - **Di macOS (Mac Pribadi)**: Jika folder network share QNAP sedang ter-*mount* (`/Volumes/Pantau SP Tangsel/file-tracker`), salin file yang berubah ke sana.
    - **ATURAN KEAMANAN MUTLAK**: **JANGAN PERNAH** menimpa atau menghapus `backend/database.sqlite`, `backend/uploads/`, maupun file sertifikat `.pem` di server QNAP. Jangan pernah menjalankan `git reset --hard` atau `git clean` di folder QNAP.
 
-3. **Commit & Push Otomatis ke GitHub**:
-   - Setelah *build* sukses, langsung lakukan `git add`, `git commit`, dan `git push origin main` ke repository `https://github.com/dicoandilasuhanda/pantau-kantah-tangsel.git` tanpa perlu menunggu instruksi `push ke github`.
+3. **Sinkronisasi Otomatis Dokumen Handover (`HANDOVER_PANTAU_KANTAH.md`)**:
+   - Setiap kali terjadi penambahan fitur baru, perubahan skema database, pembaruan endpoint API, penyesuaian alur kegiatan, atau perbaikan logika bisnis/SLA, Agent **WAJIB** langsung memeriksa dan memperbarui `HANDOVER_PANTAU_KANTAH.md` agar tetap 100% selaras (*Single Source of Truth*) dengan kode sebelum melakukan *push*.
+
+4. **Commit & Push Otomatis ke GitHub**:
+   - Setelah *build* sukses dan `HANDOVER_PANTAU_KANTAH.md` telah ter-update, langsung lakukan `git add` (termasuk file kode, dokumen handover, dan aset terkait), `git commit`, dan `git push origin main` ke repository `https://github.com/dicoandilasuhanda/pantau-kantah-tangsel.git` tanpa perlu menunggu instruksi `push ke github`.
 
 ---
 
@@ -27,5 +30,5 @@ Untuk tugas kompleks atau pengerjaan paralel, Agent Utama dapat mendefinisikan (
    - **Fokus**: Komponen React + Vite (`frontend/src/`), desain *Dark Glassmorphism*, tabel interaktif, filter laporan, pemindaian QR, export Excel/PDF (`xlsx`), serta sinkronisasi perhitungan SLA di `frontend/src/utils/dateUtils.js`.
 2. **`backend-sp` (Backend API & SQLite Specialist)**
    - **Fokus**: Endpoint REST API di `backend/server.js`, alur tahapan berkas (`FLOWS.K1` & `FLOWS.K2`), perhitungan hari kerja & hari libur nasional (`INDONESIAN_HOLIDAYS`), validasi role pengguna, serta migrasi skema SQLite yang 100% aman bagi data produksi (`database.sqlite`).
-3. **`devops-sync-sp` (Build, QNAP Sync & GitHub Release Specialist)**
-   - **Fokus**: Menjalankan uji *build* lokal (`npm.cmd run build` / `npm run build`), menyinkronkan file kode ke server QNAP (`\\10.2.0.122\Pantau SP Tangsel\file-tracker`) tanpa menyentuh `database.sqlite`/`uploads`, dan melakukan *auto-commit* & *push* ke GitHub (`origin/main`).
+3. **`devops-sync-sp` (Build, QNAP Sync, Handover & GitHub Release Specialist)**
+   - **Fokus**: Memastikan `HANDOVER_PANTAU_KANTAH.md` telah ter-update sesuai perubahan terbaru, menjalankan uji *build* lokal (`npm.cmd run build` / `npm run build`), menyinkronkan file kode ke server QNAP (`\\10.2.0.122\Pantau SP Tangsel\file-tracker`) tanpa menyentuh `database.sqlite`/`uploads`, dan melakukan *auto-commit* & *push* ke GitHub (`origin/main`).
