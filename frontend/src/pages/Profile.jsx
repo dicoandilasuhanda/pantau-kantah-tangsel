@@ -16,7 +16,8 @@ import {
   SendHorizontal,
   Lock,
   X,
-  UserCheck
+  UserCheck,
+  RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -479,6 +480,36 @@ export default function Profile() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Section Pemeliharaan & Cache Browser */}
+        <div className="glass-panel" style={{ padding: '1.25rem 1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <RefreshCw size={16} color="var(--primary-color)" /> Pemeliharaan Cache & Sesi Peramban
+            </h3>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              Jika tampilan aplikasi terasa tidak sinkron, lambat, atau baru saja ada pembaruan sistem di server, Anda dapat membersihkan cache browser secara aman.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => {
+              if (window.confirm('Bersihkan cache dan muat ulang aplikasi dengan data terbaru?')) {
+                if (window.__appSelfRepair) {
+                  window.__appSelfRepair();
+                } else {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  window.location.reload();
+                }
+              }
+            }}
+            style={{ width: 'auto', padding: '0.5rem 0.95rem', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <RefreshCw size={14} /> Bersihkan Cache & Muat Ulang
+          </button>
         </div>
 
         {/* Section 2: Ruang Penyimpanan & Pertukaran Berkas DWG */}
