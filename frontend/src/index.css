@@ -451,14 +451,164 @@ button.secondary:hover {
   color: var(--accent-color);
 }
 
-/* Animations */
+/* Animations & Seamless Page Transitions */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.994);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.4s ease forwards;
+@keyframes pageStageFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes routeBarSweep {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  65% {
+    transform: scaleX(0.88);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+.route-transition-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), #38BDF8, var(--bpn-gold, #D97706));
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.65);
+  transform-origin: left center;
+  transform: scaleX(0);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10001;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .route-transition-bar.active {
+    animation: routeBarSweep 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .page-transition-stage {
+    animation: pageStageFade 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Native View Transitions API (Directional Choreography) */
+  @keyframes vtForwardOut {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translate3d(0, -10px, 0) scale(0.985);
+    }
+  }
+
+  @keyframes vtForwardIn {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 16px, 0) scale(0.988);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes vtBackOut {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translate3d(0, 14px, 0) scale(0.986);
+    }
+  }
+
+  @keyframes vtBackIn {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -12px, 0) scale(0.988);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes vtLateralOut {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translate3d(-16px, 0, 0) scale(0.992);
+    }
+  }
+
+  @keyframes vtLateralIn {
+    from {
+      opacity: 0;
+      transform: translate3d(16px, 0, 0) scale(0.992);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  ::view-transition-old(root) {
+    animation: vtForwardOut 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  ::view-transition-new(root) {
+    animation: vtForwardIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  html[data-transition-dir="back"]::view-transition-old(root) {
+    animation: vtBackOut 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  html[data-transition-dir="back"]::view-transition-new(root) {
+    animation: vtBackIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  html[data-transition-dir="lateral"]::view-transition-old(root) {
+    animation: vtLateralOut 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  html[data-transition-dir="lateral"]::view-transition-new(root) {
+    animation: vtLateralIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 /* Skeleton Shimmer Loading */

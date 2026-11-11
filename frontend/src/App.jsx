@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
@@ -52,13 +52,116 @@ const SuratEntryRoute = ({ children }) => {
   return (userRoles.includes('Administrator') || userRoles.includes('Petugas Entry Surat')) ? children : <Navigate to="/surat" />;
 };
 
+function getRouteDepth(pathname) {
+  if (pathname === '/login') return 0;
+  if (pathname === '/') return 1;
+  if (pathname.startsWith('/file/') || pathname.startsWith('/surat/detail/')) return 4;
+  if (
+    pathname === '/entry' ||
+    pathname === '/scan' ||
+    pathname === '/surat/entry' ||
+    pathname === '/surat/scan' ||
+    pathname === '/admin/users' ||
+    pathname === '/admin/stats'
+  ) {
+    return 3;
+  }
+  return 2;
+}
+
+function routeFocusToMain(mainEl) {
+  if (!mainEl) return;
+  const heading = mainEl.querySelector('h1, h2');
+  if (heading) {
+    if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+    heading.focus({ preventScroll: true });
+  } else {
+    mainEl.focus({ preventScroll: true });
+  }
+}
+
 function AppContent() {
   const location = useLocation();
-  const isLoginPage = location.pathname === '/login';
+  const [displayLocation, setDisplayLocation] = useState(location);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionResolveRef = useRef(null);
+  const barTimerRef = useRef(null);
+  const mainRef = useRef(null);
+  const isLoginPage = displayLocation.pathname === '/login';
 
   useEffect(() => {
     document.title = 'Pantau.Kantah Tangsel';
   }, [location.pathname]);
+
+  useEffect(() => {
+    return () => {
+      if (barTimerRef.current) clearTimeout(barTimerRef.current);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    if (
+      location.pathname === displayLocation.pathname &&
+      location.search === displayLocation.search
+    ) {
+      return;
+    }
+
+    const oldDepth = getRouteDepth(displayLocation.pathname);
+    const newDepth = getRouteDepth(location.pathname);
+    const dir = newDepth > oldDepth ? 'forward' : newDepth < oldDepth ? 'back' : 'lateral';
+    document.documentElement.setAttribute('data-transition-dir', dir);
+
+    if (barTimerRef.current) clearTimeout(barTimerRef.current);
+    setIsTransitioning(true);
+    barTimerRef.current = setTimeout(() => setIsTransitioning(false), 380);
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (
+      !document.startViewTransition ||
+      prefersReducedMotion ||
+      document.visibilityState === 'hidden'
+    ) {
+      setDisplayLocation(location);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      requestAnimationFrame(() => routeFocusToMain(mainRef.current));
+      return;
+    }
+
+    if (transitionResolveRef.current) {
+      transitionResolveRef.current();
+      transitionResolveRef.current = null;
+    }
+
+    try {
+      const transition = document.startViewTransition(() => {
+        return new Promise((resolve) => {
+          transitionResolveRef.current = resolve;
+          setDisplayLocation(location);
+          setTimeout(resolve, 140);
+        });
+      });
+
+      transition.finished.finally(() => {
+        routeFocusToMain(mainRef.current);
+      });
+    } catch {
+      setDisplayLocation(location);
+      requestAnimationFrame(() => routeFocusToMain(mainRef.current));
+    }
+  }, [location, displayLocation]);
+
+  useLayoutEffect(() => {
+    if (transitionResolveRef.current) {
+      transitionResolveRef.current();
+      transitionResolveRef.current = null;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [displayLocation]);
 
   useEffect(() => {
     const syncTheme = () => {
@@ -72,8 +175,18 @@ function AppContent() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <main style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column', paddingBottom: !isLoginPage ? '3.5rem' : '0' }}>
-        <Routes>
+      <div
+        className={`route-transition-bar no-print ${isTransitioning ? 'active' : ''}`}
+        aria-hidden="true"
+      />
+      <main
+        ref={mainRef}
+        tabIndex={-1}
+        key={displayLocation.pathname}
+        className="page-transition-stage"
+        style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column', paddingBottom: !isLoginPage ? '3.5rem' : '0', outline: 'none' }}
+      >
+        <Routes location={displayLocation}>
           <Route path="/login" element={<Login />} />
         
           <Route path="/" element={

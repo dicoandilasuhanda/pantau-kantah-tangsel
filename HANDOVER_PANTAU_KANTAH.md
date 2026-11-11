@@ -458,6 +458,11 @@ Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / 
 3. **Pembersihan Cache Mandiri pada Profil Pengguna (`frontend/src/pages/Profile.jsx`)**:
    - Dilengkapi modul *Pemeliharaan Cache & Sesi Peramban* yang memungkinkan pengguna menyegarkan cache dan menyelaraskan data lokal kapan saja secara mandiri.
 
+### 9.5. Transisi Antar-Halaman Seamless Berbasis View Transitions API (`frontend/src/App.jsx` & `frontend/src/index.css`)
+- **Directional View Transitions (`document.startViewTransition`)**: Mengintegrasikan *View Transitions API* bawaan browser dengan sinkronisasi state `displayLocation` pada `<Routes location={displayLocation}>`. Sistem otomatis menghitung kedalaman rute (`getRouteDepth`) untuk menentukan arah animasi secara kontekstual (`forward` saat masuk ke sub-halaman/detail, `back` saat kembali ke modul induk/Hub, dan `lateral` saat berpindah antar-modul sejajar).
+- **Top Route Progress Bar (`.route-transition-bar`)**: Indikator *shimmer bar* tipis di tepi atas layar yang menyapu halus setiap kali perpindahan rute berlangsung.
+- **Aksesibilitas & Fallback Progresif**: Mengarahkan fokus secara terprogram ke *heading* halaman baru setelah transisi selesai (`routeFocusToMain`), menyediakan fallback animasi CSS mulus pada peramban lama tanpa merusak posisi elemen `position: fixed`, serta mematuhi preferensi `@media (prefers-reduced-motion)`.
+
 ---
 
 ## 10. Rencana Arsitektur Masa Depan (Skalabilitas Enterprise PostgreSQL)

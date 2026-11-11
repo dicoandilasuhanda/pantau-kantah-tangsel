@@ -608,7 +608,7 @@ export default function HomeHub() {
       </header>
       <div className="hub-topbar-spacer" style={{ height: `${topbarHeight}px` }} aria-hidden="true" />
 
-      <div className="hub-container">
+      <div className="hub-container animate-fade-in">
         {/* Hero Header */}
         <div className="hub-hero">
           <h1 className="hub-title">

@@ -122,6 +122,11 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 - **Global React Error Boundary (`ErrorBoundary.jsx`):** Melindungi seluruh pohon komponen aplikasi dari *crash* runtime JavaScript sehingga layar putih polos (*White Screen of Death*) dicegah sepenuhnya dan digantikan dialog elegan bertema resmi Kantah Tangsel.
 - **Pemeliharaan Cache Mandiri di Halaman Profil (`Profile.jsx`):** Petugas dapat melakukan sinkronisasi dan pembersihan cache browser kapan saja secara mandiri melalui modul *Pemeliharaan Cache & Sesi Peramban*.
 
+### 14. ✨ Transisi Antar-Halaman Seamless & Kontekstual (View Transitions API)
+- **Animasi Berarah Cerdas (*Directional Choreography*):** Menggunakan *View Transitions API* (`document.startViewTransition`) yang mendeteksi kedalaman navigasi secara otomatis — animasi *forward* saat membuka detail/sub-halaman, *back* saat kembali ke halaman induk/Hub, dan *lateral* saat berpindah antar-modul sejajar.
+- **Top Route Progress Shimmer Bar:** Indikator garis cahaya gradien tipis di bagian paling atas layar yang memberikan umpan balik visual instan saat berpindah halaman.
+- **Ramah Aksesibilitas & Performa GPU:** Seluruh transisi berjalan di *compositor thread* (`transform: translate3d` & `opacity`), mengarahkan fokus ke judul halaman baru secara otomatis, serta mematuhi pengaturan `@media (prefers-reduced-motion)`.
+
 ---
 
 ## 👥 Daftar Peran (*Roles*) dalam Sistem
