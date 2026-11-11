@@ -628,22 +628,48 @@ button.secondary:hover {
 /* Print Styles                              */
 /* ========================================= */
 @media print {
-  body {
+  @page {
+    size: auto;
+    margin: 8mm;
+  }
+
+  html, body {
     background: white !important;
     background-image: none !important;
     color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
   
   /* Hide elements that shouldn't be printed */
-  .no-print, .navbar {
+  header, nav, footer, .navbar, .navbar-spacer, .no-print, .hub-topbar, .hub-topbar-spacer, .hub-floating-saran {
     display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    visibility: hidden !important;
   }
   
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
   /* Remove container constraints */
   .print-container {
     padding: 0 !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     max-width: none !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border: none !important;
   }
 
   /* Style the QR panel specifically for print */
@@ -652,11 +678,15 @@ button.secondary:hover {
     color: black !important;
     box-shadow: none !important;
     border: none !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
-    text-align: center;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
   }
   
   .qr-result-panel p, .qr-result-panel span, 

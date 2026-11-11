@@ -443,9 +443,27 @@ export default function Navbar() {
             flex: 1;
           }
         }
+        @media print {
+          .navbar,
+          .navbar-spacer,
+          .nav-mobile-right-actions,
+          .nav-right-actions,
+          .nav-links,
+          .navbar-brand,
+          nav {
+            display: none !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            visibility: hidden !important;
+          }
+        }
       `}</style>
 
-      <nav ref={navRef} className="navbar">
+      <nav ref={navRef} className="navbar no-print">
         <div className="navbar-brand">
           <div className="navbar-brand-info">
             <div className="navbar-seal-box" title="Kementerian ATR/BPN RI">
@@ -678,7 +696,7 @@ export default function Navbar() {
           </button>
         </div>
       </nav>
-      <div className="navbar-spacer" style={{ height: `${navHeight}px` }} aria-hidden="true" />
+      <div className="navbar-spacer no-print" style={{ height: `${navHeight}px` }} aria-hidden="true" />
 
       {showPasswordModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>

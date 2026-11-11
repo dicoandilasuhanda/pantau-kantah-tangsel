@@ -216,6 +216,7 @@ function AppContent() {
       {/* Footer Terkunci di Bawah (Kecuali Halaman Login yang Memiliki Footer Institusi Sendiri) */}
       {!isLoginPage && (
         <footer 
+          className="no-print"
           style={{ 
             position: 'fixed',
             bottom: 0,
