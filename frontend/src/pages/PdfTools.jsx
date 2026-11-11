@@ -1,12 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { 
   Layers, 
   Scissors, 
   Minimize2, 
   Image as ImageIcon, 
   RotateCw, 
-  ArrowUp, 
-  ArrowDown, 
   Trash2, 
   Download, 
   Plus, 
@@ -139,7 +137,7 @@ export default function PdfTools() {
   const [splitSelectedPages, setSplitSelectedPages] = useState(new Set()); // 0-based indices
   const [splitRange, setSplitRange] = useState('');
   const [splitOutputName, setSplitOutputName] = useState('');
-  const [loadingSplitPreviews, setLoadingSplitPreviews] = useState(false);
+  const [_loadingSplitPreviews, setLoadingSplitPreviews] = useState(false);
   const splitInputRef = useRef(null);
 
   // Tab 3: Compress State
@@ -163,7 +161,7 @@ export default function PdfTools() {
   const [rotateMode, setRotateMode] = useState('all');
   const [rotateCustomRange, setRotateCustomRange] = useState('');
   const [rotateOutputName, setRotateOutputName] = useState('');
-  const [loadingRotatePreviews, setLoadingRotatePreviews] = useState(false);
+  const [_loadingRotatePreviews, setLoadingRotatePreviews] = useState(false);
   const rotateInputRef = useRef(null);
 
   // --- Handlers Tab 1: Merge ---
@@ -188,7 +186,7 @@ export default function PdfTools() {
         const buffer = await item.file.arrayBuffer();
         const thumb = await renderPdfPageThumbnail(buffer, 1, 260);
         setMergeFiles(prev => prev.map(f => f.id === item.id ? { ...f, thumbnailUrl: thumb, loadingThumb: false } : f));
-      } catch (err) {
+      } catch {
         setMergeFiles(prev => prev.map(f => f.id === item.id ? { ...f, loadingThumb: false } : f));
       }
     }

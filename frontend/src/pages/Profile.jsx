@@ -16,7 +16,6 @@ import {
   SendHorizontal,
   Lock,
   X,
-  UserCheck,
   RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -52,7 +51,7 @@ export default function Profile() {
   const dwgUploadInputRef = useRef(null);
 
   const [profile, setProfile] = useState(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [_loadingProfile, setLoadingProfile] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // DWG state

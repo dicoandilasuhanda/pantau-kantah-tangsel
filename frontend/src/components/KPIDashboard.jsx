@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 const COLORS = ["#2563eb", "#059669", "#d97706", "#dc2626", "#7c3aed", "#db2777", "#0284c7", "#ea580c", "#65a30d", "#4f46e5", "#14b8a6", "#f59e0b"];
-import { User, Clock, Activity, AlertTriangle, Mail, CheckCircle, FileText, Archive } from 'lucide-react';
+import { User, Clock, Activity, AlertTriangle, Mail, CheckCircle, Archive } from 'lucide-react';
 import Top50Berkas from './Top50Berkas';
 
 export default function KPIDashboard() {

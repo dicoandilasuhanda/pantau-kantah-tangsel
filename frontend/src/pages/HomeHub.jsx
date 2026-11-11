@@ -81,7 +81,7 @@ export default function HomeHub() {
   }, []);
 
   const handleLogout = async () => {
-    try { await api.post('/logout'); } catch (_) {}
+    try { await api.post('/logout'); } catch {}
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('user');

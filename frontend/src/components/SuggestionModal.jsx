@@ -4,8 +4,6 @@ import {
   Lightbulb, 
   Send, 
   Clock, 
-  CheckCircle, 
-  MessageSquare, 
   Trash2, 
   Sparkles, 
   Tag, 

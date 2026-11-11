@@ -447,11 +447,12 @@ Aplikasi dideploy menggunakan **Docker Compose** pada server NAS QNAP (`\\10.2.0
 >    - Selaraskan index Git di QNAP hanya dengan `git fetch origin` lalu `git reset --mixed origin/main`.
 
 ### 9.4. Sistem Pemulihan Otomatis Layar Putih & Cache Recovery (Double-Layer Fallback)
-Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / WSOD*) akibat *ChunkLoadError* pasca pembaruan kode di server, atau inkonsistensi cache lokal pada peramban (*browser*), sistem menerapkan proteksi lapis ganda:
-1. **Lapis 1 — Native Watchdog & Chunk Auto-Reload (`frontend/index.html`)**:
+Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / WSOD*) akibat *ChunkLoadError* pasca pembaruan kode di server, atau inkonsistensi cache lokal pada peramban (*browser*), sistem menerapkan proteksi lapis ganda yang 100% patuh terhadap *Content-Security-Policy (CSP)* ketat (`helmet` `script-src 'self'`):
+1. **Lapis 1 — Native Watchdog & Chunk Auto-Reload (`frontend/public/recovery.js` & `frontend/index.html`)**:
+   - Dimuat sebagai skrip eksternal `/recovery.js` dengan header HTTP `Cache-Control: no-store, no-cache, must-revalidate` di `backend/server.js` (beserta dukungan `worker-src: ["'self'", "blob:"]` untuk PDF/QR worker).
    - Mendengarkan event `window.addEventListener('error')` dan `unhandledrejection`.
-   - Jika terdeteksi kegagalan unduh chunk modul (`Failed to fetch dynamically imported module`), sistem secara otomatis me-reload halaman dengan parameter unik timestamp (`?ts=...`) sebanyak 1 kali tanpa mengganggu pengguna.
-   - Dilengkapi *Safety Watchdog Timer (4 detik)*: Jika aplikasi React gagal me-mount dan elemen `#root` masih kosong/menampilkan loader, sistem otomatis menampilkan kartu dialog pemulihan dengan tombol **"Bersihkan Cache & Pulihkan Otomatis"** (`window.__appSelfRepair()`) dan tombol **"Muat Ulang Halaman"**.
+   - Jika terdeteksi kegagalan unduh chunk modul (`Failed to fetch dynamically imported module`), sistem secara otomatis me-reload halaman dengan parameter unik timestamp (`?reload=...`) sebanyak 1 kali tanpa mengganggu pengguna.
+   - Dilengkapi *Safety Watchdog Timer (4 detik)*: Jika aplikasi React gagal me-mount dan elemen `#root` masih kosong/menampilkan loader, sistem otomatis menampilkan kartu dialog pemulihan (dengan event listener DOM standar tanpa *inline event handler* `onclick`) berisi tombol **"Bersihkan Cache & Pulihkan Otomatis"** (`window.__appSelfRepair()`) dan tombol **"Muat Ulang Halaman"**.
 2. **Lapis 2 — Global React Error Boundary (`frontend/src/components/ErrorBoundary.jsx`)**:
    - Membungkus seluruh hierarki komponen di `frontend/src/main.jsx`.
    - Menangkap segala *runtime exception* pada siklus hidup React, mencegah terjadinya layar putih total, serta menampilkan antarmuka ramah pengguna (*user-friendly*) bertema resmi Kantah Tangsel dengan tombol pembersihan cache dan reset sesi mandiri.

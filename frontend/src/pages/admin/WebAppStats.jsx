@@ -1,16 +1,11 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
-  Activity, 
   Users, 
   Smartphone, 
   Send, 
   RefreshCw, 
   Search, 
-  Shield, 
-  Clock, 
-  Globe, 
   LogOut, 
-  AlertTriangle,
   CheckCircle2,
   XCircle,
   Radio
@@ -85,7 +80,7 @@ export default function WebAppStats() {
       const res = await api.get('/admin/stats');
       setData(res.data);
       setLastUpdated(new Date());
-    } catch (err) {
+    } catch {
       if (isManual) toast.error('Gagal mengambil data statistik web-app');
     } finally {
       setLoading(false);

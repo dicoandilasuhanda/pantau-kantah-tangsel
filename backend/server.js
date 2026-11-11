@@ -34,6 +34,7 @@ app.use(helmet({
     directives: {
       "upgrade-insecure-requests": null,
       "img-src": ["'self'", "data:", "blob:"],
+      "worker-src": ["'self'", "blob:"],
     },
   },
 }));
@@ -2959,7 +2960,7 @@ app.put('/api/disposisi/:id/selesai', authenticateJWT, (req, res) => {
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '../frontend/dist'), {
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('index.html')) {
+    if (filePath.endsWith('index.html') || filePath.endsWith('recovery.js')) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
