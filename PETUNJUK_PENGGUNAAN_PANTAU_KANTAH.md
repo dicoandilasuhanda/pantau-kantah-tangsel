@@ -52,7 +52,7 @@ Setelah berhasil login, Anda akan disambut oleh halaman **Home Hub (`/`)** yang 
 - **Bilah Navigasi Atas (Navbar)**:
   - **Logo & Identitas Kantah**: Menampilkan lambang resmi Kementerian ATR/BPN, nama instansi Kantor Pertanahan Kota Tangerang Selatan, serta nama aplikasi.
   - **Tombol Navigasi Hub**: Klik tombol **Hub** (berikon rumah) pada bilah navigasi dari halaman mana saja untuk kembali ke portal utama (**Home Hub**).
-  - **Menu Kontekstual**: Menyesuaikan secara pintar dengan modul yang sedang Anda buka (misalnya menampilkan tombol *Entri Berkas*, *Scan QR*, *KPI*, dan *Admin Panel*).
+  - **Menu Kontekstual**: Menyesuaikan secara pintar dengan modul yang sedang Anda buka (misalnya menampilkan tombol *Berkas*, *Scan QR*, *Surat*, *KPI*, dan *Admin Panel*).
   - **Tombol Tema (☀️/🌙)**: Mengubah skema warna aplikasi secara instan.
   - **Chip Profil Pengguna**: Menampilkan foto/inisial, nama lengkap, dan jabatan Anda. Klik bagian ini untuk membuka halaman **Profil & Ruang Kerja DWG**.
   - **Tombol Keluar**: Mengakhiri sesi login Anda dengan aman.
@@ -207,7 +207,7 @@ Apabila Anda ingin menyerahkan banyak berkas sekaligus ke satu petugas tujuan ya
 
 ## 4. Entri Berkas Permohonan Baru & Cetak QR Code (`/entry`)
 
-Petugas Loket Pendaftaran atau Administrator dapat mendaftarkan berkas permohonan baru melalui menu **Entri Berkas**.
+Petugas Loket Pendaftaran atau Administrator dapat mendaftarkan berkas permohonan baru dengan mengeklik tombol khusus **Entri Berkas Baru** di kanan atas halaman Monitoring Berkas (identik dengan tombol *Entry Surat Baru* pada Monitoring Surat).
 
 ![Form Entri Berkas Baru](docs/screenshots/04_entry_berkas.png)
 

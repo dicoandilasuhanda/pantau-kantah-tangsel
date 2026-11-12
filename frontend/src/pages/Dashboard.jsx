@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw, Clock, Calendar, Send, CheckSquare, Square, X, Loader2, QrCode } from 'lucide-react';
+import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw, Clock, Calendar, Send, CheckSquare, Square, X, Loader2, QrCode, PlusSquare } from 'lucide-react';
 import { getWorkingDays, calculateTotalElapsedDays, getStatusColor, SOP_DAYS } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 
@@ -448,10 +448,23 @@ export default function Dashboard() {
             }}>
               <BarChart2 size={20} />
             </div>
-            <h1 style={{ margin: 0, fontSize: '1.65rem', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
-              Monitoring Berkas
-            </h1>
+            <div>
+              <h1 style={{ margin: 0, fontSize: '1.65rem', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+                Monitoring Berkas
+              </h1>
+              <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Pelacakan alur fisik berkas permohonan dan target SOP
+              </p>
+            </div>
           </div>
+          {(userRoles.includes('Administrator') || userRoles.includes('Petugas Entry Berkas') || userRoles.includes('Petugas Entry Berkas PHP')) && (
+            <button
+              onClick={() => navigate('/entry')}
+              style={{ width: 'auto', fontSize: '0.82rem', padding: '0.5rem 1rem', height: '38px', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
+            >
+              <PlusSquare size={16} /> Entri Berkas Baru
+            </button>
+          )}
         </div>
 
         {/* Summary Metric Cards */}

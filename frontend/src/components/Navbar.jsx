@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Scan, PlusSquare, Key, X, Home, Mail, FileText, Sun, Moon, Menu, Shield, Users, Activity } from 'lucide-react';
+import { LogOut, Scan, Key, X, Home, Mail, FileText, Sun, Moon, Menu, Shield, Users, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import NotificationBell from './NotificationBell';
@@ -619,12 +619,6 @@ export default function Navbar() {
                 <Link to="/berkas" className={location.pathname === '/berkas' ? 'active' : ''}>
                   <FileText size={18} /> Berkas
                 </Link>
-                
-                {(userRoles.includes('Petugas Entry Berkas') || userRoles.includes('Petugas Entry Berkas PHP')) && (
-                  <Link to="/entry" className={location.pathname === '/entry' ? 'active' : ''}>
-                    <PlusSquare size={18} /> Entri Baru
-                  </Link>
-                )}
 
                 <Link to="/scan" className={location.pathname === '/scan' ? 'active' : ''}>
                   <Scan size={18} /> Scanner QR
