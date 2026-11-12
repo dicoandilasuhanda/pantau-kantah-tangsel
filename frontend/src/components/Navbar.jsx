@@ -348,6 +348,16 @@ export default function Navbar() {
           .navbar-title-full { display: none !important; }
           .navbar-title-short { display: inline !important; }
         }
+        @media (max-width: 600px) {
+          .navbar-title-short,
+          .navbar-sep {
+            display: none !important;
+          }
+          .navbar-app-name {
+            font-size: 0.88rem !important;
+            white-space: nowrap !important;
+          }
+        }
         @media (max-width: 1280px) {
           .nav-btn-text { display: none !important; }
           .nav-sandi-btn, .nav-logout-btn { padding: 0.45rem 0.65rem !important; }

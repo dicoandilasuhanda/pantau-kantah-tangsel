@@ -138,6 +138,10 @@ Ketika berkas dipindai (*scan*), backend menerapkan aturan bisnis spesifik berda
 
 ### 5.1. Portal Utama (`HomeHub.jsx`) & Sistem Tema Ganda (*Dual Theme*)
 - **Mode Terang & Mode Gelap (*Light / Dark Glassmorphism*):** Dilengkapi saklar tema (*Segmented Theme Switcher*) di *Topbar* dan *Navbar* yang tersinkronisasi melalui `localStorage.getItem('theme')` (`light` sebagai default, atau `dark`) dan atribut `data-theme` pada `<html>`.
+- **Desain Responsif Baris Tunggal Mobile (*Zero-Overlap Mobile Topbar*):**
+  - Pada layar ponsel (*viewport* `<= 640px`), tata letak bilah atas `hub-topbar` dioptimalkan secara presisi dalam baris tunggal non-wrapping (`height: 56px !important; overflow: hidden; flex-wrap: nowrap`).
+  - Teks instansi secara otomatis diringkas menjadi identitas resmi `Pantau.Kantah Tangsel`, pil pengguna diringkas menjadi tombol avatar sirkular (tanpa teks nama/role panjang yang memakan ruang), dan tombol keluar diringkas menjadi tombol ikon `LogOut` ramping. Hal ini mengeliminasi masalah teks bertumpuk atau elemen tombol yang menabrak judul *"Portal Aplikasi"*.
+  - Pada komponen `Navbar.jsx` seluruh modul, teks header pada resolusi `<= 600px` juga disederhanakan hanya menampilkan `Pantau.Kantah Tangsel` untuk menjamin konsistensi visual di seluruh peramban mobile.
 - **5 Kartu Modul Utama di Home Hub:**
   1. **Monitoring Berkas (`/berkas`):** Tabel pemantauan berkas layanan rutin PNBP, pencarian petugas (`CariBerkasPetugas`), Top 10 Petugas, filter status/kegiatan, entri berkas (`/entry`), dan pemindai QR (`/scan`).
   2. **Monitoring Surat (`/surat`):** Daftar agenda surat masuk, pratinjau/unduh PDF aman, cetak slip QR standar, entri surat (`/surat/entry`), detail perjalanan surat (`/surat/detail/:id`), dan pemindai QR agenda surat (`/surat/scan`).

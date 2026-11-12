@@ -154,6 +154,7 @@ export default function HomeHub() {
           box-sizing: border-box !important;
           display: flex !important;
           align-items: center !important;
+          overflow: hidden !important;
         }
 
         .hub-topbar-spacer {
@@ -169,6 +170,15 @@ export default function HomeHub() {
           align-items: center;
           gap: 0.65rem;
           box-sizing: border-box;
+          flex-wrap: nowrap !important;
+        }
+
+        .hub-topbar-actions {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.65rem;
+          flex-wrap: nowrap !important;
+          flex-shrink: 0;
         }
 
         .hub-user-badge {
@@ -510,18 +520,60 @@ export default function HomeHub() {
           }
         }
 
+        @media (max-width: 860px) {
+          .hub-user-badge {
+            padding: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .hub-user-badge-text {
+            display: none !important;
+          }
+          .hub-user-badge img {
+            width: 28px !important;
+            height: 28px !important;
+          }
+        }
+
         @media (max-width: 640px) {
           .hub-topbar {
-            padding: 0.75rem 1rem;
+            padding: 0 0.75rem !important;
           }
           .hub-topbar-inner {
-            gap: 0.65rem;
+            gap: 0.45rem !important;
+          }
+          .hub-topbar-actions {
+            gap: 0.35rem !important;
+          }
+          .hub-seal-box {
+            width: 28px !important;
+            height: 28px !important;
+          }
+          .hub-brand-full,
+          .hub-brand-short,
+          .hub-brand-sep {
+            display: none !important;
+          }
+          .hub-app-name {
+            font-size: 0.88rem !important;
+            white-space: nowrap !important;
+          }
+          .hub-logout-btn {
+            padding: 0.45rem !important;
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 8px !important;
+            justify-content: center !important;
+          }
+          .hub-logout-btn span {
+            display: none !important;
           }
           .hub-container {
-            padding: 1.75rem 1rem 1.5rem;
+            padding: 1.5rem 1rem 1.5rem !important;
           }
           .hub-hero {
-            margin-bottom: 2rem;
+            margin-bottom: 2rem !important;
           }
         }
       `}</style>
@@ -529,25 +581,25 @@ export default function HomeHub() {
       {/* Top Navigation Bar */}
       <header ref={topbarRef} className="hub-topbar">
         <div className="hub-topbar-inner">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0, minWidth: 0 }}>
             <div className="hub-seal-box" title="Kementerian ATR/BPN RI">
               <img src="/logo-atr-bpn.png" alt="Logo Kementerian ATR/BPN" className="hub-seal-img" />
             </div>
-            <div>
+            <div style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', overflow: 'hidden' }}>
               <span className="hub-brand-full">
                 Kantor Pertanahan Kota Tangerang Selatan
               </span>
               <span className="hub-brand-short">
                 Kantah Tangsel
               </span>
-              <span style={{ margin: '0 0.35rem', color: 'var(--text-muted)', opacity: 0.5 }}>|</span>
+              <span className="hub-brand-sep" style={{ margin: '0 0.35rem', color: 'var(--text-muted)', opacity: 0.5 }}>|</span>
               <span className="hub-app-name">
                 Pantau<span className="hub-app-sub">.Kantah Tangsel</span>
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+          <div className="hub-topbar-actions">
             <div 
               className="hub-user-badge" 
               onClick={() => navigate('/profile')}
@@ -569,7 +621,7 @@ export default function HomeHub() {
               ) : (
                 <span className="hub-user-dot" style={{ flexShrink: 0 }} />
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
+              <div className="hub-user-badge-text" style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
                 <span className="hub-user-name" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color 0.2s ease' }}>
                   {fullNameState}
                 </span>
@@ -599,9 +651,9 @@ export default function HomeHub() {
             </div>
 
             <NotificationBell />
-            <button type="button" onClick={handleLogout} className="hub-logout-btn">
+            <button type="button" onClick={handleLogout} className="hub-logout-btn" title="Keluar">
               <LogOut size={15} />
-              Keluar
+              <span>Keluar</span>
             </button>
           </div>
         </div>
