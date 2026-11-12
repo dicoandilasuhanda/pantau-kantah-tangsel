@@ -57,6 +57,11 @@
     var root = document.getElementById('root');
     if (!root) return;
 
+    // Jangan timpa jika halaman aplikasi sudah berhasil di-render oleh React
+    if (root.children.length > 0 && !root.querySelector('.app-initial-loader')) {
+      return;
+    }
+
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     var bg = isDark ? '#07182D' : '#F8FAFC';
     var cardBg = isDark ? '#0B2545' : '#FFFFFF';
@@ -121,7 +126,23 @@
   }
 
   window.addEventListener('error', function (event) {
+    // Abaikan error dari third-party scripts (misalnya Cloudflare beacon, Google Analytics, dsb.)
+    if (event.filename && (
+      event.filename.indexOf('cloudflare') !== -1 ||
+      event.filename.indexOf('google') !== -1 ||
+      (event.filename.indexOf('http') === 0 && event.filename.indexOf(window.location.host) === -1)
+    )) {
+      return;
+    }
+
+    // Abaikan jika error terjadi pada elemen DOM sekunder (bukan window/script modul utama)
+    if (event.target && event.target !== window && (!event.target.tagName || event.target.tagName !== 'SCRIPT')) {
+      return;
+    }
+
     var msg = event.message || (event.error && event.error.message) || '';
+    if (!msg) return;
+
     __lastCapturedError = msg;
 
     if (isChunkLoadError(msg)) {
@@ -133,15 +154,22 @@
       }
     }
 
+    // Berikan jeda waktu 4 detik untuk memastikan bukan error sementara dan beri kesempatan bundle selesai di-parse
     if (!window.__APP_MOUNTED__) {
       setTimeout(function () {
-        renderRecoveryUI(msg);
-      }, 300);
+        if (!window.__APP_MOUNTED__) {
+          var root = document.getElementById('root');
+          if (root && (root.children.length === 0 || root.querySelector('.app-initial-loader'))) {
+            renderRecoveryUI(msg);
+          }
+        }
+      }, 4000);
     }
   });
 
   window.addEventListener('unhandledrejection', function (event) {
     var reason = event.reason ? (event.reason.message || String(event.reason)) : '';
+    if (!reason) return;
     __lastCapturedError = reason;
     if (isChunkLoadError(reason)) {
       var retryKey = '__chunk_auto_retry_flag__';
@@ -153,13 +181,13 @@
     }
   });
 
-  // Watchdog Pengaman Layar Putih (4 detik)
+  // Watchdog Pengaman Layar Putih (15 detik untuk mengakomodasi jaringan mobile & bundle ukuran besar)
   setTimeout(function () {
     if (!window.__APP_MOUNTED__) {
       var root = document.getElementById('root');
       if (root && (root.children.length === 0 || root.querySelector('.app-initial-loader'))) {
-        renderRecoveryUI('Aplikasi tidak merespons setelah 4 detik (kemungkinan kendala jaringan atau berkas cache usang)');
+        renderRecoveryUI('Aplikasi membutuhkan waktu lebih lama untuk memuat di jaringan ini. Silakan muat ulang atau periksa koneksi data.');
       }
     }
-  }, 4000);
+  }, 15000);
 })();

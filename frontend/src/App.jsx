@@ -164,6 +164,7 @@ function AppContent() {
   }, [displayLocation]);
 
   useEffect(() => {
+    window.__APP_MOUNTED__ = true;
     const syncTheme = () => {
       const activeTheme = localStorage.getItem('theme') || 'light';
       document.documentElement.setAttribute('data-theme', activeTheme);

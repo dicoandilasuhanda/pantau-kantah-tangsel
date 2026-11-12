@@ -463,16 +463,20 @@ Aplikasi dideploy menggunakan **Docker Compose** pada server NAS QNAP (`\\10.2.0
 >    - Selaraskan index Git di QNAP hanya dengan `git fetch origin` lalu `git reset --mixed origin/main`.
 
 ### 9.4. Sistem Pemulihan Otomatis Layar Putih & Cache Recovery (Double-Layer Fallback)
-Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / WSOD*) akibat *ChunkLoadError* pasca pembaruan kode di server, atau inkonsistensi cache lokal pada peramban (*browser*), sistem menerapkan proteksi lapis ganda yang 100% patuh terhadap *Content-Security-Policy (CSP)* ketat (`helmet` `script-src 'self'`):
+Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / WSOD*) akibat *ChunkLoadError* pasca pembaruan kode di server, atau inkonsistensi cache lokal pada peramban (*browser*), sistem menerapkan proteksi lapis ganda yang 100% patuh terhadap *Content-Security-Policy (CSP)* ketat dan dioptimalkan khusus untuk peramban mobile (iOS Safari & Android Chrome):
 1. **Lapis 1 — Native Watchdog & Chunk Auto-Reload (`frontend/public/recovery.js` & `frontend/index.html`)**:
    - Dimuat sebagai skrip eksternal `/recovery.js` dengan header HTTP `Cache-Control: no-store, no-cache, must-revalidate` di `backend/server.js` (beserta dukungan `worker-src: ["'self'", "blob:"]` untuk PDF/QR worker).
    - Mendengarkan event `window.addEventListener('error')` dan `unhandledrejection`.
+   - **Filter Cerdas Error Eksternal:** Secara selektif mengabaikan script pihak ketiga (seperti beacon Cloudflare Insights `static.cloudflareinsights.com` atau Google Fonts) serta error elemen non-skrip agar tidak memicu layar pemulihan palsu (*false positive*).
    - Jika terdeteksi kegagalan unduh chunk modul (`Failed to fetch dynamically imported module`), sistem secara otomatis me-reload halaman dengan parameter unik timestamp (`?reload=...`) sebanyak 1 kali tanpa mengganggu pengguna.
-   - Dilengkapi *Safety Watchdog Timer (4 detik)*: Jika aplikasi React gagal me-mount dan elemen `#root` masih kosong/menampilkan loader, sistem otomatis menampilkan kartu dialog pemulihan (dengan event listener DOM standar tanpa *inline event handler* `onclick`) berisi tombol **"Bersihkan Cache & Pulihkan Otomatis"** (`window.__appSelfRepair()`) dan tombol **"Muat Ulang Halaman"**.
+   - **Safety Watchdog Timer Responsif (15 detik):** Disesuaikan menjadi 15 detik (dari semula 4 detik) guna memberikan toleransi waktu yang memadai bagi perangkat *smartphone* pada jaringan seluler 4G/3G untuk mengunduh dan mengurai (*parsing*) bundel JavaScript utama secara tuntas sebelum memutuskan bahwa aplikasi mengalami kendala memuat.
 2. **Lapis 2 — Global React Error Boundary (`frontend/src/components/ErrorBoundary.jsx`)**:
    - Membungkus seluruh hierarki komponen di `frontend/src/main.jsx`.
    - Menangkap segala *runtime exception* pada siklus hidup React, mencegah terjadinya layar putih total, serta menampilkan antarmuka ramah pengguna (*user-friendly*) bertema resmi Kantah Tangsel dengan tombol pembersihan cache dan reset sesi mandiri.
-3. **Pembersihan Cache Mandiri pada Profil Pengguna (`frontend/src/pages/Profile.jsx`)**:
+3. **Penyelarasan CORS & CSP Backend untuk Mobile Safari (`backend/server.js`)**:
+   - **CORS Multi-Origin Dinamis:** Menghilangkan ketergantungan `http://localhost:5173` dengan mendukung domain resmi `https://pantaukantahtangsel.web.id`, localhost, serta IP lokal kantor (`10.2.0.*`), serta memberikan header `Access-Control-Allow-Origin: *` pada berkas statis (`express.static`) sehingga Safari pada iPhone tidak lagi memblokir eksekusi `<script type="module" crossorigin>`.
+   - **Whitelisting Cloudflare Insights pada CSP:** Menambahkan `https://static.cloudflareinsights.com` pada `script-src` / `script-src-elem` dan `https://*.cloudflareinsights.com` pada `connect-src` agar injeksi otomatis Cloudflare Tunnel tidak ditolak oleh peramban.
+4. **Pembersihan Cache Mandiri pada Profil Pengguna (`frontend/src/pages/Profile.jsx`)**:
    - Dilengkapi modul *Pemeliharaan Cache & Sesi Peramban* yang memungkinkan pengguna menyegarkan cache dan menyelaraskan data lokal kapan saja secara mandiri.
 
 ### 9.5. Transisi Antar-Halaman Seamless Berbasis View Transitions API (`frontend/src/App.jsx` & `frontend/src/index.css`)

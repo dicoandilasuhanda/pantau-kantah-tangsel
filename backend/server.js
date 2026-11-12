@@ -16,6 +16,14 @@ const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-file-tracker'; 
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3001',
+  'https://localhost:3002',
+  'https://pantaukantahtangsel.web.id',
+  'http://pantaukantahtangsel.web.id'
+];
+
 // Helper verifikasi QR Code: mendukung JWT_SECRET aktif maupun legacy secret
 function verifyQRCodeToken(token) {
   try {
@@ -33,12 +41,34 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       "upgrade-insecure-requests": null,
+      "default-src": ["'self'"],
+      "script-src": ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com"],
+      "script-src-elem": ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com"],
+      "connect-src": ["'self'", "https://cloudflareinsights.com", "https://*.cloudflareinsights.com"],
+      "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
       "img-src": ["'self'", "data:", "blob:"],
       "worker-src": ["'self'", "blob:"],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-app.use(cors({ origin: CORS_ORIGIN }));
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.indexOf(origin) !== -1 ||
+      origin.startsWith('http://10.2.0.') ||
+      origin.startsWith('http://192.168.') ||
+      origin.endsWith('.pantaukantahtangsel.web.id')
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Setup multer for surat upload
@@ -2960,14 +2990,18 @@ app.put('/api/disposisi/:id/selesai', authenticateJWT, (req, res) => {
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '../frontend/dist'), {
   setHeaders: (res, filePath) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
     if (filePath.endsWith('index.html') || filePath.endsWith('recovery.js')) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
   }
 }));
 app.get(/.*/, (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
