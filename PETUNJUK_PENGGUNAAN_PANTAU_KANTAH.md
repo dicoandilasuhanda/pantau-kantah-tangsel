@@ -50,7 +50,8 @@ Setelah berhasil login, Anda akan disambut oleh halaman **Home Hub (`/`)** yang 
 
 ### Penjelasan Komponen Utama:
 - **Bilah Navigasi Atas (Navbar)**:
-  - **Logo & Identitas Kantah**: Klik logo di kiri atas dari halaman mana saja untuk kembali ke **Home Hub**.
+  - **Logo & Identitas Kantah**: Menampilkan lambang resmi Kementerian ATR/BPN, nama instansi Kantor Pertanahan Kota Tangerang Selatan, serta nama aplikasi.
+  - **Tombol Navigasi Hub**: Klik tombol **Hub** (berikon rumah) pada bilah navigasi dari halaman mana saja untuk kembali ke portal utama (**Home Hub**).
   - **Menu Kontekstual**: Menyesuaikan secara pintar dengan modul yang sedang Anda buka (misalnya menampilkan tombol *Entri Berkas*, *Scan QR*, *KPI*, dan *Admin Panel*).
   - **Tombol Tema (☀️/🌙)**: Mengubah skema warna aplikasi secara instan.
   - **Chip Profil Pengguna**: Menampilkan foto/inisial, nama lengkap, dan jabatan Anda. Klik bagian ini untuk membuka halaman **Profil & Ruang Kerja DWG**.
