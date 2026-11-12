@@ -1,4 +1,70 @@
 (function () {
+  // Polyfill kompatibilitas WebKit (iOS Safari & iOS Chrome) untuk API ES2024/ES2025 yang digunakan oleh pdfjs-dist v6+
+  try {
+    if (typeof Promise !== 'undefined' && !Promise.withResolvers) {
+      Promise.withResolvers = function () {
+        var resolve, reject;
+        var promise = new Promise(function (res, rej) {
+          resolve = res;
+          reject = rej;
+        });
+        return { promise: promise, resolve: resolve, reject: reject };
+      };
+    }
+    if (typeof Map !== 'undefined') {
+      if (!Map.prototype.getOrInsertComputed) {
+        Map.prototype.getOrInsertComputed = function (key, callbackfn) {
+          if (this.has(key)) return this.get(key);
+          var val = callbackfn(key);
+          this.set(key, val);
+          return val;
+        };
+      }
+      if (!Map.prototype.getOrInsert) {
+        Map.prototype.getOrInsert = function (key, defaultValue) {
+          if (this.has(key)) return this.get(key);
+          this.set(key, defaultValue);
+          return defaultValue;
+        };
+      }
+    }
+    if (typeof WeakMap !== 'undefined') {
+      if (!WeakMap.prototype.getOrInsertComputed) {
+        WeakMap.prototype.getOrInsertComputed = function (key, callbackfn) {
+          if (this.has(key)) return this.get(key);
+          var val = callbackfn(key);
+          this.set(key, val);
+          return val;
+        };
+      }
+      if (!WeakMap.prototype.getOrInsert) {
+        WeakMap.prototype.getOrInsert = function (key, defaultValue) {
+          if (this.has(key)) return this.get(key);
+          this.set(key, defaultValue);
+          return defaultValue;
+        };
+      }
+    }
+    if (typeof Uint8Array !== 'undefined' && !Uint8Array.fromBase64) {
+      Uint8Array.fromBase64 = function (base64String) {
+        var binString = atob(String(base64String).replace(/[\r\n\s]+/g, ''));
+        var len = binString.length;
+        var bytes = new Uint8Array(len);
+        for (var i = 0; i < len; i++) {
+          bytes[i] = binString.charCodeAt(i);
+        }
+        return bytes;
+      };
+    }
+    if (!Object.hasOwn) {
+      Object.hasOwn = function (obj, prop) {
+        return Object.prototype.hasOwnProperty.call(obj, prop);
+      };
+    }
+  } catch {
+    // Abaikan jika gagal memasang polyfill
+  }
+
   try {
     var savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -143,7 +209,16 @@
     var msg = event.message || (event.error && event.error.message) || '';
     if (!msg) return;
 
-    __lastCapturedError = msg;
+    // Abaikan generic "Script error." tanpa filename (umumnya injeksi skrip eksternal/ekstensi pada iOS WebKit) & ResizeObserver
+    var lowerMsg = String(msg).toLowerCase();
+    if ((lowerMsg === 'script error.' || lowerMsg === 'script error') && !event.filename) {
+      return;
+    }
+    if (lowerMsg.indexOf('resizeobserver') !== -1) {
+      return;
+    }
+
+    __lastCapturedError = msg + (event.filename ? ' (' + event.filename + ':' + (event.lineno || 0) + ')' : '');
 
     if (isChunkLoadError(msg)) {
       var retryKey = '__chunk_auto_retry_flag__';
@@ -154,16 +229,16 @@
       }
     }
 
-    // Berikan jeda waktu 4 detik untuk memastikan bukan error sementara dan beri kesempatan bundle selesai di-parse
+    // Berikan jeda waktu 10 detik untuk memastikan bukan error sementara dan beri kesempatan bundle selesai di-parse
     if (!window.__APP_MOUNTED__) {
       setTimeout(function () {
         if (!window.__APP_MOUNTED__) {
           var root = document.getElementById('root');
           if (root && (root.children.length === 0 || root.querySelector('.app-initial-loader'))) {
-            renderRecoveryUI(msg);
+            renderRecoveryUI(__lastCapturedError || msg);
           }
         }
-      }, 4000);
+      }, 10000);
     }
   });
 
@@ -181,13 +256,13 @@
     }
   });
 
-  // Watchdog Pengaman Layar Putih (15 detik untuk mengakomodasi jaringan mobile & bundle ukuran besar)
+  // Watchdog Pengaman Layar Putih (20 detik untuk mengakomodasi jaringan mobile & bundle ukuran besar)
   setTimeout(function () {
     if (!window.__APP_MOUNTED__) {
       var root = document.getElementById('root');
       if (root && (root.children.length === 0 || root.querySelector('.app-initial-loader'))) {
-        renderRecoveryUI('Aplikasi membutuhkan waktu lebih lama untuk memuat di jaringan ini. Silakan muat ulang atau periksa koneksi data.');
+        renderRecoveryUI(__lastCapturedError || 'Aplikasi membutuhkan waktu lebih lama untuk memuat di jaringan ini. Silakan muat ulang atau periksa koneksi data.');
       }
     }
-  }, 15000);
+  }, 20000);
 })();
