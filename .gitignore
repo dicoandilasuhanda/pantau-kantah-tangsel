@@ -14,5 +14,3 @@ Thumbs.db
 *.db
 *.pem
 backend/uploads/
-.agent/
-.agents

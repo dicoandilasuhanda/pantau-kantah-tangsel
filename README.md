@@ -353,6 +353,8 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
 - **Tahap 17 — Penyatuan Komponen Navigasi Utama Standard (`Navbar.jsx`) & Responsif Mobile:**
   - **Penyatuan Penuh Navbar Home Hub (`HomeHub.jsx` & `App.jsx`):** Menyelaraskan bilah atas Home Hub agar menggunakan komponen `Navbar.jsx` yang sama persis seperti seluruh modul lainnya. Menghapus kode duplikasi bilah atas kustom di `HomeHub.jsx` dan mengaktifkan drawer navigasi mobile (hamburger toggle), lonceng notifikasi audio transit, serta saklar tema secara seragam.
   - **Penyederhanaan Merek Navigasi Mobile (`Navbar.jsx`):** Menyembunyikan teks sekunder pada resolusi `<= 600px` sehingga hanya menampilkan `Pantau.Kantah Tangsel` secara konsisten pada seluruh bilah navigasi modul tanpa risiko teks membungkus baris (*anti-wrapping*).
+- **Tahap 18 — Standarisasi Workspace Skills Terpadu Multi-Perangkat (`.agents/skills/`):**
+  - Mengintegrasikan seluruh koleksi *Agent Skills* langsung ke dalam repository pada direktori `.agents/skills/` (mencakup suite `antislop`, `antislop-ui`, `antislop-code`, `antislop-copywriting`, `antislop-layoutmobile`, `antislop-human`, `modern-web-guidance`, serta proteksi data dan analisis cloud) sehingga saat pengguna berpindah perangkat antara **PC Kantor** dan **MacBook Pribadi**, seluruh skill langsung tersinkronisasi otomatis via `git pull` tanpa perlu instalasi manual ulang.
 
 ---
 

@@ -491,6 +491,13 @@ Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / 
 - **Top Route Progress Bar (`.route-transition-bar`)**: Indikator *shimmer bar* tipis di tepi atas layar yang menyapu halus setiap kali perpindahan rute berlangsung.
 - **Aksesibilitas & Fallback Progresif**: Mengarahkan fokus secara terprogram ke *heading* halaman baru setelah transisi selesai (`routeFocusToMain`), menyediakan fallback animasi CSS mulus pada peramban lama tanpa merusak posisi elemen `position: fixed`, serta mematuhi preferensi `@media (prefers-reduced-motion)`.
 
+### 9.6. Sinkronisasi Workspace Skills Antar-Perangkat (PC Kantor & Mac Pribadi) (`.agents/skills/`)
+- Seluruh koleksi keterampilan AI Agent (*Antigravity Skills*) didaftarkan langsung ke dalam repositori pada folder **`.agents/skills/`**, mencakup:
+  1. **Suite Anti-Slop:** `antislop`, `antislop-ui`, `antislop-code`, `antislop-copywriting`, `antislop-layoutmobile`, `antislop-human` (menjaga standar kualitas kode, mencegah desain template klise, dan mengeliminasi teks AI artifisial).
+  2. **Modern Web Guidance:** `modern-web-guidance`, `chrome-extensions` (panduan web modern, aksesibilitas, CWV, performa CSS/DOM).
+  3. **Data Engineering & Safety:** `accidental-data-loss-prevention`, `schema-mapping`, `managing-python-dependencies`, `ml-best-practices`.
+- **Portabilitas Otomatis:** Saat pengembang berpindah antara **PC Kantor (Windows)** dan **MacBook Pribadi (macOS)**, seluruh skill otomatis terunduh saat menjalankan `git pull origin main` (SOP `AGENTS.md` poin 0) dan langsung aktif di kedua perangkat tanpa instalasi manual tambahan.
+
 ---
 
 ## 10. Rencana Arsitektur Masa Depan (Skalabilitas Enterprise PostgreSQL)
