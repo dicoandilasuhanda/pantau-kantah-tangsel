@@ -84,9 +84,37 @@ Halaman **Monitoring Berkas** menyajikan gambaran menyeluruh mengenai posisi ber
    - **Interaktif**: Klik salah satu baris tahapan pada grafik untuk langsung menyaring daftar berkas yang sedang berada di tahapan tersebut.
 4. **Fitur "Cari Berkas Petugas"**:
    - Memungkinkan Anda mencari dan memantau beban berkas yang sedang dipegang oleh petugas tertentu beserta rincian jenis kegiatannya.
-5. **Tabel Daftar Berkas & Kirim Berkas Massal (*Batch Transit*)**:
-   - Gunakan tab filter **Tugas Saya**, **Semua Berkas**, **Lewat SOP**, **Selesai**, atau **Ditutup**.
-   - Centang beberapa berkas sekaligus pada kolom kotak centang (*checkbox*), lalu klik tombol **Kirim Berkas Terpilih** pada bilah aksi mengambang di bagian bawah untuk melakukan serah terima banyak berkas sekaligus ke satu petugas tujuan.
+5. **Tabel Daftar Berkas & Fitur Pencarian**:
+   - Gunakan tab filter **Semua**, **Tugas Saya**, **Terlambat**, **Transit**, atau **Selesai**, serta kotak pencarian untuk menyaring berkas secara instan.
+
+---
+
+### Panduan Khusus: Kirim Berkas Secara Batch (Massal) & Batal Kirim Batch
+
+Apabila Anda ingin menyerahkan banyak berkas sekaligus ke satu petugas tujuan yang sama (atau membatalkan pengiriman beberapa berkas sekaligus), Anda tidak perlu membuka halaman detail berkas satu per satu. Gunakan fitur **Kirim Batch** langsung dari halaman **Monitoring Berkas (`/berkas`)**:
+
+#### Langkah 1: Pilih / Centang Berkas yang Akan Dikirim atau Dibatalkan
+
+![Memilih Berkas untuk Kirim Batch dan Batal Kirim Batch](docs/screenshots/03a_pilih_berkas_batch.png)
+
+1. Pada daftar berkas di halaman **Monitoring Berkas**, klik **kotak centang (`☑️`)** di sebelah kiri nomor berkas yang ingin Anda kirim, atau klik tombol **`Pilih Semua`** pada bilah di atas daftar berkas untuk memilih seluruh berkas yang memenuhi syarat sekaligus.
+2. Sistem secara cerdas memilah berkas yang Anda centang ke dalam 2 tombol aksi otomatis pada bilah kontrol:
+   - **Tombol Biru `Kirim Batch (Jumlah)`**: Menghitung jumlah berkas terpilih yang saat ini sedang berada di meja Anda dan siap dikirim (*transit*).
+   - **Tombol Merah `Batal Kirim (Jumlah)`**: Menghitung jumlah berkas terpilih yang sedang berstatus *Transit* (dikirim oleh Anda/Admin) dan dapat dibatalkan pengirimannya secara massal.
+   - **Tombol `× Reset Pilihan`**: Menghapus seluruh centang pilihan berkas.
+
+#### Langkah 2: Pilih Petugas Tujuan pada Modal Kirim Batch
+
+![Modal Kirim Berkas Secara Batch](docs/screenshots/03b_modal_kirim_batch.png)
+
+1. Setelah mencentang berkas, klik tombol biru **`Kirim Batch`**.
+2. Akan muncul jendela pop-up **`Kirim Berkas Secara Batch`** yang menampilkan:
+   - **Daftar berkas yang akan dikirim** (lengkap dengan Nomor Berkas dan Nama Pemohon) untuk Anda periksa kembali.
+   - **Kolom Pencarian Petugas (`Cari nama atau jabatan petugas...`)** untuk mencari nama rekan penerima dengan cepat.
+   - **Daftar Petugas Tujuan**: Klik nama petugas yang dituju hingga baris namanya berwarna biru.
+3. Klik tombol **`Kirim (Jumlah) Berkas`**:
+   - Seluruh berkas terpilih akan langsung berubah status menjadi **Transit** menuju meja petugas tersebut.
+   - Petugas penerima akan langsung mendapatkan **Notifikasi Lonceng Suara** di aplikasi web dan **Notifikasi Bot Telegram** untuk seluruh berkas yang dikirimkan.
 
 ---
 
