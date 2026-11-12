@@ -170,7 +170,7 @@
               'Muat Ulang Halaman' +
             '</button>' +
           '</div>' +
-          '<details style="text-align:left;font-size:0.75rem;color:' + textMuted + ';margin-top:1rem;border-top:1px solid ' + border + ';padding-top:0.75rem;">' +
+          '<details open style="text-align:left;font-size:0.75rem;color:' + textMuted + ';margin-top:1rem;border-top:1px solid ' + border + ';padding-top:0.75rem;">' +
             '<summary style="cursor:pointer;user-select:none;">Informasi Teknis Kendala</summary>' +
             '<pre style="margin-top:0.5rem;padding:0.5rem;background:rgba(0,0,0,0.06);border-radius:6px;overflow-x:auto;color:#EF4444;white-space:pre-wrap;">' + cleanReason + '</pre>' +
           '</details>' +
@@ -192,33 +192,21 @@
   }
 
   window.addEventListener('error', function (event) {
-    // Abaikan error dari third-party scripts (misalnya Cloudflare beacon, Google Analytics, dsb.)
-    if (event.filename && (
-      event.filename.indexOf('cloudflare') !== -1 ||
-      event.filename.indexOf('google') !== -1 ||
-      (event.filename.indexOf('http') === 0 && event.filename.indexOf(window.location.host) === -1)
-    )) {
-      return;
-    }
-
-    // Abaikan jika error terjadi pada elemen DOM sekunder (bukan window/script modul utama)
-    if (event.target && event.target !== window && (!event.target.tagName || event.target.tagName !== 'SCRIPT')) {
+    // Hanya tangkap error yang benar-benar berasal dari bundel utama aplikasi (/assets/)
+    // Abaikan seluruh error dari WKUserScript iOS (webkit-masked-url://, __gCrWeb Chrome iOS, WhatsApp WebView, Cloudflare beacon, ekstensi)
+    if (!event.filename || event.filename.indexOf('/assets/') === -1) {
       return;
     }
 
     var msg = event.message || (event.error && event.error.message) || '';
     if (!msg) return;
 
-    // Abaikan generic "Script error." tanpa filename (umumnya injeksi skrip eksternal/ekstensi pada iOS WebKit) & ResizeObserver
     var lowerMsg = String(msg).toLowerCase();
-    if ((lowerMsg === 'script error.' || lowerMsg === 'script error') && !event.filename) {
-      return;
-    }
     if (lowerMsg.indexOf('resizeobserver') !== -1) {
       return;
     }
 
-    __lastCapturedError = msg + (event.filename ? ' (' + event.filename + ':' + (event.lineno || 0) + ')' : '');
+    __lastCapturedError = msg + ' (' + event.filename + ':' + (event.lineno || 0) + ':' + (event.colno || 0) + ')';
 
     if (isChunkLoadError(msg)) {
       var retryKey = '__chunk_auto_retry_flag__';
@@ -261,7 +249,8 @@
     if (!window.__APP_MOUNTED__) {
       var root = document.getElementById('root');
       if (root && (root.children.length === 0 || root.querySelector('.app-initial-loader'))) {
-        renderRecoveryUI(__lastCapturedError || 'Aplikasi membutuhkan waktu lebih lama untuk memuat di jaringan ini. Silakan muat ulang atau periksa koneksi data.');
+        var statusInfo = window.__BUNDLE_EXECUTING__ ? 'Bundel dieksekusi namun mount belum selesai' : 'Bundel belum tereksekusi';
+        renderRecoveryUI((__lastCapturedError ? __lastCapturedError + ' | ' : '') + statusInfo + ' (' + navigator.userAgent + ')');
       }
     }
   }, 20000);

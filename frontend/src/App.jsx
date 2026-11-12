@@ -21,10 +21,14 @@ import PdfTools from './pages/PdfTools';
 import Profile from './pages/Profile';
 
 // Pemeriksaan Ingat Sesi Saya: Jika tidak dicentang dan browser baru saja dibuka dari awal, reset sesi
-if (localStorage.getItem('remember_me') === 'false' && !sessionStorage.getItem('session_active')) {
-  localStorage.removeItem('token');
-  localStorage.removeItem('role');
-  localStorage.removeItem('user');
+try {
+  if (localStorage.getItem('remember_me') === 'false' && !sessionStorage.getItem('session_active')) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('user');
+  }
+} catch {
+  // Abaikan jika penyimpanan dibatasi
 }
 
 // Simple PrivateRoute wrapper
@@ -127,7 +131,7 @@ function AppContent() {
       document.visibilityState === 'hidden'
     ) {
       setDisplayLocation(location);
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      try { window.scrollTo(0, 0); } catch {}
       requestAnimationFrame(() => routeFocusToMain(mainRef.current));
       return;
     }
@@ -146,9 +150,11 @@ function AppContent() {
         });
       });
 
-      transition.finished.finally(() => {
-        routeFocusToMain(mainRef.current);
-      });
+      transition.finished
+        .finally(() => {
+          routeFocusToMain(mainRef.current);
+        })
+        .catch(() => {});
     } catch {
       setDisplayLocation(location);
       requestAnimationFrame(() => routeFocusToMain(mainRef.current));
@@ -160,7 +166,7 @@ function AppContent() {
       transitionResolveRef.current();
       transitionResolveRef.current = null;
     }
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    try { window.scrollTo(0, 0); } catch {}
   }, [displayLocation]);
 
   useEffect(() => {

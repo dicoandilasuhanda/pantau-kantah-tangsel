@@ -32,7 +32,7 @@ function iosWebKitCompatibilityPlugin() {
               .replace(/import\.meta\.resolve/g, 'undefined')
               .replace(/import\.meta\.url/g, 'window.location.href')
             if (!code.startsWith('(function(){"use strict";')) {
-              code = `(function(){"use strict";\n${code}\n})();\n`
+              code = `(function(){"use strict";window.__BUNDLE_EXECUTING__=true;\n${code}\n})();\n`
             }
             fs.writeFileSync(filePath, code, 'utf8')
           }
@@ -64,6 +64,9 @@ function iosWebKitCompatibilityPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), iosWebKitCompatibilityPlugin()],
+  build: {
+    target: ['es2018', 'safari13', 'ios13']
+  },
   server: {
     proxy: {
       '/api': {

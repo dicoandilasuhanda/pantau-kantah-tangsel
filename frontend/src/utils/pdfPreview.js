@@ -1,7 +1,17 @@
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+let pdfjsLibPromise = null;
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+async function getPdfJs() {
+  if (!pdfjsLibPromise) {
+    const pdfModuleUrl = '/pdfjs/pdf.min.mjs';
+    pdfjsLibPromise = import(/* @vite-ignore */ pdfModuleUrl).then((lib) => {
+      if (lib && lib.GlobalWorkerOptions) {
+        lib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
+      }
+      return lib;
+    });
+  }
+  return pdfjsLibPromise;
+}
 
 /**
  * Render a single page of PDF data to an image data URL
@@ -12,6 +22,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export async function renderPdfPageThumbnail(pdfData, pageNumber = 1, maxDimension = 300) {
   try {
+    const pdfjsLib = await getPdfJs();
     const loadingTask = pdfjsLib.getDocument({ 
       data: pdfData,
       useSystemFonts: true
@@ -45,6 +56,7 @@ export async function renderPdfPageThumbnail(pdfData, pageNumber = 1, maxDimensi
  */
 export async function getPdfInfo(pdfData) {
   try {
+    const pdfjsLib = await getPdfJs();
     const loadingTask = pdfjsLib.getDocument({ data: pdfData });
     const pdf = await loadingTask.promise;
     return {
