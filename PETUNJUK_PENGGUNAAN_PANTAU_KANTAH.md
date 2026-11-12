@@ -8,17 +8,17 @@
 ## 📋 Daftar Isi
 
 1. [Halaman Login & Keamanan Sesi](#1-halaman-login--keamanan-sesi)
-2. [Portal Utama (Home Hub) & Navigasi Atas](#2-portal-utama-home-hub--navigasi-atas)
-3. [Modul Monitoring Berkas Permohonan (`/berkas`)](#3-modul-monitoring-berkas-permohonan-berkas)
+2. [Portal Utama (Home Hub), Lonceng Notifikasi, Bot Telegram, Ubah Sandi & Kotak Saran](#2-portal-utama-home-hub--navigasi-atas)
+3. [Modul Monitoring Berkas Permohonan & Kirim Batch (`/berkas`)](#3-modul-monitoring-berkas-permohonan-berkas)
 4. [Entri Berkas Permohonan Baru & Cetak QR Code (`/entry`)](#4-entri-berkas-permohonan-baru--cetak-qr-code-entry)
 5. [Detail Berkas, Kirim Transit, Disposisi & Jeda SOP (`/file/:qrcode`)](#5-detail-berkas-kirim-transit-disposisi--jeda-sop-fileqrcode)
-6. [Scan QR Berkas (Kamera & Scanner USB/Wireless) (`/scan`)](#6-scan-qr-berkas-kamera--scanner-usbwireless-scan)
-7. [Modul Monitoring Persuratan / Surat Masuk (`/surat`)](#7-modul-monitoring-persuratan--surat-masuk-surat)
+6. [Scan QR Berkas: Mode Scan Satuan vs Mode Scan Batch (`/scan`)](#6-scan-qr-berkas-mode-scan-satuan-vs-mode-scan-batch-beruntun-scan)
+7. [Modul Monitoring Persuratan, Detail Surat & Scan QR Surat (`/surat`)](#7-modul-monitoring-persuratan--surat-masuk-surat)
 8. [Entri Surat Masuk & Unggah Lampiran PDF (`/surat/entry`)](#8-entri-surat-masuk--unggah-lampiran-pdf-suratentry)
-9. [Dashboard Kinerja Petugas (KPI) & Top 50 Berkas Terlama (`/kpi`)](#9-dashboard-kinerja-petugas-kpi--top-50-berkas-terlama-kpi)
+9. [Dashboard Kinerja Petugas (KPI Berkas, KPI Persuratan & Top 50 Berkas Terlama) (`/kpi`)](#9-dashboard-kinerja-petugas-kpi--top-50-berkas-terlama-kpi)
 10. [PDF Tools Kantah (Olah Dokumen Mandiri di Browser) (`/pdf-tools`)](#10-pdf-tools-kantah-olah-dokumen-mandiri-di-browser-pdf-tools)
-11. [Profil Pengguna, Integrasi Bot Telegram & Ruang Kerja `.dwg` (`/profile`)](#11-profil-pengguna-integrasi-bot-telegram--ruang-kerja-dwg-profile)
-12. [Admin Panel: Kelola Berkas, Surat & Laporan Excel (`/admin`)](#12-admin-panel-kelola-berkas-surat--laporan-excel-admin)
+11. [Profil Pengguna, Pemeliharaan Cache & Ruang Kerja AutoCAD `.dwg` (`/profile`)](#11-profil-pengguna-integrasi-bot-telegram--ruang-kerja-dwg-profile)
+12. [Admin Panel: Kelola Berkas, Kelola Persuratan & Laporan Excel (`/admin`)](#12-admin-panel-kelola-berkas-surat--laporan-excel-admin)
 13. [Manajemen Pengguna & Hak Akses Multi-Role (`/admin/users`)](#13-manajemen-pengguna--hak-akses-multi-role-adminusers)
 14. [Statistik Pengguna Online & Manajemen Sesi Real-Time (`/admin/stats`)](#14-statistik-pengguna-online--manajemen-sesi-real-time-adminstats)
 
@@ -117,6 +117,33 @@ Agar Anda tetap menerima pemberitahuan *real-time* di ponsel meskipun sedang tid
 | **`/daftar <username> <password>`** | Memverifikasi akun pegawai dan menautkan notifikasi *real-time* ke Telegram HP Anda. |
 | **`/cek`** atau **`/status`** | Memeriksa status koneksi akun Anda beserta jumlah berkas *transit* yang saat ini sedang menunggu di meja Anda. |
 | **`/stop`** atau **`/putus`** | Memutuskan tautan notifikasi Telegram langsung dari ponsel Anda. |
+
+---
+
+### Panduan Khusus: Ubah Kata Sandi Mandiri (`🔑 Sandi`)
+
+Setiap pengguna dapat mengganti kata sandi akunnya secara mandiri kapan saja melalui tombol **`🔑 Sandi`** di pojok kanan atas bilah navigasi (Navbar):
+
+![Modal Ubah Kata Sandi Mandiri](docs/screenshots/02d_modal_ubah_sandi.png)
+
+1. Klik tombol **`🔑 Sandi`** di sebelah tombol tema (☀️/🌙).
+2. Masukkan **Kata Sandi Lama**, **Kata Sandi Baru**, dan **Konfirmasi Kata Sandi Baru**.
+3. Klik **`Simpan Sandi Baru`** untuk langsung memperbarui kata sandi akun Anda.
+
+---
+
+### Panduan Khusus: Kotak Saran & Ide Pengembangan Fitur (`💡 Kirim Saran di Sini`)
+
+Di pojok kanan bawah halaman **Home Hub (`/`)** terdapat tombol melayang **`💡 Punya Ide pengembangan fitur baru? Kirim Saran di Sini →`** yang memungkinkan seluruh pegawai menyampaikan masukan pengembangan aplikasi secara langsung.
+
+![Modal Kotak Saran dan Ide Fitur](docs/screenshots/02c_modal_saran_fitur.png)
+
+1. **Tab `Tulis Saran`**:
+   - Pilih **Kategori Saran** (*Fitur Baru*, *Alur Kerja & Efisiensi SOP*, *Perbaikan Tampilan UI/UX*, *Integrasi & Otomasi*, *Laporan & Rekapitulasi Data*, atau *Lainnya*).
+   - Isi **Judul Ide / Fitur** dan **Rincian Ide / Masukan**, lalu klik **`Kirim Saran`**.
+2. **Tab `Saran Saya` & `Semua Saran Masuk`**:
+   - Pantau seluruh usulan fitur yang telah dikirimkan beserta status tindak lanjutnya (**`Menunggu Review`**, **`Ditinjau`**, **`Diterima`**, **`Selesai`**, atau **`Ditolak`**) dan balasan resmi dari Administrator.
+   - Khusus **Administrator**, tersedia tombol pembaruan status dan catatan tanggapan langsung pada setiap kartu saran.
 
 ---
 
@@ -291,6 +318,40 @@ Selain berkas permohonan pengukuran, aplikasi menyediakan modul khusus **Monitor
 
 ---
 
+### A. Halaman Detail Surat Masuk, Kirim Transit Surat & Disposisi (`/surat/detail/:id`)
+
+Mengklik salah satu surat pada tabel **Monitoring Persuratan** akan membuka halaman **Detail Surat Masuk**:
+
+![Halaman Detail Surat Masuk](docs/screenshots/07a_detail_surat.png)
+
+1. **Informasi Agenda & Dokumen PDF**:
+   - Menampilkan **Nomor Agenda**, **Asal Surat**, **Nomor Surat**, **Tanggal Diterima**, **Perihal**, dan **Durasi Penanganan Surat (Hari Kerja)**.
+   - Klik **`Buka PDF Surat`** untuk membuka atau mengunduh salinan digital PDF surat yang terlampir.
+2. **Kirim Surat (*Transit Antar Petugas*) & Cetak QR Code**:
+   - Klik tombol biru **`Kirim Surat (Transit)`** untuk mengirimkan surat ke meja pejabat/petugas tujuan (penerima akan mendapatkan notifikasi lonceng & Telegram).
+   - Klik **`Cetak QR Code`** di bawah label QR untuk mencetak ulang stiker QR Agenda Surat.
+3. **Catatan Tindak Lanjut, Disposisi & Riwayat Perjalanan Surat**:
+   - Tambahkan catatan tindak lanjut maupun **Lembar Disposisi Surat** di bagian bawah, serta pantau kronologi perpindahan surat pada panel **Riwayat Perjalanan Surat** di sebelah kanan.
+
+---
+
+### B. Halaman Scan QR Surat Masuk & Konfirmasi Tindak Lanjut (`/surat/scan`)
+
+Saat fisik surat tiba di meja Anda (atau saat Anda mengklik tombol **`Scan Terima`** dari Lonceng Notifikasi), gunakan halaman **Scan QR Surat (`/surat/scan`)**:
+
+![Halaman Scan QR Surat Masuk](docs/screenshots/07b_scan_qr_surat.png)
+
+1. **Pindai Kamera atau Unggah Foto QR**:
+   - Arahkan kamera ke stiker QR Agenda pada lembar disposisi surat, atau klik **`Unggah Foto QR`**.
+2. **Rincian Surat & Konfirmasi Penerimaan**:
+   - Setelah QR terbaca, sistem langsung menampilkan kartu **Surat Agenda** lengkap dengan **Asal Surat**, **Nomor Surat**, **Perihal**, **Catatan Tindak Lanjut**, serta tombol **`Buka / Unduh Berkas PDF Surat`**.
+   - Pilih jabatan penerima pada dropdown **`Terima Sebagai Peran/Jabatan`** (bila memiliki multi-jabatan) dan isi **`Catatan Tindak Lanjut / Disposisi (Opsional)`**.
+3. **Dua Tombol Tindak Lanjut**:
+   - Klik **`Terima & Proses Surat Ini`** untuk mencatat bahwa surat resmi berada di meja Anda.
+   - Klik tombol hijau **`Selesaikan Tindak Lanjut`** apabila penanganan surat tersebut telah tuntas sepenuhnya.
+
+---
+
 ## 8. Entri Surat Masuk & Unggah Lampiran PDF (`/surat/entry`)
 
 Petugas Entry Surat dan Administrator dapat meregistrasi surat masuk baru melalui halaman **Entri Surat Masuk**.
@@ -315,13 +376,22 @@ Halaman **Analitik & KPI** memberikan transparansi beban kerja dan kecepatan pen
 ![Dashboard Kinerja & Analitik KPI](docs/screenshots/09_kpi_dashboard.png)
 
 ### 3 Tab Analitik pada Halaman KPI:
-1. **Tab `KPI Berkas Permohonan`**:
+1. **Tab `Kinerja Berkas Permohonan`**:
    - Menampilkan grafik perbandingan **Jumlah Interaksi Berkas** dan **Rata-rata Waktu Penyelesaian (Jam Kerja)** per petugas.
    - Tersedia filter dropdown **Pilih Nama Petugas** dan **Pilih Jenis Kegiatan** untuk melihat rincian (*breakdown*) performa spesifik masing-masing pegawai.
-2. **Tab `KPI Persuratan`**:
-   - Menampilkan ringkasan total surat masuk, surat aktif, surat selesai, serta grafik kecepatan tindak lanjut surat per petugas berdasarkan instansi asal surat.
-3. **Tab `Top 50 Berkas Aktif Terlama`**:
-   - Menampilkan daftar peringkat 50 berkas permohonan aktif yang memiliki durasi hari kerja berjalan paling lama (otomatis mengecualikan hari Sabtu, Minggu, hari libur nasional, dan durasi jeda/*pause*), sehingga pimpinan dan koordinator dapat melakukan percepatan (*debottlenecking*) secara tepat sasaran.
+
+2. **Tab `Kinerja Persuratan`**:
+
+![Tab Kinerja Persuratan pada Halaman KPI](docs/screenshots/09a_kpi_persuratan.png)
+
+   - Menampilkan 4 kartu ringkasan (**Total Surat Masuk**, **Sedang Diproses**, **Surat Selesai**, dan **Ditutup / Diarsipkan**).
+   - Menyajikan tabel **Kinerja Pegawai Terkait Persuratan** lengkap dengan **Total Surat Ditangani**, **Surat Diselesaikan**, **Rata-rata Waktu Proses**, serta tombol **`Lihat Detail`** dan grafik perbandingan penanganan surat per pegawai berdasarkan instansi asal surat.
+
+3. **Tab `Top 50 Berkas Terlama (Masih Proses)`**:
+
+![Tab Top 50 Berkas Terlama pada Halaman KPI](docs/screenshots/09b_top50_berkas.png)
+
+   - Menampilkan daftar peringkat **50 berkas permohonan aktif** yang memiliki durasi hari kerja berjalan paling lama (otomatis mengecualikan hari Sabtu, Minggu, hari libur nasional, dan durasi jeda/*pause*), lengkap dengan indikator apabila berkas sedang *Transit*, sehingga pimpinan dan koordinator dapat melakukan percepatan (*debottlenecking*) secara tepat sasaran.
 
 ---
 
@@ -350,13 +420,22 @@ Klik nama akun Anda di pojok kanan atas Navbar untuk membuka halaman **Profil Pe
 1. **Identitas & Foto Profil**:
    - Klik ikon kamera pada avatar Anda untuk mengunggah atau mengganti foto profil (`.jpg`, `.png`, `.webp`).
    - Menampilkan daftar lengkap jabatan/role yang melekat pada akun Anda.
-2. **Integrasi Bot Telegram Notifikasi Instan**:
-   - Masukkan **Telegram Chat ID** Anda dan simpan agar setiap kali ada berkas permohonan, surat masuk, atau file AutoCAD `.dwg` yang dikirimkan kepada Anda, Bot Telegram Kantor Pertanahan langsung mengirimkan pesan notifikasi ke ponsel Anda secara *real-time*.
-   - Tersedia panduan langkah demi langkah cara mendapatkan *Chat ID* melalui bot Telegram.
-3. **Ruang Kerja & Pengiriman File AutoCAD (`.dwg`)** *(Khusus Petugas Ukur, Petugas Pemetaan, ASK, Koordinator, & Admin)*:
+2. **Pemeliharaan Cache & Sesi Peramban (`Bersihkan Cache & Muat Ulang`)**:
+   - Apabila tampilan aplikasi di perangkat Anda terasa belum sinkron setelah ada pembaruan sistem di server, klik tombol **`Bersihkan Cache & Muat Ulang`** untuk membersihkan *Service Worker / Cache Storage* peramban secara otomatis dan memuat ulang versi aplikasi terbaru dengan aman.
+3. **Ruang Kerja & Pengiriman File AutoCAD (`.dwg`)** *(Khusus Petugas Ukur, Petugas Pemetaan, ASK, & Admin)*:
    - **Simpan ke Folder Pribadi**: Unggah file gambar ukur / peta kerja berformat `.dwg` (hingga 50 MB per file) sebagai cadangan (*cloud backup* internal kantor) yang dapat diunduh dari komputer mana saja di kantor.
-   - **Kirim File `.dwg` ke Rekan Petugas**: Klik tombol **Kirim File DWG**, pilih rekan penerima (misalnya dari Petugas Ukur ke ASK atau Petugas Pemetaan), tambahkan catatan koordinat/GU, dan kirim.
-   - **4 Tab Pengelompokan**: Pantau seluruh file melalui tab **Semua File**, **Kotak Masuk (Inbox)**, **Folder Pribadi**, dan **Terkirim (Sent)** lengkap dengan tombol **Unduh (`.dwg`)** dan **Teruskan (Forward)**.
+   - **4 Tab Pengelompokan**: Pantau seluruh file melalui tab **Semua**, **Berkas Masuk (Inbox)**, **Folder Pribadi**, dan **Terkirim (Sent)** lengkap dengan tombol **Unduh (`.dwg`)** dan **Teruskan (Forward)**.
+
+#### Cara Mengirim / Meneruskan (*Forward*) File Peta `.dwg` ke Rekan Petugas:
+
+![Modal Unggah dan Kirim Berkas DWG](docs/screenshots/11a_modal_kirim_dwg.png)
+
+1. Klik tombol biru **`Kirim Berkas DWG`** di kanan atas panel Ruang Berkas DWG (atau klik tombol **`Teruskan`** pada salah satu baris file `.dwg` yang sudah ada).
+2. Pada jendela pop-up **`Unggah & Kirim Berkas DWG`**:
+   - Pilih file peta kerja berformat **`.dwg`** dari komputer Anda.
+   - Pilih **Tujuan Pengiriman (Petugas Penerima)** dari daftar dropdown (*Petugas Ukur*, *Asisten Surveyor Kadastral*, atau *Petugas Pemetaan*).
+   - Isi **Catatan / Keterangan Berkas** (misalnya nomor berkas/PBT, koordinat TDT, atau instruksi plotting).
+3. Klik **`Kirim Berkas`**: File `.dwg` langsung masuk ke **Berkas Masuk (Inbox)** petugas tujuan disertai pemberitahuan otomatis ke **Bot Telegram HP** penerima.
 
 ---
 
@@ -364,19 +443,25 @@ Klik nama akun Anda di pojok kanan atas Navbar untuk membuka halaman **Profil Pe
 
 Khusus bagi pengguna dengan hak akses **Administrator**, menu **Admin Panel** menyediakan kendali penuh atas seluruh data berkas permohonan dan persuratan.
 
-![Admin Panel Kelola Berkas dan Surat](docs/screenshots/12_admin_panel.png)
+### A. Tab `Kelola Berkas Permohonan` & Laporan Excel Berkas
 
-### Fitur Utama Admin Panel:
-1. **Dua Tab Manajemen Utama**: Beralih dengan mudah antara **Kelola Berkas Permohonan** dan **Kelola Persuratan (Surat Masuk)**.
+![Admin Panel Kelola Berkas Permohonan](docs/screenshots/12_admin_panel.png)
+
+### B. Tab `Kelola Persuratan` & Laporan Excel Surat Masuk
+
+![Admin Panel Kelola Persuratan](docs/screenshots/12a_admin_kelola_surat.png)
+
+### Fitur Utama Admin Panel (Berkas & Persuratan):
+1. **Dua Tab Manajemen Utama**: Beralih dengan mudah antara **`Kelola Berkas Permohonan`** dan **`Kelola Persuratan (Surat Masuk)`** lengkap dengan kartu ringkasan status masing-masing modul.
 2. **Filter Multi-Dimensi**:
-   - Saring data berdasarkan **Kata Kunci Pencarian**, **Bulan**, **Tahun**, **Rentang Tanggal Mulai–Akhir**, **Jenis Kegiatan**, **Status Berkas** (*Proses, Selesai, Ditutup*), serta **Status SLA** (*Aman / Lewat SOP*).
+   - Saring data berdasarkan **Kata Kunci Pencarian**, **Bulan**, **Tahun**, **Rentang Tanggal Mulai–Akhir**, **Jenis Kegiatan**, **Status Berkas/Surat** (*Proses, Selesai, Ditutup*), serta **Status SLA** (*Aman / Lewat SOP*).
 3. **Unduh Laporan Excel (`.xlsx`)**:
-   - Klik tombol **Unduh Laporan Excel** untuk mengekspor seluruh data sesuai filter aktif ke dalam file spreadsheet Microsoft Excel lengkap dengan rincian tanggal masuk, posisi terakhir, status SLA, dan catatan.
+   - Klik tombol hijau **`Unduh Laporan Excel`** (atau **`Unduh Laporan Persuratan`**) di kanan atas untuk mengekspor seluruh data sesuai filter aktif ke dalam file spreadsheet Microsoft Excel lengkap dengan rincian tanggal masuk, posisi terakhir, status SLA, dan catatan.
 4. **Tindakan Administratif pada Berkas/Surat**:
-   - **Selesaikan Manual (`✓`)**: Menandai berkas/surat telah *Selesai* secara langsung.
-   - **Tutup Berkas (`🔒`)**: Menutup berkas yang dibatalkan/ditolak dengan mencantumkan alasan penutupan resmi.
-   - **Hapus Permanen (`🗑️`)**: Menghapus data berkas/surat yang salah input beserta riwayatnya.
-   - ** pintasan Cepat**: Di bagian atas terdapat tombol navigasi langsung menuju **Kelola Akun Pengguna** dan **Statistik Pengguna Online**.
+   - **Selesaikan Manual (`✓ Selesai`)**: Menandai berkas/surat telah *Selesai* secara langsung.
+   - **Tutup Berkas/Surat (`🔒 Tutup`)**: Menutup berkas/surat yang dibatalkan atau dikembalikan dengan wajib mencantumkan **Alasan Penutupan Resmi** pada jendela konfirmasi.
+   - **Hapus Permanen (`🗑️ Hapus`)**: Menghapus data berkas/surat yang salah input beserta seluruh riwayat perjalanannya.
+   - **Pintasan Cepat di Navbar**: Di bagian atas terdapat tombol navigasi langsung menuju **`Kelola Akun`** dan **`Stats` (Statistik Pengguna Online)**.
 
 ---
 
