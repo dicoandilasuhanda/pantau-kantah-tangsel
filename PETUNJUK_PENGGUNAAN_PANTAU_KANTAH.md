@@ -56,12 +56,15 @@ Setelah berhasil login, Anda akan disambut oleh halaman **Home Hub (`/`)** yang 
   - **Tombol Tema (☀️/🌙)**: Mengubah skema warna aplikasi secara instan.
   - **Chip Profil Pengguna**: Menampilkan foto/inisial, nama lengkap, dan jabatan Anda. Klik bagian ini untuk membuka halaman **Profil & Ruang Kerja DWG**.
   - **Tombol Keluar**: Mengakhiri sesi login Anda dengan aman.
-- **5 Kartu Modul Utama**:
-  1. **Monitoring Berkas**: Pelacakan posisi fisik berkas permohonan Survei & Pemetaan (Alur K1 dan K2), perhitungan hari kerja SLA/SOP, dan serah terima berkas.
-  2. **Monitoring Persuratan**: Pelacakan surat masuk, pencetakan QR Agenda, lampiran PDF, dan disposisi persuratan.
-  3. **PDF Tools Kantah**: Alat pengolah file PDF mandiri (*Merge, Split, Compress, Rotate, Image to PDF*) tanpa perlu mengunggah dokumen ke internet luar.
-  4. **Profil & Ruang Kerja DWG**: Pengaturan foto profil, integrasi notifikasi Bot Telegram, dan pengiriman/penyimpanan file peta kerja AutoCAD (`.dwg`).
+- **5 Kartu Modul Utama (Home Hub Grid)**:
+  1. **Monitoring Berkas**: Pelacakan posisi fisik berkas permohonan Survei & Pemetaan (Alur K1 dan K2), perhitungan hari kerja SLA/SOP, pengiriman transit, dan serah terima berkas.
+  2. **Monitoring Persuratan**: Pelacakan surat masuk, pencetakan QR Agenda, lampiran PDF, pengiriman surat antar meja, dan disposisi persuratan.
+  3. **Dashboard Kinerja**: Pemantauan capaian SLA berkas permohonan, kinerja tindak lanjut persuratan pegawai, tren waktu pemrosesan, serta beban kerja seksi secara menyeluruh.
+  4. **PDF Tools Kantah**: Alat pengolah file PDF mandiri (*Merge, Split, Compress, Rotate, Image to PDF*) tanpa perlu mengunggah dokumen ke internet luar.
   5. **Admin Panel & Pengguna** *(Khusus Administrator)*: Manajemen seluruh data berkas/surat, unduh laporan Excel (`.xlsx`), kelola akun pegawai, dan pantau pengguna online.
+
+> [!NOTE]
+> Modul **Profil & Ruang Kerja DWG** tidak berada pada kartu grid Home Hub, melainkan diakses secara langsung dari bilah navigasi (Navbar) dengan mengeklik **Chip Profil Pengguna** di pojok kanan atas.
 
 ---
 
