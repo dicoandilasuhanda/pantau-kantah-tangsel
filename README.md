@@ -12,6 +12,8 @@
 
 🌐 **Domain Akses Resmi Publik:** [https://pantaukantahtangsel.web.id](https://pantaukantahtangsel.web.id) (Didukung oleh Cloudflare Tunnel dengan proteksi SSL/TLS otomatis).
 
+📘 **Buku Petunjuk Penggunaan (Bergambar):** [PETUNJUK_PENGGUNAAN_PANTAU_KANTAH.md](./PETUNJUK_PENGGUNAAN_PANTAU_KANTAH.md) — Panduan langkah demi langkah mulai dari Login hingga seluruh 14 halaman & modul lengkap dengan *screenshot* antarmuka.
+
 Dibangun dan dikembangkan oleh **[@dicoandila](https://x.com/dicoandila)**.
 
 ---

@@ -16,6 +16,11 @@ Aplikasi ini melacak pergerakan fisik berkas permohonan pelayanan pertanahan dan
 
 🌐 **Domain Produksi Resmi:** [https://pantaukantahtangsel.web.id](https://pantaukantahtangsel.web.id) *(Dijalankan di atas QNAP NAS Container Station + Cloudflare Tunnel).*
 
+📘 **Dokumen Pendamping Resmi di Repositori:**
+- **[`PETUNJUK_PENGGUNAAN_PANTAU_KANTAH.md`](./PETUNJUK_PENGGUNAAN_PANTAU_KANTAH.md)**: Buku petunjuk penggunaan lengkap untuk pengguna & Administrator (14 modul disertai tangkapan layar beresolusi tinggi pada folder `docs/screenshots/`).
+- **[`PANDUAN_DEPLOY_KANTAH_BARU.md`](./PANDUAN_DEPLOY_KANTAH_BARU.md)**: Panduan instalasi & replikasi sistem untuk Kantor Pertanahan baru.
+- **[`Panduan_Update_Server.md`](./Panduan_Update_Server.md)**: Prosedur pembaruan kode ke server produksi QNAP NAS tanpa menyentuh database produksi.
+
 ---
 
 ## 2. Katalog 14 Jenis Kegiatan Layanan & Target Hari Kerja SOP
