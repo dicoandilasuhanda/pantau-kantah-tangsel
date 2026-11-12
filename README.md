@@ -219,6 +219,7 @@ pantau-kantah-tangsel/
 │   │   │   └── SuratScanner.jsx    # Pemindai QR agenda surat untuk terima kiriman surat
 │   │   ├── utils/
 │   │   │   ├── api.js              # Konfigurasi instance Axios & interceptor JWT
+│   │   │   ├── audioUtils.js       # Synthesizer Web Audio API nada sukses scan QR, beep, & error
 │   │   │   └── dateUtils.js        # Kalkulator hari kerja, kalender libur, & target SOP
 │   │   ├── App.jsx                 # Konfigurasi routing utama & Role-based Route Guards
 │   │   └── index.css               # Sistem desain global (Dark Glassmorphism)
@@ -337,6 +338,13 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Restrukturisasi Menu Navigasi Navbar (`Navbar.jsx`):** Menempatkan tombol pintas **Admin Panel** dan **Kelola Akun** langsung di bilah navbar atas bagi akun Administrator, mengalihkan akses menu **Kinerja** agar berfokus diakses melalui portal Home Hub, serta merapikan posisi menu kanan (`Sandi` & `Keluar`) agar tetap rapat kanan tanpa terpotong di layar laptop & desktop.
   - **Paginasi Tabel Manajemen Pengguna (`UserManagement.jsx`):** Mengoptimalkan daftar akun pengguna di panel admin dengan paginasi 10 baris per halaman untuk mempercepat proses render antarmuka dan mempermudah navigasi data staf/petugas.
   - **Kotak Saran & Ide Fitur Pengguna (`SuggestionModal.jsx`):** Penyediaan tombol saran di *Topbar* dan banner interaktif *Hero* portal Home Hub untuk menampung ide dan aspirasi staf demi pengembangan berkelanjutan aplikasi, dilengkapi notifikasi bot Telegram otomatis ke Administrator serta panel review status usulan (*Menunggu Review*, *Ditinjau*, *Diterima*, *Selesai*, *Ditolak*).
+- **Tahap 15 — Notifikasi Suara Web Audio API Pemindai QR & Sterilisasi Total Cetak Slip QR:**
+  - **Notifikasi Suara Sukses & Feedback Audio Pemindai (`audioUtils.js`):** Implementasi engine suara sintesis *client-side* berbasis browser-native *Web Audio API* untuk memberikan konfirmasi audio instan saat petugas memindai QR Code di `Scanner.jsx` (berkas) maupun `SuratScanner.jsx` (surat masuk).
+    - **Nada Berhasil (`playScanSuccessSound`):** Akord harmonik ganda *C6 (1046.5 Hz) -> G6 (1568 Hz)* berdurasi ~0.28 detik yang renyah dan elegan, ditenagai *dynamics compressor* agar suara tidak pecah di speaker smartphone saat pemindaian beruntun (*batch mode*).
+    - **Nada Beep Deteksi (`playScanBeepSound`):** Nada *sine wave* cepat 1480 Hz (~0.08 detik) ketika kamera pertama kali mendeteksi QR Code sebelum dikirim ke backend.
+    - **Nada Peringatan Error (`playScanErrorSound`):** Nada rendah *sawtooth* 280 Hz -> 180 Hz (~0.20 detik) ketika berkas ditolak, berstatus selesai/tutup, atau QR tidak valid.
+    - **Kompatibilitas Penuh Perangkat Bergerak & Tombol Tes:** Dilengkapi pendengar event *touch-unlock* otomatis untuk mengatasi kebijakan *autoplay policy* pada browser mobile (iOS Safari / Android Chrome), serta tombol pil interaktif uji coba suara di layar scanner.
+  - **Sterilisasi Total Cetak Slip QR (*Clean Print Isolation*):** Mensterilkan hasil cetak slip kode QR (`/entry`, `/file/:qrcode`, `/surat`, `/surat/detail/:id`) dari seluruh elemen antarmuka aplikasi. Melalui konfigurasi CSS `@media print` terpadu pada `index.css`, `Navbar.jsx`, dan `App.jsx`, elemen bilah navigasi atas (logo ATR/BPN, teks Kantah Tangsel, lonceng notifikasi, menu toggle hamburger), progress bar transisi, tombol navigasi, dan footer disembunyikan secara bersih (`display: none !important; height: 0 !important; margin: 0 !important; border: none !important`), memastikan hanya kartu label QR dan metadata berkas/surat yang dicetak rapi pada kertas/stiker label.
 
 ---
 

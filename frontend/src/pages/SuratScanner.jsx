@@ -13,9 +13,11 @@ import {
   Mail,
   Check,
   Clock,
-  MapPin
+  MapPin,
+  Volume2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { playScanSuccessSound, playScanErrorSound } from '../utils/audioUtils';
 
 export default function SuratScanner() {
   const [status, setStatus] = useState('scanning'); // 'scanning', 'processing', 'found', 'not_found', 'error'
@@ -95,15 +97,18 @@ export default function SuratScanner() {
           setScannedSurat(match);
         }
         setStatus('found');
+        playScanSuccessSound();
         toast.success(`Surat Agenda ${match.nomor_agenda} ditemukan!`);
       } else {
         setStatus('not_found');
+        playScanErrorSound();
         setMessage(`Tidak ditemukan surat dengan kode/agenda: "${clean}"`);
         toast.error('Surat tidak ditemukan');
       }
     } catch (err) {
       console.error(err);
       setStatus('error');
+      playScanErrorSound();
       setMessage(err.response?.data?.error || 'Gagal memverifikasi data surat');
       toast.error('Gagal mengambil data surat');
     }
@@ -130,8 +135,10 @@ export default function SuratScanner() {
       });
       setScannedSurat(res.data.surat);
       setCatatanInput('');
+      playScanSuccessSound();
       toast.success(res.data.message);
     } catch (err) {
+      playScanErrorSound();
       toast.error(err.response?.data?.error || 'Gagal mencatat pemindaian surat');
     } finally {
       setSubmittingScan(false);
@@ -195,6 +202,7 @@ export default function SuratScanner() {
         const result = await scannerRef.current.scanFile(file, false);
         handleScanSuccess(result);
       } catch {
+        playScanErrorSound();
         toast.error('Gagal membaca QR Code dari gambar yang dipilih.');
       }
     }
@@ -221,6 +229,34 @@ export default function SuratScanner() {
             <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               Pindai kode QR surat untuk menerima posisi surat, menindaklanjuti, atau membuka arsip PDF
             </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+              <div 
+                onClick={() => {
+                  playScanSuccessSound();
+                  toast('🔊 Tes Nada Notifikasi Scan Berhasil!', { icon: '🔔' });
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  fontSize: '0.78rem',
+                  color: 'var(--text-muted)',
+                  padding: '0.25rem 0.65rem',
+                  background: 'var(--surface-subtle)',
+                  borderRadius: '999px',
+                  border: '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  width: 'fit-content'
+                }}
+                title="Klik untuk menguji nada suara notifikasi scan"
+              >
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
+                <Volume2 size={13} style={{ color: 'var(--primary-color)' }} />
+                <span>Suara Notifikasi Scan Aktif</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--primary-color)', fontWeight: 600 }}>• Tes Suara</span>
+              </div>
+            </div>
           </div>
         </div>
 

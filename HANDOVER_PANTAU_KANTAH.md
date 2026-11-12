@@ -175,6 +175,22 @@ Ketika berkas dipindai (*scan*), backend menerapkan aturan bisnis spesifik berda
 - **Batas Maksimal 2 Perangkat (`session_id`):** Kolom `session_id` menyimpan maksimal 2 token sesi heksadesimal yang dipisahkan koma (`s1,s2`). Login ke-3 otomatis menggeser (`shift()`) sesi paling lama.
 - **Fitur Kick Sesi (`POST /api/admin/users/:id/kick`):** Administrator dapat mengosongkan `session_id = NULL` milik pengguna tertentu sehingga seluruh perangkat pengguna tersebut langsung terputus pada request berikutnya.
 
+### 5.6. Pemindai QR & Web Audio API Feedback Engine (`Scanner.jsx`, `SuratScanner.jsx`, `audioUtils.js`)
+- **Mode Pindai Cepat & Fleksibel:** Mendukung pemindaian berkas layanan rutin (`/scan`) dan surat masuk (`/surat/scan`) baik secara tunggal (*single*) maupun beruntun (*batch mode*), menggunakan kamera gawai/webcam atau pemindaian file gambar/galeri.
+- **Audio Synthesizer 100% Client-Side (`audioUtils.js`):** Menghasilkan nada umpan balik audio langsung di peramban memanfaatkan *Web Audio API* bawaan browser tanpa perlu mengunduh file MP3/WAV eksternal:
+  - **Nada Sukses (`playScanSuccessSound`):** Akord harmonik ganda *C6 (1046.5 Hz) -> G6 (1568 Hz)* berdurasi ~0.28 detik dengan *sine wave* bulat dan aksen *triangle harmonic*. Dilengkapi *Dynamics Compressor* bawaan agar suara tetap jernih dan tidak pecah pada speaker smartphone saat pemindaian beruntun cepat.
+  - **Nada Beep Deteksi (`playScanBeepSound`):** Nada *sine* berfrekuensi 1480 Hz selama ~0.08 detik saat kamera pertama kali berhasil membaca payload teks QR Code.
+  - **Nada Peringatan Error (`playScanErrorSound`):** Nada rendah *sawtooth* 280 Hz -> 180 Hz (~0.20 detik) ketika pemindaian berkas ditolak (misal: berkas sudah selesai/ditutup, bukan tujuan transit, atau payload tidak valid).
+- **Auto-Unlock Audio Mobile:** Menyertakan pendengar event `click` dan `touchstart` pasif sekali pakai untuk membuka kunci `AudioContext` yang tertahan oleh kebijakan *mobile browser autoplay restrictions* (iOS Safari / Android Chrome).
+
+### 5.7. Standarisasi Cetak Slip QR & Isolasi Cetak Bersih (*Clean Print Stylesheet*)
+- **Isolasi Mutlak Media Cetak (`@media print`):** Seluruh titik cetak QR Code (`/entry`, `/file/:qrcode`, `/surat`, `/surat/detail/:id`) telah disterilkan dari elemen navigasi dan kontrol antarmuka.
+- **Pembersihan Header & Shell:** Melalui kombinasi stylesheet global `index.css`, `Navbar.jsx`, dan `App.jsx`, elemen berikut disembunyikan total saat mencetak (`display: none !important; height: 0 !important; margin: 0 !important; border: none !important; visibility: hidden !important`):
+  - Bilah navigasi atas (`.navbar`, `nav`, `.navbar-brand`, `.navbar-spacer`).
+  - Lonceng notifikasi & tombol menu hamburger mobile (`.nav-mobile-right-actions`).
+  - Bilah transisi rute (`.route-transition-bar`), tombol kembali, dan footer aplikasi (`footer`).
+- **Tata Letak Slip Resmi:** Hasil cetak difokuskan murni pada panel `.qr-result-panel` / `.print-only-slip`, mencakup kop institusi (Kantor Pertanahan Kota Tangerang Selatan), judul Pantau.Kantah Tangsel, kotak QR Code beresolusi tinggi dengan logo Kementerian ATR/BPN, nomor berkas/agenda, nama kegiatan/perihal, nama pemohon/asal surat, serta pencatatan alamat IP pencetak.
+
 ---
 
 ## 6. Daftar 14 Peran (*Roles*) Resmi dalam Sistem

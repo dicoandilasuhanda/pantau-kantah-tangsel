@@ -2,8 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { CheckCircle, AlertCircle, Upload, Layers, QrCode, Check, RotateCcw } from 'lucide-react';
+import { CheckCircle, AlertCircle, Upload, Layers, QrCode, Check, RotateCcw, Volume2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { playScanSuccessSound, playScanBeepSound, playScanErrorSound } from '../utils/audioUtils';
 
 export default function Scanner() {
   const [scanResult, setScanResult] = useState(null);
@@ -75,9 +76,11 @@ export default function Scanner() {
       };
 
       setBatchHistory(prev => [successItem, ...prev]);
+      playScanSuccessSound();
       toast.success(`Diterima: Berkas ${fileData.nomor_berkas}/${fileData.tahun_berkas}`);
     } catch (err) {
       const errMsg = err.response?.data?.error || 'Gagal memproses QR Code';
+      playScanErrorSound();
       let nomorLabel = 'QR Tidak Dikenal';
       let pemohonLabel = '-';
       try {
@@ -125,16 +128,19 @@ export default function Scanner() {
 
       if (response.data.current_location === 'Selesai' || response.data.current_location === 'Ditutup') {
         setStatus('error');
+        playScanErrorSound();
         const msg = `Berkas ini sudah berstatus ${response.data.current_location} dan tidak dapat diproses lagi.`;
         setMessage(msg);
         toast.error(msg);
       } else if (userRoles.length > 1) {
         processScan(result);
       } else {
+        playScanBeepSound();
         setStatus('confirming_accept');
       }
     } catch (err) {
       setStatus('error');
+      playScanErrorSound();
       const errorMsg = err.response?.data?.error || 'Gagal memeriksa status berkas.';
       setMessage(errorMsg);
       toast.error(errorMsg);
@@ -169,6 +175,7 @@ export default function Scanner() {
             const result = await scannerRef.current.scanFile(f, false);
             await handleBatchScan(result);
           } catch {
+            playScanErrorSound();
             toast.error(`Gagal membaca QR dari gambar ${f.name}`);
           }
         }
@@ -178,6 +185,7 @@ export default function Scanner() {
           const result = await scannerRef.current.scanFile(file, false);
           handleScanSuccess(result);
         } catch {
+          playScanErrorSound();
           toast.error('Gambar tidak terbaca atau bukan QR Code yang valid.');
         }
       }
@@ -192,6 +200,7 @@ export default function Scanner() {
       const response = await api.post('/files/scan', { qr_code, fullName, isFinishing: false, selected_role });
       setStatus('success');
       setMessage(response.data.message);
+      playScanSuccessSound();
       toast.success(`Berhasil! ${response.data.message}`);
     } catch (err) {
       const data = err.response?.data;
@@ -203,6 +212,7 @@ export default function Scanner() {
         setSmartData(data);
       } else {
         setStatus('error');
+        playScanErrorSound();
         const errorMsg = data?.error || 'Gagal memperbarui lokasi berkas.';
         setMessage(errorMsg);
         toast.error(errorMsg);
@@ -277,6 +287,35 @@ export default function Scanner() {
         >
           <Layers size={16} /> Mode Scan Batch (Beruntun)
         </button>
+      </div>
+
+      {/* Audio Feedback Indicator & Test Button */}
+      <div 
+        onClick={() => {
+          playScanSuccessSound();
+          toast('🔊 Tes Nada Notifikasi Scan Berhasil!', { icon: '🔔' });
+        }}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.45rem',
+          fontSize: '0.78rem',
+          color: 'var(--text-muted)',
+          marginBottom: '1.25rem',
+          padding: '0.3rem 0.75rem',
+          background: 'var(--surface-subtle)',
+          borderRadius: '999px',
+          border: '1px solid var(--border-color)',
+          cursor: 'pointer',
+          userSelect: 'none',
+          transition: 'all 0.2s ease'
+        }}
+        title="Klik untuk menguji nada suara notifikasi scan"
+      >
+        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
+        <Volume2 size={13} style={{ color: 'var(--primary-color)' }} />
+        <span>Suara Notifikasi Scan Aktif</span>
+        <span style={{ fontSize: '0.72rem', color: 'var(--primary-color)', fontWeight: 600 }}>• Tes Suara</span>
       </div>
 
       {/* Role Selector untuk User Multi-Jabatan saat Mode Batch */}
