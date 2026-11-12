@@ -20,7 +20,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('Tugas Saya');
-  const [userRole, setUserRole] = useState('');
+  const [userRole, setUserRole] = useState(() => localStorage.getItem('role') || '');
   const [hoveredFileId, setHoveredFileId] = useState(null);
   const navigate = useNavigate();
   const [transitFiles, setTransitFiles] = useState([]);
@@ -457,7 +457,7 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-          {(userRoles.includes('Administrator') || userRoles.includes('Petugas Entry Berkas') || userRoles.includes('Petugas Entry Berkas PHP')) && (
+          {userRoles.some(r => ['administrator', 'petugas entry berkas', 'petugas entry berkas php'].includes(r.toLowerCase())) && (
             <button
               onClick={() => navigate('/entry')}
               style={{ width: 'auto', fontSize: '0.82rem', padding: '0.5rem 1rem', height: '38px', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
