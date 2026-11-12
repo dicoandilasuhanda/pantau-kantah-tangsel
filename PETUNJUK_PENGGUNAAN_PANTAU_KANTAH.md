@@ -64,6 +64,62 @@ Setelah berhasil login, Anda akan disambut oleh halaman **Home Hub (`/`)** yang 
 
 ---
 
+### Panduan Khusus: Lonceng Notifikasi Suara & Integrasi Bot Telegram (`@pantaukantahtangsel_bot`)
+
+Di pojok kanan atas bilah navigasi (Navbar) terdapat ikon **Lonceng Notifikasi (`🔔`)** yang berfungsi sebagai pusat peringatan berkas kiriman (*Transit*) sekaligus panel penghubung **Bot Telegram Resmi Kantor Pertanahan**.
+
+#### A. Fungsi Lonceng Notifikasi & Peringatan Suara Otomatis
+
+![Lonceng Notifikasi & Tombol Hubungkan Telegram](docs/screenshots/02a_lonceng_telegram_belum_terhubung.png)
+
+1. **Indikator Angka Merah (*Badge Count*)**:
+   - Menampilkan jumlah berkas permohonan yang sedang dikirim (*Transit*) menuju meja Anda dan menunggu untuk di-scan terima.
+2. **Nada Panggilan Otomatis (*Web Audio Chime* ~3,2 Detik)**:
+   - Saat Anda baru saja login (dan terdapat berkas kiriman yang menunggu) atau saat rekan kerja baru saja mengirimkan berkas ke meja Anda, aplikasi otomatis membunyikan **nada *chime* pengumuman 2 putaran** melalui speaker PC/HP Anda serta memunculkan *popup* pemberitahuan di bagian atas layar.
+   - Sistem melakukan pengecekan otomatis setiap **20 detik** di latar belakang tanpa perlu memuat ulang halaman.
+3. **Daftar Kiriman Berkas & Tombol Pintas**:
+   - Klik ikon **Lonceng (`🔔`)** untuk membuka daftar **Kiriman Berkas**.
+   - Setiap kartu menampilkan **Nomor Berkas**, **Waktu Kirim**, **Jenis Kegiatan**, **Nama Pemohon**, serta **Nama Petugas Pengirim** (kotak kuning).
+   - Tersedia 2 tombol tindakan langsung pada setiap berkas:
+     - **`Detail Berkas`**: Membuka halaman rincian berkas dan riwayat perjalanannya.
+     - **`Scan Terima`**: Langsung membuka halaman **Scanner QR** untuk memindai map fisik berkas yang tiba di meja Anda.
+
+---
+
+#### B. Cara Menghubungkan Akun dengan Bot Telegram HP (`@pantaukantahtangsel_bot`)
+
+Agar Anda tetap menerima pemberitahuan *real-time* di ponsel meskipun sedang tidak membuka komputer/browser, hubungkan akun Anda ke Bot Telegram resmi **`@pantaukantahtangsel_bot`**:
+
+1. **Melalui Menu Lonceng Notifikasi**:
+   - Klik ikon **Lonceng (`🔔`)** di Navbar atas.
+   - Pada bagian bawah panel lonceng, klik tombol biru **`Hubungkan Notifikasi Telegram HP`** (atau buka aplikasi Telegram dan cari **`@pantaukantahtangsel_bot`**).
+2. **Verifikasi Keamanan dengan Kata Sandi (`/daftar`)**:
+   - Di ruang chat Telegram **`@pantaukantahtangsel_bot`**, ketik perintah berikut:
+     ```text
+     /daftar <username> <password>
+     ```
+     *(Contoh: `/daftar dicoandila rahasia123`)*
+   - Verifikasi kata sandi akun web ini diwajibkan agar pihak luar tidak dapat menautkan akun pegawai tanpa izin.
+   - Demi keamanan, silakan hapus pesan perintah `/daftar` Anda di chat Telegram setelah bot membalas bahwa penautan berhasil.
+
+![Status Lonceng Saat Telegram Sudah Terhubung](docs/screenshots/02b_lonceng_telegram_terhubung.png)
+
+3. **Indikator Terhubung & Fitur Reset**:
+   - Setelah berhasil ditautkan, bagian bawah menu Lonceng akan berubah menjadi indikator hijau **`● Telegram Terhubung (Chat ID)`**.
+   - Setiap kali ada petugas yang **Mengirim Berkas (*Transit*)**, **Membatalkan Kiriman (*Batal Kirim*)**, atau **Mengirim File Peta `.dwg`** kepada Anda, bot akan langsung mengirimkan pesan rinciannya ke Telegram HP Anda.
+   - Jika Anda berganti nomor/akun Telegram, cukup klik tombol merah **`Reset`** di samping indikator hijau untuk memutuskan tautan lama dan menghubungkan akun Telegram baru.
+
+#### C. Daftar Perintah Interaktif pada Bot `@pantaukantahtangsel_bot`
+
+| Perintah di Chat Bot | Fungsi / Kegunaan |
+| :--- | :--- |
+| **`/start`** | Menampilkan pesan selamat datang, panduan penautan akun, dan informasi *Chat ID* Telegram Anda. |
+| **`/daftar <username> <password>`** | Memverifikasi akun pegawai dan menautkan notifikasi *real-time* ke Telegram HP Anda. |
+| **`/cek`** atau **`/status`** | Memeriksa status koneksi akun Anda beserta jumlah berkas *transit* yang saat ini sedang menunggu di meja Anda. |
+| **`/stop`** atau **`/putus`** | Memutuskan tautan notifikasi Telegram langsung dari ponsel Anda. |
+
+---
+
 ## 3. Modul Monitoring Berkas Permohonan (`/berkas`)
 
 Halaman **Monitoring Berkas** menyajikan gambaran menyeluruh mengenai posisi berkas permohonan di Seksi Survei dan Pemetaan secara *real-time*.

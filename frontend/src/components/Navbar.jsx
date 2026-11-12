@@ -302,7 +302,7 @@ export default function Navbar() {
           flex-wrap: nowrap !important;
           padding: 0 1.25rem 0 1rem !important;
           gap: 0.65rem !important;
-          overflow: hidden !important;
+          overflow: visible !important;
         }
         .navbar-spacer {
           height: 56px;
