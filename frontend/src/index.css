@@ -163,6 +163,21 @@ input:not([type="checkbox"]):not([type="radio"]), select, textarea {
   transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
+/* Hilangkan outline hitam bawaan browser saat elemen non-interaktif/heading difokuskan */
+[tabindex="-1"]:focus,
+[tabindex="-1"]:focus-visible,
+h1:focus,
+h2:focus,
+h3:focus,
+h4:focus,
+main:focus {
+  outline: none !important;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--primary-color);

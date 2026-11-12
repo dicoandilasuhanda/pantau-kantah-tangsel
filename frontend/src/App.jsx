@@ -75,9 +75,12 @@ function getRouteDepth(pathname) {
 
 function routeFocusToMain(mainEl) {
   if (!mainEl) return;
+  // Jangan fokuskan heading di halaman login agar tidak memicu kotak hitam default browser
+  if (window.location.pathname === '/login') return;
   const heading = mainEl.querySelector('h1, h2');
   if (heading) {
     if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+    heading.style.outline = 'none';
     heading.focus({ preventScroll: true });
   } else {
     mainEl.focus({ preventScroll: true });

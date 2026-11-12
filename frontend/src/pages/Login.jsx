@@ -1041,6 +1041,11 @@ export default function Login() {
           font-weight: 800;
           letter-spacing: -0.02em;
           margin: 0 0 6px 0;
+          outline: none !important;
+        }
+        .bpn-card-title:focus,
+        .bpn-card-title:focus-visible {
+          outline: none !important;
         }
         .bpn-theme-light .bpn-card-title {
           color: #0F172A;
