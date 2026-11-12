@@ -681,6 +681,11 @@ app.post('/api/surat/scan', authenticateJWT, (req, res) => {
       return res.status(400).json({ error: `Surat ini sudah berstatus ${surat.current_location} dan tidak dapat diproses lagi.` });
     }
 
+    const isAdmin = userRoles.includes('Administrator');
+    if (surat.is_transit === 1 && surat.transit_to_username && req.user.username !== surat.transit_to_username && !isAdmin) {
+      return res.status(403).json({ error: `Surat ini sedang dikirim ke meja petugas lain (${surat.transit_to_username}). Hanya petugas tersebut yang bisa memindai terima.` });
+    }
+
     const newLocation = isFinishing ? 'Selesai' : roleUsed;
     const historyLocation = isFinishing ? `Selesai (${roleUsed})` : roleUsed;
 
@@ -873,28 +878,92 @@ app.post('/api/surat/:id/transit', authenticateJWT, (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
 
-    db.run(
-      'UPDATE surat SET is_transit = 1, transit_to_username = ?, transit_by_username = ?, transit_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [target_username, req.user.username, suratId],
-      (uErr) => {
-        if (uErr) return res.status(500).json({ error: uErr.message });
-        res.json({ message: 'Surat berhasil dikirim (Transit).' });
-      }
-    );
+    db.get('SELECT full_name, telegram_chat_id FROM users WHERE username = ?', [target_username], (userErr, targetUser) => {
+      const targetFullName = targetUser && targetUser.full_name ? targetUser.full_name : target_username;
+      const senderFullName = req.user.full_name || req.user.username;
+      const scannedBy = `${senderFullName} (${req.user.role})`;
+      const clientIp = getClientIp(req);
+      const transitLocation = `Dikirim (Transit) ke ${targetFullName}`;
+
+      db.run(
+        'UPDATE surat SET is_transit = 1, transit_to_username = ?, transit_by_username = ?, transit_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [target_username, req.user.username, suratId],
+        function (uErr) {
+          if (uErr) return res.status(500).json({ error: uErr.message });
+
+          // Catat ke surat_history
+          db.run(
+            'INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)',
+            [suratId, scannedBy, req.user.username, transitLocation, clientIp],
+            function (hErr) {
+              if (hErr) console.error("Error inserting surat transit history:", hErr);
+
+              // Kirim notifikasi langsung ke Telegram petugas tujuan jika sudah terhubung bot
+              if (targetUser && targetUser.telegram_chat_id) {
+                const waktuWib = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+                const tgMsg =
+                  `<b>SURAT KIRIMAN MASUK (TRANSIT)</b>\n\n` +
+                  `Halo <b>${targetFullName}</b>, ada surat masuk yang sedang dikirim menuju meja Anda:\n\n` +
+                  `No. Agenda: <b>${surat.nomor_agenda}</b>\n` +
+                  `Asal Surat: <b>${surat.asal_surat || '-'}</b>\n` +
+                  `No. Surat: <b>${surat.nomor_surat || '-'}</b>\n` +
+                  `Perihal: <b>${surat.perihal || '-'}</b>\n` +
+                  `Dikirim Oleh: <b>${senderFullName}</b> (${req.user.role})\n` +
+                  `Waktu Kirim: ${waktuWib} WIB\n\n` +
+                  `<i>Silakan buka aplikasi Pantau.Kantah Tangsel dan lakukan <b>Scan QR Surat</b> saat surat fisik tiba di meja Anda.</i>`;
+                sendTelegramMessage(targetUser.telegram_chat_id, tgMsg);
+              }
+
+              res.json({ message: 'Surat berhasil dikirim (Transit).' });
+            }
+          );
+        }
+      );
+    });
   });
 });
 
 // Batal Kirim Surat (Cancel Transit)
 app.post('/api/surat/:id/cancel-transit', authenticateJWT, (req, res) => {
   const suratId = req.params.id;
-  db.run(
-    'UPDATE surat SET is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?',
-    [suratId],
-    (uErr) => {
-      if (uErr) return res.status(500).json({ error: uErr.message });
-      res.json({ message: 'Pengiriman surat berhasil dibatalkan.' });
-    }
-  );
+
+  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
+
+    const prevTarget = surat.transit_to_username;
+    db.get('SELECT full_name, telegram_chat_id FROM users WHERE username = ?', [prevTarget], (userErr, targetUser) => {
+      const senderFullName = req.user.full_name || req.user.username;
+      const scannedBy = `${senderFullName} (${req.user.role})`;
+      const clientIp = getClientIp(req);
+      const cancelLocation = `Pengiriman Dibatalkan oleh ${senderFullName}`;
+
+      db.run(
+        'UPDATE surat SET is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?',
+        [suratId],
+        function (uErr) {
+          if (uErr) return res.status(500).json({ error: uErr.message });
+
+          db.run(
+            'INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)',
+            [suratId, scannedBy, req.user.username, cancelLocation, clientIp],
+            function (hErr) {
+              if (hErr) console.error("Error inserting cancel transit history:", hErr);
+
+              if (targetUser && targetUser.telegram_chat_id) {
+                const tgCancelMsg =
+                  `<b>PENGIRIMAN SURAT DIBATALKAN</b>\n\n` +
+                  `Pengiriman surat No. Agenda <b>${surat.nomor_agenda}</b> (${surat.asal_surat || '-'}) menuju meja Anda telah dibatalkan oleh pengirim (<b>${senderFullName}</b>).`;
+                sendTelegramMessage(targetUser.telegram_chat_id, tgCancelMsg);
+              }
+
+              res.json({ message: 'Pengiriman surat berhasil dibatalkan.' });
+            }
+          );
+        }
+      );
+    });
+  });
 });
 
 // GET Disposisi Surat
@@ -1878,22 +1947,64 @@ app.get('/api/files', authenticateJWT, (req, res) => {
   });
 });
 
-// Get active transit notifications for the logged-in user
+// Get active transit notifications for the logged-in user (berkas & surat)
 app.get('/api/notifications/transit', authenticateJWT, (req, res) => {
   const username = req.user.username;
   const query = `
-    SELECT f.id, f.qr_code, f.nomor_berkas, f.tahun_berkas, f.nama_kegiatan, f.nama_pemohon,
-           f.current_location, f.is_transit, f.transit_to_username, f.transit_by_username, f.transit_at,
-           u_by.full_name as transit_by_fullname,
-           u_by.role as transit_by_role
-    FROM files f
-    LEFT JOIN users u_by ON f.transit_by_username = u_by.username
-    WHERE f.is_transit = 1
-      AND f.transit_to_username = ?
-      AND f.current_location NOT IN ('Selesai', 'Ditutup')
-    ORDER BY f.transit_at DESC, f.id DESC
+    SELECT * FROM (
+      SELECT f.id, 
+             'file' as item_type,
+             f.qr_code, 
+             f.nomor_berkas, 
+             f.tahun_berkas, 
+             f.nama_kegiatan, 
+             f.nama_pemohon,
+             NULL as nomor_agenda,
+             NULL as asal_surat,
+             NULL as nomor_surat,
+             NULL as perihal,
+             f.current_location, 
+             f.is_transit, 
+             f.transit_to_username, 
+             f.transit_by_username, 
+             f.transit_at,
+             u_by.full_name as transit_by_fullname,
+             u_by.role as transit_by_role
+      FROM files f
+      LEFT JOIN users u_by ON f.transit_by_username = u_by.username
+      WHERE f.is_transit = 1
+        AND f.transit_to_username = ?
+        AND f.current_location NOT IN ('Selesai', 'Ditutup')
+      
+      UNION ALL
+
+      SELECT s.id, 
+             'surat' as item_type,
+             s.qr_code, 
+             NULL as nomor_berkas, 
+             NULL as tahun_berkas, 
+             NULL as nama_kegiatan, 
+             NULL as nama_pemohon,
+             s.nomor_agenda,
+             s.asal_surat,
+             s.nomor_surat,
+             s.perihal,
+             s.current_location, 
+             s.is_transit, 
+             s.transit_to_username, 
+             s.transit_by_username, 
+             s.transit_at,
+             u_by.full_name as transit_by_fullname,
+             u_by.role as transit_by_role
+      FROM surat s
+      LEFT JOIN users u_by ON s.transit_by_username = u_by.username
+      WHERE s.is_transit = 1
+        AND s.transit_to_username = ?
+        AND s.current_location NOT IN ('Selesai', 'Ditutup')
+    )
+    ORDER BY transit_at DESC, id DESC
   `;
-  db.all(query, [username], (err, rows) => {
+  db.all(query, [username, username], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows || []);
   });
@@ -2127,16 +2238,21 @@ async function pollTelegramUpdates() {
               );
             } else {
               db.get(
-                `SELECT COUNT(*) as total FROM files WHERE is_transit = 1 AND transit_to_username = ? AND current_location NOT IN ('Selesai', 'Ditutup')`,
-                [u.username],
+                `SELECT 
+                   (SELECT COUNT(*) FROM files WHERE is_transit = 1 AND transit_to_username = ? AND current_location NOT IN ('Selesai', 'Ditutup')) as total_files,
+                   (SELECT COUNT(*) FROM surat WHERE is_transit = 1 AND transit_to_username = ? AND current_location NOT IN ('Selesai', 'Ditutup')) as total_surat
+                `,
+                [u.username, u.username],
                 (err2, row) => {
-                  const count = row ? row.total : 0;
+                  const fileCount = row ? row.total_files : 0;
+                  const suratCount = row ? row.total_surat : 0;
                   sendTelegramMessage(
                     chatId,
                     `<b>Status Akun Terhubung</b>\n\n` +
                     `Nama: <b>${u.full_name}</b> (<code>${u.username}</code>)\n` +
                     `Jabatan: ${u.role}\n` +
-                    `Berkas Transit Menunggu: <b>${count} berkas</b>`
+                    `Berkas Transit Menunggu: <b>${fileCount} berkas</b>\n` +
+                    `Surat Transit Menunggu: <b>${suratCount} surat</b>`
                   );
                 }
               );

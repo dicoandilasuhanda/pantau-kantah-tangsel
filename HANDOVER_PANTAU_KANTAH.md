@@ -155,12 +155,14 @@ Ketika berkas dipindai (*scan*), backend menerapkan aturan bisnis spesifik berda
   5. **Admin Panel & Pengguna (`/admin`):** Khusus `Administrator`. Mengintegrasikan manajemen berkas & surat, ekspor Excel 2-Sheet, kelola pengguna (`/admin/users`), dan pantauan statistik pengguna online (`/admin/stats`).
 
 ### 5.2. Lonceng Notifikasi Suara (`NotificationBell.jsx`) & Bot Telegram (`@pantaukantahtangsel_bot`)
-- **Web Audio API Chime:** Membunyikan nada *harmonic chime* 2 putaran (~3,2 detik) secara *native* di browser tanpa file MP3/WAV eksternal, dengan *polling* tiap 20 detik ke `GET /api/notifications/transit`.
+- **Web Audio API Chime & Notifikasi Terpadu (Berkas & Surat):**
+  - Membunyikan nada *harmonic chime* 2 putaran (~3,2 detik) secara *native* di browser tanpa file MP3/WAV eksternal, dengan *polling* tiap 20 detik ke `GET /api/notifications/transit`.
+  - **Dukungan Multi-Dokumen:** Menampilkan dan membedakan secara visual dokumen **Berkas Permohonan** (label biru + tautan ke Detail Berkas & Scan Terima Berkas) dan **Surat Masuk** (label hijau + nomor agenda/asal surat + tautan ke Detail Surat & Scan Terima Surat).
 - **Bot Telegram Terintegrasi (`backend/server.js`):**
   - *Long-polling* setiap 5 detik ke Telegram Bot API (`getUpdates`).
   - Mendukung *deep-linking* `/start link_<username>` dan verifikasi wajib kata sandi `/daftar <username> <password>` (dicocokkan dengan hash `bcrypt` di database).
-  - Perintah `/cek` atau `/status` untuk memeriksa jumlah berkas transit aktif, serta `/stop` atau `/putus` untuk melepas tautan.
-  - Mengirimkan notifikasi otomatis pada 4 peristiwa: **(1) Berkas Masuk (Transit)**, **(2) Pembatalan Transit**, **(3) Kiriman File AutoCAD DWG Masuk**, dan **(4) Saran Fitur Baru Masuk (khusus ke Telegram Admin)**.
+  - Perintah `/cek` atau `/status` untuk memeriksa rekapitulasi jumlah berkas dan surat transit yang sedang menunggu.
+  - Mengirimkan notifikasi otomatis pada 5 peristiwa: **(1) Berkas Masuk (Transit)**, **(2) Surat Masuk (Transit)**, **(3) Pembatalan Transit (Berkas/Surat)**, **(4) Kiriman File AutoCAD DWG Masuk**, dan **(5) Saran Fitur Baru Masuk (khusus ke Telegram Admin)**.
 
 ### 5.3. Profil Pengguna & Ruang Kerja DWG Antar-Petugas Teknis (`Profile.jsx`)
 - **Profil & Avatar:** Pengguna dapat mengunggah/menghapus foto profil (`POST / DELETE /api/user/profile/avatar`, JPG/JPEG/PNG/WEBP maks 5 MB). Nama lengkap ditampilkan *read-only* di halaman profil pengguna untuk menjaga integritas nama pada histori.

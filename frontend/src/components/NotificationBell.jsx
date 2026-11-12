@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Scan, ExternalLink, Send, Clock, RefreshCw } from 'lucide-react';
+import { Bell, Scan, ExternalLink, Send, Clock, RefreshCw, Mail, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { parseSQLiteDate } from '../utils/dateUtils';
@@ -145,13 +145,15 @@ export default function NotificationBell() {
 
       const isInitialSessionCheck = sessionStorage.getItem('notif_initial_checked') !== 'true';
       const newItems = items.filter(item => {
-        const key = `${item.id}_${item.transit_at || ''}`;
+        const itemType = item.item_type || 'file';
+        const key = `${itemType}_${item.id}_${item.transit_at || ''}`;
         return !notifiedMap[key];
       });
 
       if (newItems.length > 0) {
         newItems.forEach(item => {
-          const key = `${item.id}_${item.transit_at || ''}`;
+          const itemType = item.item_type || 'file';
+          const key = `${itemType}_${item.id}_${item.transit_at || ''}`;
           notifiedMap[key] = true;
         });
         sessionStorage.setItem('notified_transit_map', JSON.stringify(notifiedMap));
@@ -164,15 +166,21 @@ export default function NotificationBell() {
         }
 
         if (isInitialSessionCheck && newItems.length > 1) {
-          toast.success(`Anda memiliki ${items.length} berkas kiriman (Transit) yang menunggu di-scan terima!`, {
+          toast.success(`Anda memiliki ${items.length} kiriman dokumen (Transit) yang menunggu di-scan terima!`, {
             duration: 6000
           });
         } else {
           const latest = newItems[0];
           const sender = latest.transit_by_fullname || latest.transit_by_username || 'Petugas';
-          toast.success(`Berkas Kiriman Masuk: ${latest.nomor_berkas}/${latest.tahun_berkas} dari ${sender}`, {
-            duration: 6000
-          });
+          if (latest.item_type === 'surat') {
+            toast.success(`Surat Kiriman Masuk: Agenda ${latest.nomor_agenda} dari ${sender}`, {
+              duration: 6000
+            });
+          } else {
+            toast.success(`Berkas Kiriman Masuk: ${latest.nomor_berkas}/${latest.tahun_berkas} dari ${sender}`, {
+              duration: 6000
+            });
+          }
         }
       } else if (isInitialSessionCheck) {
         sessionStorage.setItem('notif_initial_checked', 'true');
@@ -360,7 +368,7 @@ export default function NotificationBell() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Send size={15} color="#60a5fa" />
               <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
-                Kiriman Berkas ({count})
+                Kiriman Masuk ({count})
               </span>
             </div>
 
@@ -384,110 +392,167 @@ export default function NotificationBell() {
             </button>
           </div>
 
-          {/* Daftar Berkas Kiriman */}
+          {/* Daftar Berkas & Surat Kiriman */}
           <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '0.6rem' }}>
             {count === 0 ? (
               <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 <Bell size={28} color="#475569" style={{ marginBottom: '0.5rem', opacity: 0.7 }} />
-                <p style={{ margin: 0, fontWeight: 500, color: 'var(--text-main)' }}>Tidak ada kiriman berkas</p>
+                <p style={{ margin: 0, fontWeight: 500, color: 'var(--text-main)' }}>Tidak ada kiriman dokumen</p>
                 <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  Berkas yang dikirim (Transit) ke meja Anda akan muncul di sini beserta peringatan suara.
+                  Dokumen berkas atau surat yang dikirim (Transit) ke meja Anda akan muncul di sini beserta peringatan suara.
                 </p>
               </div>
             ) : (
-              transitFiles.map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    padding: '0.85rem',
-                    marginBottom: '0.5rem',
-                    borderRadius: '12px',
-                    background: 'var(--surface-subtle)',
-                    border: '1px solid var(--border-color)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.45rem'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#60a5fa' }}>
-                      No. {item.nomor_berkas}/{item.tahun_berkas}
-                    </span>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <Clock size={11} /> {formatTransitTime(item.transit_at)}
-                    </span>
-                  </div>
+              transitFiles.map((item) => {
+                const isSurat = item.item_type === 'surat';
+                const itemKey = `${item.item_type || 'file'}_${item.id}`;
 
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: 500, lineHeight: 1.35 }}>
-                    {item.nama_kegiatan}
-                  </div>
-
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                    Pemohon: <strong style={{ color: 'var(--text-main)' }}>{item.nama_pemohon}</strong>
-                  </div>
-
+                return (
                   <div
+                    key={itemKey}
                     style={{
-                      fontSize: '0.75rem',
-                      color: '#fbbf24',
-                      background: 'rgba(245, 158, 11, 0.1)',
-                      padding: '0.35rem 0.6rem',
-                      borderRadius: '6px',
-                      border: '1px solid rgba(245, 158, 11, 0.2)'
+                      padding: '0.85rem',
+                      marginBottom: '0.5rem',
+                      borderRadius: '12px',
+                      background: 'var(--surface-subtle)',
+                      border: '1px solid var(--border-color)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.45rem'
                     }}
                   >
-                    Dikirim oleh: <strong>{item.transit_by_fullname || item.transit_by_username || 'Petugas'}</strong>
-                  </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        {isSurat ? (
+                          <span style={{ 
+                            fontSize: '0.68rem', 
+                            fontWeight: 800, 
+                            padding: '0.15rem 0.45rem', 
+                            borderRadius: '4px', 
+                            background: 'rgba(16, 185, 129, 0.15)', 
+                            color: '#10b981',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                          }}>
+                            <Mail size={10} /> SURAT
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            fontSize: '0.68rem', 
+                            fontWeight: 800, 
+                            padding: '0.15rem 0.45rem', 
+                            borderRadius: '4px', 
+                            background: 'rgba(59, 130, 246, 0.15)', 
+                            color: '#60a5fa',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                          }}>
+                            <FileText size={10} /> BERKAS
+                          </span>
+                        )}
+                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: isSurat ? '#10b981' : '#60a5fa' }}>
+                          {isSurat ? `Agenda ${item.nomor_agenda}` : `No. ${item.nomor_berkas}/${item.tahun_berkas}`}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Clock size={11} /> {formatTransitTime(item.transit_at)}
+                      </span>
+                    </div>
 
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOpen(false);
-                        navigate(`/file/${encodeURIComponent(item.qr_code)}`);
-                      }}
+                    {isSurat ? (
+                      <>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: 500, lineHeight: 1.35 }}>
+                          {item.perihal || 'Tidak ada perihal'}
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                          Asal Surat: <strong style={{ color: 'var(--text-main)' }}>{item.asal_surat || '-'}</strong>
+                          {item.nomor_surat ? ` • No: ${item.nomor_surat}` : ''}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: 500, lineHeight: 1.35 }}>
+                          {item.nama_kegiatan}
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                          Pemohon: <strong style={{ color: 'var(--text-main)' }}>{item.nama_pemohon}</strong>
+                        </div>
+                      </>
+                    )}
+
+                    <div
                       style={{
-                        flex: 1,
-                        padding: '0.42rem 0.6rem',
-                        fontSize: '0.76rem',
-                        background: 'var(--surface-badge)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '8px',
-                        color: 'var(--text-main)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.35rem'
+                        fontSize: '0.75rem',
+                        color: '#fbbf24',
+                        background: 'rgba(245, 158, 11, 0.1)',
+                        padding: '0.35rem 0.6rem',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(245, 158, 11, 0.2)'
                       }}
                     >
-                      <ExternalLink size={13} /> Detail Berkas
-                    </button>
+                      Dikirim oleh: <strong>{item.transit_by_fullname || item.transit_by_username || 'Petugas'}</strong>
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOpen(false);
-                        navigate('/scan');
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '0.42rem 0.6rem',
-                        fontSize: '0.76rem',
-                        background: 'var(--primary-color)',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: '#ffffff',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.35rem'
-                      }}
-                    >
-                      <Scan size={13} /> Scan Terima
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOpen(false);
+                          if (isSurat) {
+                            navigate(`/surat/detail/${item.id}`);
+                          } else {
+                            navigate(`/file/${encodeURIComponent(item.qr_code)}`);
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '0.42rem 0.6rem',
+                          fontSize: '0.76rem',
+                          background: 'var(--surface-badge)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '8px',
+                          color: 'var(--text-main)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        <ExternalLink size={13} /> {isSurat ? 'Detail Surat' : 'Detail Berkas'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOpen(false);
+                          if (isSurat) {
+                            navigate('/surat/scan');
+                          } else {
+                            navigate('/scan');
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '0.42rem 0.6rem',
+                          fontSize: '0.76rem',
+                          background: 'var(--primary-color)',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: '#ffffff',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        <Scan size={13} /> Scan Terima
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

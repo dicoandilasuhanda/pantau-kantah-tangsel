@@ -35,14 +35,14 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 - **Pengiriman Terarah (*Transit*):** Petugas tidak dapat memindai berkas secara sembarangan sebelum pemegang berkas sebelumnya menekan tombol **Kirim Berkas (Transit)** dan memilih nama petugas tujuan.
 - **Batal Kirim:** Pengirim atau Administrator dapat membatalkan status transit jika terjadi kesalahan pemilihan petugas tujuan.
 - **Lonceng Notifikasi & Peringatan Suara Otomatis (`NotificationBell`):**
-  - Terpasang di *Topbar HomeHub* dan *Navbar* seluruh halaman (Desktop & Mobile) lengkap dengan *badge* angka merah jumlah berkas kiriman yang menuju meja pengguna aktif.
+  - Terpasang di *Topbar HomeHub* dan *Navbar* seluruh halaman (Desktop & Mobile) lengkap dengan *badge* angka merah jumlah dokumen kiriman (berkas dan surat) yang menuju meja pengguna aktif.
   - **Nada Panggilan *Web Audio Chime* (~3,2 Detik):** Membunyikan nada *chime* pengumuman 2 putaran yang nyaring dan jernih menggunakan *Web Audio API* bawaan browser (100% berjalan di jaringan lokal tanpa internet maupun file audio eksternal).
-  - **Deteksi Saat Login & *Auto-Polling* (Tiap 20 Detik):** Memberikan notifikasi suara dan *popup* otomatis baik saat petugas baru saja login (jika ada berkas kiriman yang menunggu) maupun saat ada petugas lain yang baru mengirimkan berkas secara *real-time*.
-  - **Dropdown Kiriman Berkas:** Menampilkan Nomor Berkas, Waktu Kirim, Jenis Kegiatan, Nama Pemohon, dan Nama Pengirim beserta tombol pintas **Detail Berkas** dan **Scan Terima**.
+  - **Deteksi Saat Login & *Auto-Polling* (Tiap 20 Detik):** Memberikan notifikasi suara dan *popup* otomatis baik saat petugas baru saja login (jika ada berkas/surat kiriman yang menunggu) maupun saat ada petugas lain yang baru mengirimkan dokumen secara *real-time*.
+  - **Dropdown Kiriman Terpadu (Berkas & Surat Masuk):** Menampilkan badge pembeda (Biru untuk Berkas Permohonan, Hijau untuk Surat Masuk), Nomor Berkas/Agenda, Waktu Kirim, Jenis Kegiatan/Perihal, Nama Pemohon/Asal Surat, dan Nama Pengirim beserta tombol pintas **Detail** dan **Scan Terima**.
 - **Integrasi Bot Telegram Resmi (`@pantaukantahtangsel_bot`):**
   - **Koneksi Mandiri Terverifikasi Sandi:** Setiap petugas dapat menghubungkan notifikasi Telegram secara aman dengan perintah `/daftar <username> <password>` langsung di bot `@pantaukantahtangsel_bot` atau melalui tautan di menu lonceng. Penautan akun wajib menyertakan verifikasi kata sandi akun web untuk mencegah penyadapan data oleh pihak luar.
-  - **Perintah Interaktif Bot:** Mendukung perintah `/start` (panduan & info Chat ID), `/daftar <username> <password>` (verifikasi & menautkan akun), `/cek` atau `/status` (melihat status akun & jumlah berkas transit yang menunggu), serta `/stop` atau `/putus` (memutuskan tautan).
-  - **Notifikasi *Real-Time* Kirim & Batal Kirim:** Saat berkas dikirim (*Transit*) atau dibatalkan (*Batal Kirim*), server otomatis mengirim pesan rincian berkas langsung ke Telegram HP petugas tujuan meskipun petugas sedang tidak membuka browser/aplikasi web.
+  - **Perintah Interaktif Bot:** Mendukung perintah `/start` (panduan & info Chat ID), `/daftar <username> <password>` (verifikasi & menautkan akun), `/cek` atau `/status` (melihat status akun & jumlah berkas dan surat transit yang menunggu), serta `/stop` atau `/putus` (memutuskan tautan).
+  - **Notifikasi *Real-Time* Kirim & Batal Kirim:** Saat berkas atau surat dikirim (*Transit*) atau dibatalkan (*Batal Kirim*), server otomatis mengirim pesan rincian langsung ke Telegram HP petugas tujuan meskipun petugas sedang tidak membuka browser/aplikasi web.
   - **Fitur Reset & Pantauan Admin:** Dilengkapi tombol **Reset** di dalam menu lonceng serta indikator status koneksi Telegram (`Terhubung` / `Belum Terhubung`) di halaman **Manajemen Pengguna**.
 
 ### 4. ⏱️ Mesin Perhitungan Hari Kerja SOP/SLA & *Pause/Resume*
