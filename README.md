@@ -78,6 +78,7 @@ Antarmuka gerbang utama (*Single Portal Hub*) bergaya *modern dark glassmorphism
 - **Multi-Role & Konfirmasi Pintar (*Smart Role Selection*):** Satu akun pengguna dapat memiliki lebih dari satu jabatan/peran. Saat melakukan *scan*, sistem otomatis mendeteksi riwayat scan dan menyarankan peran berikutnya atau menampilkan pilihan jabatan aktif.
 - **Pembatasan Sesi Perangkat (*Max 2 Devices*):** Setiap akun dibatasi maksimal aktif pada 2 perangkat secara bersamaan. Login pada perangkat ke-3 otomatis mengeluarkan sesi perangkat paling lama.
 - **Anti-Stale Cache pada Perangkat Mobile:** Dilengkapi pengaturan header HTTP `Cache-Control: no-store, no-cache, must-revalidate` pada `index.html` agar browser smartphone (Safari iOS / Chrome Android) selalu memuat pembaruan antarmuka secara instan.
+- **Perlindungan Layar Perangkat Mobile (`MobileSecurityGuard`):** Saat diakses melalui smartphone/tablet, sistem otomatis menampilkan **Dynamic Watermark Identitas** (Nama Petugas, `@username`, dan Timestamp WIB), mengaktifkan **Privacy Blur** saat tab masuk *App Switcher / Recent Apps*, serta memblokir *long-press*, *drag* gambar, dan penyalinan teks non-input (tetap mendukung cetak slip QR bersih).
 - **Proteksi API Berlapis:** Menggunakan `helmet` (HTTP Security Headers), `express-rate-limit` (perlindungan *brute-force* pada endpoint login), `bcryptjs` untuk *hashing* kata sandi, dan pencatatan IP Address pada setiap riwayat pemindaian.
 
 ### 9. ⚙️ Admin Panel, Filter Multi-Dimensi, & Ekspor Excel 2-Sheet

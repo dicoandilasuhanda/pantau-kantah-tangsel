@@ -789,6 +789,29 @@ button.secondary:hover {
   to { transform: rotate(360deg); }
 }
 
+/* Mobile Screen Protection: cegah salin/tahan gambar tanpa mengganggu kolom input */
+html.mobile-guard-active body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html.mobile-guard-active input,
+html.mobile-guard-active textarea,
+html.mobile-guard-active select,
+html.mobile-guard-active [contenteditable="true"] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
+html.mobile-guard-active img,
+html.mobile-guard-active canvas,
+html.mobile-guard-active svg {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
 /* ========================================= */
 /* Print Styles                              */
 /* ========================================= */

@@ -202,6 +202,12 @@ Ketika berkas dipindai (*scan*), backend menerapkan aturan bisnis spesifik berda
   - Bilah transisi rute (`.route-transition-bar`), tombol kembali, dan footer aplikasi (`footer`).
 - **Tata Letak Slip Resmi:** Hasil cetak difokuskan murni pada panel `.qr-result-panel` / `.print-only-slip`, mencakup kop institusi (Kantor Pertanahan Kota Tangerang Selatan), judul Pantau.Kantah Tangsel, kotak QR Code beresolusi tinggi dengan logo Kementerian ATR/BPN, nomor berkas/agenda, nama kegiatan/perihal, nama pemohon/asal surat, serta pencatatan alamat IP pencetak.
 
+### 5.8. Perlindungan Layar Perangkat Mobile (`MobileSecurityGuard.jsx`)
+- **Aktif Otomatis pada Perangkat Mobile/Tablet:** Diaktifkan secara selektif saat pengguna mengakses aplikasi terotentikasi (di luar `/login`) dari peramban mobile (`pointer: coarse`, mobile User-Agent, atau lebar viewport `<= 768px`).
+- **Dynamic Watermark Overlay:** Merender latar watermark SVG diagonal transparan (`pointer-events: none`) berisi **Nama Lengkap, Username (`@username`), serta Tanggal & Jam WIB** yang diperbarui tiap 60 detik sehingga setiap tangkapan layar/foto kamera eksternal langsung dapat diidentifikasi sumbernya.
+- **Privacy Blur Shield (*App Switcher*):** Menyamarkan layar dengan lapisan *frosted blur* saat tab peramban ditinggalkan atau masuk mode *Recent Apps* (`visibilitychange`, `pagehide`, `blur`) tanpa mengganggu picker/kolom `<input>`, `<select>`, dan `<textarea>`.
+- **Pencegahan Salin/Tahan (*Long-Press*) & Drag:** Menerapkan kelas `html.mobile-guard-active` di `index.css` untuk menonaktifkan `user-select`, `-webkit-touch-callout`, menu konteks, dan *drag* elemen gambar/QR pada perangkat mobile, sambil mengecualikan kolom input dan menyembunyikan seluruh overlay pada mode cetak (`@media print` / `.no-print`).
+
 ---
 
 ## 6. Daftar 14 Peran (*Roles*) Resmi dalam Sistem

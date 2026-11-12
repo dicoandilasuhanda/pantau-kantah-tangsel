@@ -19,6 +19,7 @@ import { Toaster } from 'react-hot-toast';
 import KPIDashboard from './components/KPIDashboard';
 import PdfTools from './pages/PdfTools';
 import Profile from './pages/Profile';
+import MobileSecurityGuard from './components/MobileSecurityGuard';
 
 // Pemeriksaan Ingat Sesi Saya: Jika tidak dicentang dan browser baru saja dibuka dari awal, reset sesi
 try {
@@ -185,6 +186,7 @@ function AppContent() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      <MobileSecurityGuard disabled={isLoginPage} />
       <div
         className={`route-transition-bar no-print ${isTransitioning ? 'active' : ''}`}
         aria-hidden="true"
