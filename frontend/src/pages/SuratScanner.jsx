@@ -13,8 +13,7 @@ import {
   Mail,
   Check,
   Clock,
-  MapPin,
-  Volume2
+  MapPin
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { playScanSuccessSound, playScanErrorSound } from '../utils/audioUtils';
@@ -229,34 +228,7 @@ export default function SuratScanner() {
             <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               Pindai kode QR surat untuk menerima posisi surat, menindaklanjuti, atau membuka arsip PDF
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-              <div 
-                onClick={() => {
-                  playScanSuccessSound();
-                  toast('🔊 Tes Nada Notifikasi Scan Berhasil!', { icon: '🔔' });
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.45rem',
-                  fontSize: '0.78rem',
-                  color: 'var(--text-muted)',
-                  padding: '0.25rem 0.65rem',
-                  background: 'var(--surface-subtle)',
-                  borderRadius: '999px',
-                  border: '1px solid var(--border-color)',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  width: 'fit-content'
-                }}
-                title="Klik untuk menguji nada suara notifikasi scan"
-              >
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-                <Volume2 size={13} style={{ color: 'var(--primary-color)' }} />
-                <span>Suara Notifikasi Scan Aktif</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--primary-color)', fontWeight: 600 }}>• Tes Suara</span>
-              </div>
-            </div>
+
           </div>
         </div>
 

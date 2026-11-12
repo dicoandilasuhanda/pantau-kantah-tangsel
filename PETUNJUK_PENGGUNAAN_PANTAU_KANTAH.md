@@ -300,7 +300,6 @@ Gunakan **Mode Scan Batch (Beruntun)** apabila Anda menerima **tumpukan banyak b
 | **Konfirmasi Penerimaan** | Menampilkan layar konfirmasi per berkas | Langsung mencatat penerimaan secara otomatis |
 | **Pilihan Multi-Jabatan** | Ditanyakan saat berkas dipindai | Dipilih sekali di awal pada dropdown `Terima Sebagai Jabatan` |
 | **Unggah Gambar QR** | 1 file gambar per proses | Mendukung *multi-select* banyak gambar QR sekaligus |
-| **Tombol Tes Suara** | Tersedia tombol **`Suara Notifikasi Scan Aktif • Tes Suara`** untuk menguji nada *beep/chime* speaker perangkat | Tersedia tombol **`Suara Notifikasi Scan Aktif • Tes Suara`** dan membedakan nada sukses vs gagal |
 
 ---
 
