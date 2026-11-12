@@ -136,7 +136,7 @@ export default function Navbar() {
 
   const isSuratModule = location.pathname.startsWith('/surat');
   const isAdminModule = location.pathname.startsWith('/admin');
-  const isHubOnlyModule = location.pathname.startsWith('/pdf-tools') || location.pathname.startsWith('/kpi') || location.pathname.startsWith('/profile');
+  const isHubOnlyModule = location.pathname === '/' || location.pathname.startsWith('/pdf-tools') || location.pathname.startsWith('/kpi') || location.pathname.startsWith('/profile');
 
   return (
     <>

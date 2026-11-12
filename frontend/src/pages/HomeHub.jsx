@@ -1,9 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Mail, LogOut, ArrowRight, Shield, Sun, Moon, Files, BarChart2, Lightbulb } from 'lucide-react';
-import NotificationBell from '../components/NotificationBell';
+import { FolderKanban, Mail, ArrowRight, Shield, Files, BarChart2, Lightbulb } from 'lucide-react';
 import SuggestionModal from '../components/SuggestionModal';
-import api from '../utils/api';
 
 export default function HomeHub() {
   const navigate = useNavigate();
@@ -11,88 +9,6 @@ export default function HomeHub() {
   const roleStr = localStorage.getItem('role') || '';
   const userRoles = roleStr.split(',').map(r => r.trim()).filter(Boolean);
   const isAdmin = userRoles.includes('Administrator');
-
-  let fullName = localStorage.getItem('full_name') || localStorage.getItem('username') || 'Pengguna';
-  try {
-    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
-    if (userObj.full_name) fullName = userObj.full_name;
-    if (userObj.avatar_url && !localStorage.getItem('avatar_url')) {
-      localStorage.setItem('avatar_url', userObj.avatar_url);
-    }
-  } catch {
-    // ignore JSON parse error
-  }
-
-  const [avatarUrl, setAvatarUrl] = useState(() => localStorage.getItem('avatar_url') || '');
-  const [fullNameState, setFullNameState] = useState(fullName);
-
-  useEffect(() => {
-    const handleProfileSync = () => {
-      setAvatarUrl(localStorage.getItem('avatar_url') || '');
-      setFullNameState(localStorage.getItem('full_name') || localStorage.getItem('fullName') || 'Pengguna');
-    };
-    window.addEventListener('profile-update', handleProfileSync);
-    return () => window.removeEventListener('profile-update', handleProfileSync);
-  }, []);
-
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
-  const topbarRef = useRef(null);
-  const [topbarHeight, setTopbarHeight] = useState(56);
-
-  useEffect(() => {
-    const el = topbarRef.current;
-    if (!el) return;
-    const updateHeight = () => {
-      if (el.offsetHeight > 0) {
-        setTopbarHeight(el.offsetHeight);
-      }
-    };
-    updateHeight();
-    let observer;
-    if (typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(updateHeight);
-      observer.observe(el);
-    }
-    window.addEventListener('resize', updateHeight);
-    return () => {
-      if (observer) observer.disconnect();
-      window.removeEventListener('resize', updateHeight);
-    };
-  }, []);
-
-  const setThemeMode = (mode) => {
-    setTheme(mode);
-    localStorage.setItem('theme', mode);
-    document.documentElement.setAttribute('data-theme', mode);
-    window.dispatchEvent(new Event('theme-change'));
-  };
-
-  useEffect(() => {
-    const saved = localStorage.getItem('theme') || 'light';
-    setTheme(saved);
-    document.documentElement.setAttribute('data-theme', saved);
-    const handleThemeSync = () => {
-      const current = localStorage.getItem('theme') || 'light';
-      setTheme(current);
-      document.documentElement.setAttribute('data-theme', current);
-    };
-    window.addEventListener('theme-change', handleThemeSync);
-    return () => window.removeEventListener('theme-change', handleThemeSync);
-  }, []);
-
-  const handleLogout = async () => {
-    try { await api.post('/logout'); } catch {}
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('user');
-    localStorage.removeItem('username');
-    localStorage.removeItem('full_name');
-    localStorage.removeItem('fullName');
-    sessionStorage.removeItem('session_active');
-    sessionStorage.removeItem('notified_transit_map');
-    sessionStorage.removeItem('notif_initial_checked');
-    navigate('/login');
-  };
 
   return (
     <div className="hub-wrapper">
@@ -110,22 +26,6 @@ export default function HomeHub() {
           font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        .hub-seal-box {
-          width: 36px;
-          height: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-
-        .hub-seal-img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
-        }
-
         .hub-container {
           max-width: 1100px;
           width: 100%;
@@ -133,111 +33,6 @@ export default function HomeHub() {
           padding: 2.5rem 1.5rem 1rem;
           position: relative;
           z-index: 1;
-        }
-
-        .hub-topbar {
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          width: 100% !important;
-          max-width: 100vw !important;
-          height: 56px !important;
-          z-index: 1000 !important;
-          background: var(--glass-bg);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid var(--border-color);
-          padding: 0 1.25rem 0 1rem !important;
-          transition: background-color 0.25s ease;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-          box-sizing: border-box !important;
-          display: flex !important;
-          align-items: center !important;
-          overflow: hidden !important;
-        }
-
-        .hub-topbar-spacer {
-          height: 56px;
-          width: 100%;
-          flex-shrink: 0;
-        }
-
-        .hub-topbar-inner {
-          width: 100%;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 0.65rem;
-          box-sizing: border-box;
-          flex-wrap: nowrap !important;
-        }
-
-        .hub-topbar-actions {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.65rem;
-          flex-wrap: nowrap !important;
-          flex-shrink: 0;
-        }
-
-        .hub-user-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.65rem;
-          padding: 0.4rem 0.85rem;
-          background: var(--surface-card);
-          border: 1px solid var(--border-color);
-          border-radius: 999px;
-          user-select: none;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .hub-user-badge:hover {
-          background: var(--surface-hover);
-          border-color: var(--primary-color);
-          transform: translateY(-1px);
-        }
-        [data-theme="dark"] .hub-user-badge:hover {
-          border-color: #38BDF8;
-        }
-        .hub-user-badge:hover .hub-user-name {
-          color: var(--primary-color);
-        }
-        [data-theme="dark"] .hub-user-badge:hover .hub-user-name {
-          color: #38BDF8;
-        }
-
-        .hub-user-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #10b981;
-          box-shadow: 0 0 8px #10b981;
-        }
-
-        .hub-logout-btn {
-          width: auto !important;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.4rem;
-          padding: 0.45rem 0.95rem;
-          background: rgba(239, 68, 68, 0.1) !important;
-          color: #ef4444 !important;
-          border: 1px solid rgba(239, 68, 68, 0.25) !important;
-          border-radius: 8px !important;
-          font-size: 0.85rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .hub-logout-btn:hover {
-          background: rgba(239, 68, 68, 0.2) !important;
-          border-color: rgba(239, 68, 68, 0.45) !important;
-          transform: translateY(-1px);
         }
 
         .hub-floating-saran {
@@ -485,90 +280,7 @@ export default function HomeHub() {
           color: #07182D;
         }
 
-        .hub-app-name {
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: var(--text-main);
-        }
-        .hub-app-sub {
-          font-weight: 700;
-          color: #1D4ED8;
-        }
-        [data-theme="dark"] .hub-app-sub {
-          color: #38BDF8;
-        }
-        .hub-brand-full {
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: var(--text-main);
-          letter-spacing: -0.01em;
-        }
-        .hub-brand-short {
-          display: none;
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: var(--text-main);
-          letter-spacing: -0.01em;
-        }
-
-        @media (max-width: 1024px) {
-          .hub-brand-full {
-            display: none;
-          }
-          .hub-brand-short {
-            display: inline;
-          }
-        }
-
-        @media (max-width: 860px) {
-          .hub-user-badge {
-            padding: 0 !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-          }
-          .hub-user-badge-text {
-            display: none !important;
-          }
-          .hub-user-badge img {
-            width: 28px !important;
-            height: 28px !important;
-          }
-        }
-
         @media (max-width: 640px) {
-          .hub-topbar {
-            padding: 0 0.75rem !important;
-          }
-          .hub-topbar-inner {
-            gap: 0.45rem !important;
-          }
-          .hub-topbar-actions {
-            gap: 0.35rem !important;
-          }
-          .hub-seal-box {
-            width: 28px !important;
-            height: 28px !important;
-          }
-          .hub-brand-full,
-          .hub-brand-short,
-          .hub-brand-sep {
-            display: none !important;
-          }
-          .hub-app-name {
-            font-size: 0.88rem !important;
-            white-space: nowrap !important;
-          }
-          .hub-logout-btn {
-            padding: 0.45rem !important;
-            width: 32px !important;
-            height: 32px !important;
-            border-radius: 8px !important;
-            justify-content: center !important;
-          }
-          .hub-logout-btn span {
-            display: none !important;
-          }
           .hub-container {
             padding: 1.5rem 1rem 1.5rem !important;
           }
@@ -577,88 +289,6 @@ export default function HomeHub() {
           }
         }
       `}</style>
-
-      {/* Top Navigation Bar */}
-      <header ref={topbarRef} className="hub-topbar">
-        <div className="hub-topbar-inner">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0, minWidth: 0 }}>
-            <div className="hub-seal-box" title="Kementerian ATR/BPN RI">
-              <img src="/logo-atr-bpn.png" alt="Logo Kementerian ATR/BPN" className="hub-seal-img" />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-              <span className="hub-brand-full">
-                Kantor Pertanahan Kota Tangerang Selatan
-              </span>
-              <span className="hub-brand-short">
-                Kantah Tangsel
-              </span>
-              <span className="hub-brand-sep" style={{ margin: '0 0.35rem', color: 'var(--text-muted)', opacity: 0.5 }}>|</span>
-              <span className="hub-app-name">
-                Pantau<span className="hub-app-sub">.Kantah Tangsel</span>
-              </span>
-            </div>
-          </div>
-
-          <div className="hub-topbar-actions">
-            <div 
-              className="hub-user-badge" 
-              onClick={() => navigate('/profile')}
-              title="Buka Profil & Berkas DWG"
-            >
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="Avatar"
-                  style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    flexShrink: 0,
-                    border: '1.5px solid var(--border-color)'
-                  }}
-                />
-              ) : (
-                <span className="hub-user-dot" style={{ flexShrink: 0 }} />
-              )}
-              <div className="hub-user-badge-text" style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
-                <span className="hub-user-name" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color 0.2s ease' }}>
-                  {fullNameState}
-                </span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {roleStr || 'Petugas'}
-                </span>
-              </div>
-            </div>
-
-            <div className="theme-switch-segmented" role="group" aria-label="Pilihan Tema">
-              <button
-                type="button"
-                onClick={() => setThemeMode('light')}
-                className={`theme-pill-btn ${theme === 'light' ? 'active' : ''}`}
-                title="Pilih Mode Terang"
-              >
-                <Sun size={13} color={theme === 'light' ? '#FFFFFF' : '#64748B'} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setThemeMode('dark')}
-                className={`theme-pill-btn ${theme === 'dark' ? 'active' : ''}`}
-                title="Pilih Mode Gelap"
-              >
-                <Moon size={13} color={theme === 'dark' ? '#FFFFFF' : '#64748B'} />
-              </button>
-            </div>
-
-            <NotificationBell />
-            <button type="button" onClick={handleLogout} className="hub-logout-btn" title="Keluar">
-              <LogOut size={15} />
-              <span>Keluar</span>
-            </button>
-          </div>
-        </div>
-      </header>
-      <div className="hub-topbar-spacer" style={{ height: `${topbarHeight}px` }} aria-hidden="true" />
 
       <div className="hub-container animate-fade-in">
         {/* Hero Header */}

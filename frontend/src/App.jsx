@@ -192,7 +192,10 @@ function AppContent() {
         
           <Route path="/" element={
             <PrivateRoute>
-              <HomeHub />
+              <>
+                <Navbar />
+                <HomeHub />
+              </>
             </PrivateRoute>
           } />
 
