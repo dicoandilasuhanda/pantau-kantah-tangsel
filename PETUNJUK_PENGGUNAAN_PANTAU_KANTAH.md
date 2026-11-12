@@ -133,22 +133,59 @@ Mengklik salah satu baris berkas pada tabel Monitoring akan membuka halaman **De
 
 ---
 
-## 6. Scan QR Berkas (Kamera & Scanner USB/Wireless) (`/scan`)
+## 6. Scan QR Berkas: Mode Scan Satuan vs Mode Scan Batch (Beruntun) (`/scan`)
 
-Halaman **Scan QR** digunakan oleh setiap petugas tahapan saat menerima fisik berkas di mejanya agar posisi berkas berpindah secara resmi ke akun dan tahapan petugas tersebut.
+Halaman **Scanner QR Code (`/scan`)** digunakan oleh setiap petugas tahapan saat menerima fisik berkas di mejanya agar posisi berkas berpindah secara resmi ke akun dan tahapan petugas tersebut. Halaman ini menyediakan **2 Mode Pemindaian** yang dapat dipilih sesuai jumlah berkas yang sedang diterima:
 
-![Halaman Scan QR Berkas](docs/screenshots/06_scan_qr_berkas.png)
+---
 
-### 2 Metode Pemindaian yang Didukung:
-1. **Mode Scanner Fisik (USB / Wireless 2.4GHz / Bluetooth) — *Direkomendasikan di Meja Kerja***:
-   - Pastikan tab **Scanner Fisik / Ketik Manual** aktif dan kursor berada di dalam kotak input.
-   - Arahkan alat *barcode/QR scanner* ke stiker QR pada map berkas lalu tekan pelatuknya.
-   - Alat scanner akan otomatis mengetikkan kode berkas dan mengirim tombol `Enter` sehingga berkas langsung terverifikasi dalam hitungan milidetik tanpa perlu menekan tombol apa pun di layar.
-2. **Mode Kamera Perangkat (HP / Tablet / Webcam Laptop)**:
-   - Klik tombol **Buka Kamera QR**, izinkan akses kamera pada browser, lalu arahkan lensa kamera ke QR Code berkas.
-3. **Umpan Balik Suara Pintar (*Smart Voice Feedback*) & Beep**:
-   - Setiap kali scan berhasil, aplikasi mengeluarkan bunyi *beep* konfirmasi diikuti pengucapan suara Bahasa Indonesia otomatis (contoh: *"Scan berhasil. Berkas nomor enam tujuh dua tiga enam"*).
-   - Gunakan tombol **🔊 Uji Suara** untuk memastikan speaker perangkat Anda aktif.
+### A. Mode Scan Satuan (Default)
+
+Gunakan **Mode Scan Satuan** apabila Anda hanya menerima **1 (satu) berkas** dan ingin melihat konfirmasi detail berkas sebelum menyetujui penerimaan.
+
+![Mode Scan Satuan](docs/screenshots/06a_scan_qr_satuan.png)
+
+#### Cara Menggunakan Mode Scan Satuan:
+1. Pastikan tombol biru **`Mode Scan Satuan`** terpilih di bagian atas.
+2. Arahkan kamera ke stiker QR Code pada map berkas (atau klik tombol **`Pilih Gambar QR`** untuk memilih foto QR dari perangkat).
+3. Begitu QR Code terbaca, **kamera akan otomatis berhenti** dan sistem menampilkan layar **Konfirmasi Penerimaan**:
+   - Bagi **Petugas 1 Jabatan**: Muncul konfirmasi *"Anda yakin akan menerima berkas ini? (Nomor Berkas & Nama Pemohon)"* dengan tombol **Ya, Terima** atau **Tidak**.
+   - Bagi **Petugas Multi-Jabatan (*Multi-Role*)**: Jika Anda memegang lebih dari 1 jabatan pada alur berkas tersebut, sistem akan menampilkan pilihan **Pilih Posisi Berkas** atau **Konfirmasi Lanjutan Pintar (*Smart Confirmation*)** untuk melanjutkan berkas ke jabatan berikutnya.
+4. Setelah diterima, muncul layar **Berhasil!** dengan tombol **Ke Monitoring Berkas** atau **Scan Lagi**.
+
+---
+
+### B. Mode Scan Batch / Beruntun (Untuk Banyak Berkas Sekaligus)
+
+Gunakan **Mode Scan Batch (Beruntun)** apabila Anda menerima **tumpukan banyak berkas sekaligus** di meja Anda agar tidak perlu menekan tombol konfirmasi berulang-ulang untuk setiap berkas.
+
+![Mode Scan Batch Beruntun](docs/screenshots/06_scan_qr_berkas.png)
+
+#### Cara Menggunakan Mode Scan Batch (Beruntun):
+1. Klik tombol hijau **`Mode Scan Batch (Beruntun)`** di bagian atas halaman.
+2. **Pilih Jabatan Penerima *(Khusus Pengguna Multi-Jabatan)***:
+   - Jika akun Anda memiliki lebih dari satu jabatan/role, pilih terlebih dahulu jabatan yang akan digunakan pada menu dropdown **`Terima Sebagai Jabatan`** di atas kamera, sehingga sistem tidak perlu menanyakan pilihan jabatan pada setiap berkas yang di-scan.
+3. **Pindai Berkas Satu per Satu Tanpa Henti**:
+   - Kamera **tetap menyala terus-menerus**. Cukup lewatkan stiker QR berkas pertama, kedua, ketiga, dan seterusnya di depan kamera (atau klik **`Pilih Gambar QR (Bisa Banyak)`** untuk mengunggah banyak gambar QR sekaligus).
+   - Sistem dilengkapi **Pelindung Anti-Scan Ganda (3,5 Detik)** sehingga berkas yang sama tidak akan tercatat dua kali apabila masih berada di depan kamera.
+4. **Pantau Daftar `Hasil Scan Batch` di Bagian Bawah**:
+   - Setiap berkas yang dipindai langsung masuk ke panel **Hasil Scan Batch** di bawah kamera:
+     - **Kotak Hijau (`✔`)**: Berkas berhasil diterima di meja Anda disertai bunyi *chime* sukses.
+     - **Kotak Merah (`!`)**: Berkas ditolak (misalnya belum dikirim *transit* ke meja Anda atau sudah berstatus *Selesai*) disertai bunyi peringatan gagal dan alasan penolakannya.
+5. Setelah seluruh tumpukan berkas selesai dipindai, klik tombol biru **`✓ Selesai (Jumlah Diterima)`** untuk kembali ke halaman Monitoring Berkas.
+
+---
+
+### Perbandingan Cepat: Kapan Menggunakan Satuan vs Batch?
+
+| Fitur / Perilaku | **Mode Scan Satuan** | **Mode Scan Batch (Beruntun)** |
+| :--- | :--- | :--- |
+| **Peruntukan Utama** | Menerima 1 berkas tunggal | Menerima banyak tumpukan berkas sekaligus |
+| **Kondisi Kamera** | Berhenti otomatis setelah 1 QR terbaca | Tetap menyala terus-menerus tanpa jeda |
+| **Konfirmasi Penerimaan** | Menampilkan layar konfirmasi per berkas | Langsung mencatat penerimaan secara otomatis |
+| **Pilihan Multi-Jabatan** | Ditanyakan saat berkas dipindai | Dipilih sekali di awal pada dropdown `Terima Sebagai Jabatan` |
+| **Unggah Gambar QR** | 1 file gambar per proses | Mendukung *multi-select* banyak gambar QR sekaligus |
+| **Tombol Tes Suara** | Tersedia tombol **`Suara Notifikasi Scan Aktif • Tes Suara`** untuk menguji nada *beep/chime* speaker perangkat | Tersedia tombol **`Suara Notifikasi Scan Aktif • Tes Suara`** dan membedakan nada sukses vs gagal |
 
 ---
 
@@ -297,3 +334,4 @@ Halaman **Statistik Web-App (`/admin/stats`)** memungkinkan Administrator memant
 
 > **Catatan Bantuan Teknis:**  
 > Apabila Anda mengalami kendala akses jaringan lokal, pembaruan tampilan pada perangkat seluler (iOS/Android), atau membutuhkan penyesuaian hak akses jabatan (*role*), silakan menghubungi **Administrator Sistem Seksi Survei dan Pemetaan — Kantor Pertanahan Kota Tangerang Selatan**.
+
