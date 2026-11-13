@@ -187,7 +187,18 @@ pantau-kantah-tangsel/
 │   │   ├── avatars/                # Direktori penyimpanan foto profil pengguna
 │   │   ├── dwg/                    # Direktori penyimpanan arsip berkas gambar AutoCAD (.dwg)
 │   │   └── surat/                  # Direktori penyimpanan PDF surat masuk
-│   ├── server.js                   # Entry point utama backend, skema DB, & seluruh endpoint API
+│   ├── src/                        # Modul domain & layanan backend terpisah:
+│   │   ├── routes/
+│   │   │   ├── reports.js          # Router /api/reports/* (dashboard, files, kpi, kpi-surat)
+│   │   │   ├── stats.js            # Router /api/admin/* (web-app stats & kick session)
+│   │   │   └── suggestions.js      # Router /api/suggestions/* (kotak saran fitur)
+│   │   ├── services/
+│   │   │   ├── kpiService.js       # Mesin kalkulasi rata-rata jam kerja efektif KPI
+│   │   │   └── kpiService.test.js  # Unit test mesin kalkulasi KPI berkas & persuratan
+│   │   └── utils/
+│   │       ├── workingDays.js      # Single Source of Truth kalender libur, hari kerja, & jam efektif
+│   │       └── workingDays.test.js # Unit test hari kerja & pemotongan libur/akhir pekan
+│   ├── server.js                   # Entry point utama backend, skema DB, & router inti API
 │   ├── validation.js               # Middleware & skema validasi input REST API berbasis Zod
 │   ├── validation.test.js          # Unit test skema validasi Zod backend (node --test)
 │   ├── database.sqlite             # File database utama SQLite (diabaikan oleh Git demi keamanan)

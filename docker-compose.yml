@@ -13,6 +13,7 @@ services:
       - ./backend/uploads:/app/backend/uploads
       - ./backend/server.js:/app/backend/server.js
       - ./backend/validation.js:/app/backend/validation.js
+      - ./backend/src:/app/backend/src
       - ./backend/cert.pem:/app/backend/cert.pem
       - ./backend/key.pem:/app/backend/key.pem
       - ./frontend/dist:/app/frontend/dist

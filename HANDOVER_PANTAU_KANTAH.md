@@ -461,6 +461,7 @@ Aplikasi dideploy menggunakan **Docker Compose** pada server NAS QNAP (`\\10.2.0
      - `./backend/uploads:/app/backend/uploads`
      - `./backend/server.js:/app/backend/server.js`
      - `./backend/validation.js:/app/backend/validation.js`
+     - `./backend/src:/app/backend/src`
      - `./backend/cert.pem:/app/backend/cert.pem` & `./backend/key.pem:/app/backend/key.pem`
      - `./frontend/dist:/app/frontend/dist`
 2. **`cloudflared` (`pantau-sp-tunnel`):**
@@ -518,8 +519,8 @@ Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / 
 ## 10. Rencana Arsitektur Masa Depan (Skalabilitas Enterprise PostgreSQL)
 
 Jika proyek ini dikembangkan ulang atau dimigrasikan ke skala **Enterprise Kantah Penuh** pada repositori baru, gunakan rancangan target berikut:
-- **Backend:** Node.js + Express/Fastify dengan **TypeScript** berpola *Modular Clean Architecture* (`/src/modules/{auth,berkas,surat,dwg,kpi,suggestions,stats}`).
+- **Backend:** Node.js + Express/Fastify dengan **TypeScript** berpola *Modular Clean Architecture* (`/src/modules/{auth,berkas,surat,dwg,kpi,suggestions,stats}`) — *(tahap awal modularisasi JS sudah dimulai di `backend/src/` untuk `routes/{reports,suggestions,stats}`, `services/kpiService`, dan `utils/workingDays`)*.
 - **Database Utama:** **PostgreSQL 16+** dengan **Prisma ORM** atau **Drizzle ORM** (menggantikan SQLite untuk mendukung konkurensi tulis tinggi lintas seluruh seksi).
 - **In-Memory Store & Queue:** **Redis** untuk manajemen sesi multi-perangkat, pencatatan *real-time online presence*, *rate-limiting*, dan *message queue* (**BullMQ**) untuk pengiriman notifikasi Telegram asinkron.
 - **Object Storage:** **MinIO** (self-hosted di QNAP) atau **Cloudflare R2 / AWS S3** untuk menyimpan arsip PDF surat, gambar kadastral `.dwg`, dan foto profil secara terpisah dari container aplikasi.
-- **Validasi & Pengujian:** Validasi skema input menggunakan **Zod** (`backend/validation.js`, *sudah diimplementasikan untuk endpoint utama login, berkas, surat, disposisi, catatan, user, profil, dan saran fitur* beserta unit test `node --test` di `backend/validation.test.js`) serta pengujian unit otomatis (**Vitest** — *sudah diimplementasikan untuk `frontend/src/utils/dateUtils.js` melalui `dateUtils.test.js`*, sedangkan pengujian jam kerja efektif KPI backend menyusul pada tahap berikutnya).
+- **Validasi & Pengujian:** Validasi skema input menggunakan **Zod** (`backend/validation.js`, unit test di `backend/validation.test.js`) serta pengujian unit otomatis untuk utilitas tanggal/libur SLA (`frontend/src/utils/dateUtils.test.js` via **Vitest**, `backend/src/utils/workingDays.test.js` via `node --test`) dan mesin perhitungan jam kerja efektif KPI (`backend/src/services/kpiService.test.js` via `node --test`).
