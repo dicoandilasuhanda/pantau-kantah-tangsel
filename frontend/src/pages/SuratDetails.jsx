@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeft, Clock, MapPin, UserCheck, Calendar, AlertTriangle, Edit2, Save, X, MessageSquare, Send, Loader2, FileText, ExternalLink } from 'lucide-react';
-import { getWorkingDays, getStatusColor, parseSQLiteDate } from '../utils/dateUtils';
+import { getWorkingDays, getStatusColor, parseSQLiteDate, formatDateDDMMYYYY } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 
 export default function SuratDetails() {
@@ -328,7 +328,7 @@ export default function SuratDetails() {
             Nomor Surat: <strong style={{ color: 'var(--text-main)' }}>{surat.nomor_surat}</strong>
           </p>
           <p style={{ color: 'var(--text-muted)', marginBottom: '0.35rem', fontSize: '0.9rem' }}>
-            Tanggal Diterima: <strong style={{ color: 'var(--text-main)' }}>{surat.tanggal_diterima || '-'}</strong>
+            Tanggal Diterima: <strong style={{ color: 'var(--text-main)' }}>{formatDateDDMMYYYY(surat.tanggal_diterima)}</strong>
           </p>
           <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
             Perihal: <strong style={{ color: 'var(--text-main)' }}>{surat.perihal}</strong>

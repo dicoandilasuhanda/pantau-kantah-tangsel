@@ -193,6 +193,7 @@ Ketika berkas dipindai (*scan*), backend menerapkan aturan bisnis spesifik berda
   - **Nada Beep Deteksi (`playScanBeepSound`):** Nada *sine* berfrekuensi 1480 Hz selama ~0.08 detik saat kamera pertama kali berhasil membaca payload teks QR Code.
   - **Nada Peringatan Error (`playScanErrorSound`):** Nada rendah *sawtooth* 280 Hz -> 180 Hz (~0.20 detik) ketika pemindaian berkas ditolak (misal: berkas sudah selesai/ditutup, bukan tujuan transit, atau payload tidak valid).
 - **Auto-Unlock Audio Mobile:** Menyertakan pendengar event `click` dan `touchstart` pasif sekali pakai untuk membuka kunci `AudioContext` yang tertahan oleh kebijakan *mobile browser autoplay restrictions* (iOS Safari / Android Chrome).
+- **Konsistensi Format Tanggal Persuratan (`formatDateDDMMYYYY`):** Seluruh tampilan tanggal terima surat (`tanggal_diterima`) pada `SuratDashboard.jsx`, `SuratDetails.jsx`, `SuratScanner.jsx`, dan `AdminDashboard.jsx` diseragamkan ke format **`DD/MM/YYYY`** menggunakan utilitas `formatDateDDMMYYYY` (`frontend/src/utils/dateUtils.js`) yang mengonversi string tanggal SQLite/ISO secara langsung tanpa pergeseran zona waktu.
 
 ### 5.7. Standarisasi Cetak Slip QR & Isolasi Cetak Bersih (*Clean Print Stylesheet*)
 - **Isolasi Mutlak Media Cetak (`@media print`):** Seluruh titik cetak QR Code (`/entry`, `/file/:qrcode`, `/surat`, `/surat/detail/:id`) telah disterilkan dari elemen navigasi dan kontrol antarmuka.

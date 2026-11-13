@@ -223,7 +223,7 @@ pantau-kantah-tangsel/
 │   │   ├── utils/
 │   │   │   ├── api.js              # Konfigurasi instance Axios & interceptor JWT
 │   │   │   ├── audioUtils.js       # Synthesizer Web Audio API nada sukses scan QR, beep, & error
-│   │   │   └── dateUtils.js        # Kalkulator hari kerja, kalender libur, & target SOP
+│   │   │   └── dateUtils.js        # Kalkulator hari kerja, kalender libur, target SOP, & formatter tanggal (DD/MM/YYYY)
 │   │   ├── App.jsx                 # Konfigurasi routing utama & Role-based Route Guards
 │   │   └── index.css               # Sistem desain global (Dark Glassmorphism)
 │   └── package.json                # Dependensi frontend

@@ -114,6 +114,22 @@ export function formatDate(date) {
   }).format(date);
 }
 
+// Memformat string tanggal (misal YYYY-MM-DD) menjadi DD/MM/YYYY tanpa pergeseran zona waktu
+export function formatDateDDMMYYYY(dateStr) {
+  if (!dateStr) return '-';
+  const clean = String(dateStr).trim();
+  const ymdMatch = clean.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymdMatch) {
+    return `${ymdMatch[3]}/${ymdMatch[2]}/${ymdMatch[1]}`;
+  }
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(clean)) {
+    return clean;
+  }
+  const parsed = parseSQLiteDate(clean);
+  if (isNaN(parsed.getTime())) return clean;
+  return formatDate(parsed);
+}
+
 export function getStatusColor(workingDaysAtDesk) {
   if (workingDaysAtDesk > 2) return 'var(--error-color)'; // Merah (> 2 artinya 3 atau lebih)
   if (workingDaysAtDesk === 2) return 'var(--warning-color)'; // Kuning (tepat 2 hari)

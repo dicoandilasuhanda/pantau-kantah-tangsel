@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { Mail, MailPlus, Search, FileText, QrCode, Printer, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
+import { formatDateDDMMYYYY } from '../utils/dateUtils';
 
 export default function SuratDashboard() {
   const [suratList, setSuratList] = useState([]);
@@ -222,7 +223,7 @@ export default function SuratDashboard() {
                   </td>
                   <td style={{ padding: '0.8rem 1rem', fontWeight: 600, fontSize: '0.86rem' }}>{surat.asal_surat}</td>
                   <td style={{ padding: '0.8rem 1rem', fontSize: '0.84rem' }}>{surat.nomor_surat}</td>
-                  <td style={{ padding: '0.8rem 1rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{surat.tanggal_diterima}</td>
+                  <td style={{ padding: '0.8rem 1rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{formatDateDDMMYYYY(surat.tanggal_diterima)}</td>
                   <td style={{ padding: '0.8rem 1rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.84rem' }}>
                     {surat.perihal}
                   </td>

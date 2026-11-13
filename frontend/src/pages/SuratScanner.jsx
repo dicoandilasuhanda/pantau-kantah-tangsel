@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { playScanSuccessSound, playScanErrorSound } from '../utils/audioUtils';
+import { formatDateDDMMYYYY } from '../utils/dateUtils';
 
 export default function SuratScanner() {
   const [status, setStatus] = useState('scanning'); // 'scanning', 'processing', 'found', 'not_found', 'error'
@@ -316,7 +317,7 @@ export default function SuratScanner() {
                 </div>
                 <div>
                   <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Tanggal Diterima</span>
-                  <strong style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>{scannedSurat.tanggal_diterima}</strong>
+                  <strong style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>{formatDateDDMMYYYY(scannedSurat.tanggal_diterima)}</strong>
                 </div>
               </div>
 
