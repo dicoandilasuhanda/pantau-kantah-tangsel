@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw, Clock, Calendar, Send, CheckSquare, Square, X, Loader2, QrCode, PlusSquare } from 'lucide-react';
-import { getWorkingDays, calculateTotalElapsedDays, getStatusColor, SOP_DAYS } from '../utils/dateUtils';
+import { Search, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw, Send, CheckSquare, Square, X, QrCode, PlusSquare } from 'lucide-react';
+import { getWorkingDays, calculateTotalElapsedDays, SOP_DAYS } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
+import BatchTransitModal from '../components/BatchTransitModal';
+import DashboardFileCard from '../components/DashboardFileCard';
+import './Dashboard.css';
 
 function formatShortDate(dateStr) {
   if (!dateStr) return '-';
@@ -264,171 +267,6 @@ export default function Dashboard() {
   return (
     <div style={{ position: 'relative', minHeight: 'calc(100vh - 60px)' }}>
       {/* Inject Global Grid Background & Dashboard Styles */}
-      <style>{`
-        body, #root, .app-container {
-          background-color: var(--bg-color) !important;
-          background-image: var(--bg-pattern) !important;
-          background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100% !important;
-          background-attachment: fixed !important;
-        }
-        .dashboard-container {
-          max-width: 1100px !important;
-          margin: 0 auto !important;
-          width: 100% !important;
-          box-sizing: border-box !important;
-          overflow-x: hidden !important;
-        }
-        .dash-file-card {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-          width: 100% !important;
-          box-sizing: border-box !important;
-        }
-        .dash-col-info {
-          flex: 0 1 380px;
-          min-width: 220px;
-        }
-        .dash-col-timeline {
-          flex: 0 1 240px;
-          min-width: 180px;
-          padding-left: 1.25rem;
-          border-left: 1px solid var(--border-color);
-        }
-        .dash-col-status {
-          flex: 0 0 auto;
-          margin-left: auto;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          text-align: right;
-        }
-        .dash-toolbar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 0.85rem;
-          margin-bottom: 1.25rem;
-          flex-wrap: wrap;
-          width: 100% !important;
-          box-sizing: border-box !important;
-        }
-        .dash-search-box {
-          position: relative;
-          flex: 1 1 280px;
-          max-width: 440px;
-        }
-        .dash-search-icon {
-          position: absolute;
-          left: 0.85rem;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #64748b;
-          display: flex;
-          align-items: center;
-          pointer-events: none;
-        }
-        .dash-filter-tabs {
-          display: flex;
-          gap: 0.4rem;
-          flex-wrap: wrap;
-          align-items: center;
-        }
-        @media (max-width: 860px) {
-          .dashboard-container {
-            padding-left: 0.75rem !important;
-            padding-right: 0.75rem !important;
-            overflow-x: hidden !important;
-          }
-          .dash-file-card {
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 0.45rem !important;
-            padding: 0.75rem 0.95rem !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-            overflow: hidden !important;
-          }
-          .dash-col-info {
-            flex: none !important;
-            width: 100% !important;
-            min-width: 0 !important;
-            box-sizing: border-box !important;
-          }
-          .dash-col-timeline {
-            flex: none !important;
-            width: 100% !important;
-            min-width: 0 !important;
-            padding-left: 0 !important;
-            border-left: none !important;
-            padding-top: 0.45rem !important;
-            border-top: 1px solid var(--border-color) !important;
-            gap: 0.2rem !important;
-            box-sizing: border-box !important;
-          }
-          .dash-col-status {
-            flex: none !important;
-            width: 100% !important;
-            margin-left: 0 !important;
-            align-items: flex-start !important;
-            text-align: left !important;
-            padding-top: 0.45rem !important;
-            border-top: 1px solid var(--border-color) !important;
-            box-sizing: border-box !important;
-          }
-          .dash-metrics-grid {
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-          }
-          .dash-toolbar {
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 0.65rem !important;
-            margin-bottom: 0.75rem !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            min-width: 0 !important;
-            box-sizing: border-box !important;
-          }
-          .dash-search-box {
-            flex: none !important;
-            max-width: 100% !important;
-            width: 100% !important;
-            min-width: 0 !important;
-            height: auto !important;
-            margin-bottom: 0 !important;
-            box-sizing: border-box !important;
-          }
-          .dash-search-box input {
-            margin-bottom: 0 !important;
-            height: 38px !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-          }
-          .dash-filter-tabs {
-            display: flex !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            min-width: 0 !important;
-            overflow-x: auto !important;
-            flex-wrap: nowrap !important;
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: 6px;
-            box-sizing: border-box !important;
-            scrollbar-width: none;
-          }
-          .dash-filter-tabs::-webkit-scrollbar {
-            display: none;
-          }
-          .dash-filter-tabs button {
-            flex-shrink: 0;
-            white-space: nowrap;
-          }
-        }
-      `}</style>
 
       {/* Main Content Container */}
       <div className="container animate-fade-in dashboard-container" style={{ position: 'relative', zIndex: 5, paddingBottom: '3rem' }}>
@@ -469,56 +307,30 @@ export default function Dashboard() {
 
         {/* Summary Metric Cards */}
         <div className="dash-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem', marginBottom: '1.25rem' }}>
-          {/* Card 1: Total Berkas Aktif */}
-          <div style={{
-            background: 'var(--surface-card)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid var(--border-color)',
-            borderLeft: '4px solid #1D4ED8',
-            borderRadius: '12px',
-            padding: '0.85rem 1.15rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.25rem',
-            boxShadow: '0 4px 12px -3px var(--card-shadow)'
-          }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '500' }}>Total Berkas Aktif</span>
-            <strong style={{ fontSize: '1.65rem', color: 'var(--text-main)', lineHeight: 1.1 }}>{metrics.activeFiles}</strong>
-          </div>
-
-          {/* Card 2: Melewati SOP (Terlambat) */}
-          <div style={{
-            background: 'var(--surface-card)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid var(--border-color)',
-            borderLeft: '4px solid #ef4444',
-            borderRadius: '12px',
-            padding: '0.85rem 1.15rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.25rem',
-            boxShadow: '0 4px 12px -3px var(--card-shadow)'
-          }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '500' }}>Melewati SOP (Terlambat)</span>
-            <strong style={{ fontSize: '1.65rem', color: '#ef4444', lineHeight: 1.1 }}>{metrics.overdueFiles}</strong>
-          </div>
-
-          {/* Card 3: Menunggu di Meja Saya */}
-          <div style={{
-            background: 'var(--surface-card)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid var(--border-color)',
-            borderLeft: '4px solid #10b981',
-            borderRadius: '12px',
-            padding: '0.85rem 1.15rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.25rem',
-            boxShadow: '0 4px 12px -3px var(--card-shadow)'
-          }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '500' }}>Menunggu di Meja Saya</span>
-            <strong style={{ fontSize: '1.65rem', color: 'var(--text-main)', lineHeight: 1.1 }}>{metrics.myFiles}</strong>
-          </div>
+          {[
+            { label: 'Total Berkas Aktif', value: metrics.activeFiles, accent: '#1D4ED8', valueColor: 'var(--text-main)' },
+            { label: 'Melewati SOP (Terlambat)', value: metrics.overdueFiles, accent: '#ef4444', valueColor: '#ef4444' },
+            { label: 'Menunggu di Meja Saya', value: metrics.myFiles, accent: '#10b981', valueColor: 'var(--text-main)' },
+          ].map((card) => (
+            <div
+              key={card.label}
+              style={{
+                background: 'var(--surface-card)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid var(--border-color)',
+                borderLeft: `4px solid ${card.accent}`,
+                borderRadius: '12px',
+                padding: '0.85rem 1.15rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem',
+                boxShadow: '0 4px 12px -3px var(--card-shadow)',
+              }}
+            >
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '500' }}>{card.label}</span>
+              <strong style={{ fontSize: '1.65rem', color: card.valueColor, lineHeight: 1.1 }}>{card.value}</strong>
+            </div>
+          ))}
         </div>
 
         {/* Filter Pills & Search Bar (Compact Toolbar) */}
@@ -859,305 +671,36 @@ export default function Dashboard() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            {filteredFiles.map(file => {
-              const isDone = file.current_location === 'Selesai' || file.current_location === 'Ditutup';
-              const isTransit = !isDone && file.is_transit === 1;
-              const updatedAt = file.updated_at ? file.updated_at : file.created_at;
-              
-              let daysText = '';
-              let statusColor = '';
-
-              if (isTransit) {
-                daysText = 'Menunggu di-scan penerima';
-                statusColor = 'var(--warning-color, #f59e0b)';
-              } else if (isDone) {
-                const totalDaysTaken = calculateTotalElapsedDays(file, updatedAt);
-                daysText = file.current_location === 'Ditutup' 
-                  ? `Berkas ditutup (${totalDaysTaken} hari kerja)` 
-                  : `Diselesaikan dalam ${totalDaysTaken} hari kerja`;
-                statusColor = file.current_location === 'Ditutup' ? '#6b7280' : 'var(--success-color, #10b981)';
-              } else {
-                const daysAtLocation = getWorkingDays(updatedAt);
-                statusColor = getStatusColor(daysAtLocation);
-                daysText = daysAtLocation === 0 ? 'Baru masuk di posisi ini' : `${daysAtLocation} hari kerja di posisi ini`;
-              }
-
-              const isHovered = hoveredFileId === file.id;
-              const sopTarget = SOP_DAYS[file.nama_kegiatan];
-              const selectable = isFileSelectable(file);
-              const isSelected = selectedQrCodes.includes(file.qr_code);
-
-              return (
-                <div
-                  key={file.id}
-                  onClick={() => navigate(`/file/${file.qr_code}`)}
-                  onMouseEnter={() => setHoveredFileId(file.id)}
-                  onMouseLeave={() => setHoveredFileId(null)}
-                  className="dash-file-card"
-                  style={{
-                    cursor: 'pointer',
-                    background: isSelected ? 'rgba(29, 78, 216, 0.08)' : (isHovered ? 'var(--surface-hover)' : 'var(--surface-card)'),
-                    backdropFilter: 'blur(16px)',
-                    border: isSelected ? '1.5px solid #1D4ED8' : (isHovered ? '1px solid #1D4ED8' : '1px solid var(--border-color)'),
-                    borderRadius: '12px',
-                    padding: '0.85rem 1.15rem',
-                    transition: 'all 0.18s ease',
-                    transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
-                    boxShadow: isHovered ? '0 8px 20px -4px var(--card-shadow)' : '0 2px 6px -2px var(--card-shadow)'
-                  }}
-                >
-                  {/* Col 1: Checkbox + Identitas Berkas */}
-                  <div className="dash-col-info" style={{ minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                    {selectable && (
-                      <div
-                        onClick={(e) => toggleSelectFile(e, file.qr_code)}
-                        title={isSelected ? 'Batalkan pilihan berkas ini' : 'Pilih berkas ini untuk aksi batch'}
-                        style={{
-                          paddingTop: '0.15rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          color: isSelected ? '#1D4ED8' : 'var(--text-muted)'
-                        }}
-                      >
-                        {isSelected ? <CheckSquare size={20} color="#1D4ED8" /> : <Square size={20} />}
-                      </div>
-                    )}
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <h3 style={{ margin: '0 0 0.2rem 0', display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '1rem', color: 'var(--text-main)', fontWeight: 700 }}>
-                        <FileText size={17} color="#1D4ED8" style={{ flexShrink: 0 }} /> {file.nomor_berkas} / {file.tahun_berkas}
-                      </h3>
-                      <p style={{ fontSize: '0.86rem', margin: '0 0 0.15rem 0', color: 'var(--text-main)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {file.nama_kegiatan}
-                      </p>
-                      <p style={{ fontSize: '0.8rem', margin: 0, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        Pemohon: {file.nama_pemohon}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Col 2 (Bagian Tengah): Timeline & SOP */}
-                  <div className="dash-col-timeline" style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Clock size={13} color="#64748B" />
-                      <span>Target SOP: <strong style={{ color: 'var(--text-main)' }}>{sopTarget ? `${sopTarget} Hari Kerja` : 'Tidak Diatur'}</strong></span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Calendar size={13} color="#64748B" />
-                      <span>Masuk: <strong style={{ color: 'var(--text-main)' }}>{formatShortDate(file.created_at)}</strong></span>
-                    </div>
-                  </div>
-
-                  {/* Col 3: Posisi Meja & Durasi SLA */}
-                  <div className="dash-col-status">
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <MapPin size={13} color={isTransit ? '#f59e0b' : (file.current_location === 'Ditutup' ? '#6b7280' : '#10b981')} />
-                      <span style={{
-                        padding: '0.2rem 0.65rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.76rem',
-                        fontWeight: '600',
-                        background: isTransit ? 'rgba(245, 158, 11, 0.15)' : (file.current_location === 'Ditutup' ? 'rgba(107, 114, 128, 0.15)' : 'rgba(16, 185, 129, 0.12)'),
-                        border: isTransit ? '1px solid rgba(245, 158, 11, 0.35)' : (file.current_location === 'Ditutup' ? '1px solid rgba(107, 114, 128, 0.25)' : '1px solid rgba(16, 185, 129, 0.25)'),
-                        color: isTransit ? '#d97706' : (file.current_location === 'Ditutup' ? '#6b7280' : '#059669')
-                      }}>
-                        {isTransit ? `Transit ke ${file.transit_to_fullname || file.transit_to_username}` : file.current_location}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.8rem', marginTop: '0.35rem' }}>
-                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: statusColor, boxShadow: `0 0 6px ${statusColor}`, flexShrink: 0 }} />
-                      <span style={{ color: statusColor, fontWeight: '600' }}>
-                        {daysText}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {filteredFiles.map((file) => (
+              <DashboardFileCard
+                key={file.id}
+                file={file}
+                isHovered={hoveredFileId === file.id}
+                isSelected={selectedQrCodes.includes(file.qr_code)}
+                selectable={isFileSelectable(file)}
+                enteredDateText={formatShortDate(file.created_at)}
+                onOpen={() => navigate(`/file/${file.qr_code}`)}
+                onToggleSelect={(e) => toggleSelectFile(e, file.qr_code)}
+                onHoverEnter={() => setHoveredFileId(file.id)}
+                onHoverLeave={() => setHoveredFileId(null)}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* Modal 1: Kirim Berkas Batch (Transit) */}
-      {showBatchTransitModal && (
-        <div
-          onClick={() => !batchProcessing && setShowBatchTransitModal(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.65)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 2000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem'
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--surface-card)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '16px',
-              padding: '1.5rem',
-              width: '100%',
-              maxWidth: '480px',
-              boxShadow: '0 20px 40px -10px rgba(0,0,0,0.4)'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Send size={20} color="#1D4ED8" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>
-                  Kirim Berkas Secara Batch ({sendableSelected.length} Berkas)
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowBatchTransitModal(false)}
-                disabled={batchProcessing}
-                style={{
-                  width: 'auto',
-                  background: 'transparent',
-                  border: 'none',
-                  padding: '0.25rem',
-                  margin: 0,
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer'
-                }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{
-              background: 'var(--surface-subtle, rgba(29, 78, 216, 0.06))',
-              border: '1px solid var(--border-color)',
-              borderRadius: '10px',
-              padding: '0.6rem 0.85rem',
-              marginBottom: '0.9rem',
-              maxHeight: '110px',
-              overflowY: 'auto',
-              fontSize: '0.8rem',
-              color: 'var(--text-main)'
-            }}>
-              <div style={{ fontWeight: 600, marginBottom: '0.3rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                Daftar berkas yang akan dikirim:
-              </div>
-              {sendableSelected.map(f => (
-                <div key={f.qr_code} style={{ padding: '0.15rem 0', display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
-                  <strong>{f.nomor_berkas}/{f.tahun_berkas}</strong>
-                  <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {f.nama_pemohon}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <p style={{ margin: '0 0 0.45rem 0', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>
-              Pilih Petugas Tujuan:
-            </p>
-            <input
-              type="text"
-              placeholder="Cari nama atau jabatan petugas..."
-              value={batchTransitSearch}
-              onChange={(e) => setBatchTransitSearch(e.target.value)}
-              style={{
-                width: '100%',
-                marginBottom: '0.6rem',
-                padding: '0.6rem 0.85rem',
-                borderRadius: '10px',
-                border: '1px solid var(--border-color)',
-                background: 'var(--bg-color)',
-                color: 'var(--text-main)',
-                fontSize: '0.85rem'
-              }}
-            />
-
-            <div style={{
-              maxHeight: '210px',
-              overflowY: 'auto',
-              marginBottom: '1.1rem',
-              border: '1px solid var(--border-color)',
-              borderRadius: '10px',
-              background: 'var(--bg-color)'
-            }}>
-              {usersList.filter(u =>
-                (u.full_name || u.username).toLowerCase().includes(batchTransitSearch.toLowerCase()) ||
-                (u.role || '').toLowerCase().includes(batchTransitSearch.toLowerCase())
-              ).map(u => {
-                const isChosen = batchTransitTarget === u.username;
-                return (
-                  <div
-                    key={u.username}
-                    onClick={() => setBatchTransitTarget(u.username)}
-                    style={{
-                      padding: '0.7rem 0.9rem',
-                      cursor: 'pointer',
-                      background: isChosen ? '#1D4ED8' : 'transparent',
-                      color: isChosen ? '#ffffff' : 'var(--text-main)',
-                      borderBottom: '1px solid var(--border-color)',
-                      transition: 'background 0.15s'
-                    }}
-                  >
-                    <div style={{ fontSize: '0.88rem', fontWeight: isChosen ? 700 : 600 }}>
-                      {u.full_name || u.username}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', opacity: isChosen ? 0.92 : 0.7, marginTop: '0.15rem' }}>
-                      {u.role}
-                    </div>
-                  </div>
-                );
-              })}
-              {usersList.filter(u =>
-                (u.full_name || u.username).toLowerCase().includes(batchTransitSearch.toLowerCase()) ||
-                (u.role || '').toLowerCase().includes(batchTransitSearch.toLowerCase())
-              ).length === 0 && (
-                <div style={{ padding: '1rem', fontSize: '0.84rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                  Petugas tidak ditemukan
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem' }}>
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => setShowBatchTransitModal(false)}
-                disabled={batchProcessing}
-                style={{ width: 'auto', padding: '0.55rem 1.1rem', fontSize: '0.85rem', margin: 0 }}
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleBatchTransitSubmit}
-                disabled={batchProcessing || !batchTransitTarget}
-                style={{
-                  width: 'auto',
-                  background: '#1D4ED8',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.55rem 1.2rem',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  margin: 0
-                }}
-              >
-                {batchProcessing ? <Loader2 size={15} className="spin" /> : <Send size={15} />}
-                {batchProcessing ? 'Mengirim...' : `Kirim ${sendableSelected.length} Berkas`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BatchTransitModal
+        isOpen={showBatchTransitModal}
+        sendableSelected={sendableSelected}
+        usersList={usersList}
+        batchTransitTarget={batchTransitTarget}
+        onSelectTarget={setBatchTransitTarget}
+        batchTransitSearch={batchTransitSearch}
+        onSearchChange={setBatchTransitSearch}
+        batchProcessing={batchProcessing}
+        onClose={() => setShowBatchTransitModal(false)}
+        onSubmit={handleBatchTransitSubmit}
+      />
     </div>
   );
 }

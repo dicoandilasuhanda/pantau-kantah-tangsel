@@ -477,7 +477,7 @@ export default function Navbar() {
         <div className="navbar-brand">
           <div className="navbar-brand-info">
             <div className="navbar-seal-box" title="Kementerian ATR/BPN RI">
-              <img src="/logo-atr-bpn.png" alt="Logo Kementerian ATR/BPN" className="navbar-seal-img" />
+              <img src="/logo-atr-bpn.png" alt="Logo Kementerian ATR/BPN" width="32" height="32" fetchpriority="high" className="navbar-seal-img" />
             </div>
             <div className="navbar-brand-text">
               <span className="navbar-title-full">Kantor Pertanahan Kota Tangerang Selatan</span>

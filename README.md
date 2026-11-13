@@ -228,10 +228,15 @@ pantau-kantah-tangsel/
 │   ├── public/                     # Aset statis publik (Logo Kantah, Favicon)
 │   ├── src/
 │   │   ├── components/             # Komponen modular:
+│   │   │   ├── admin/              # Subkomponen Admin (AdminBerkasTab, AdminSuratTab, CloseReasonModal, RecordRowActions)
+│   │   │   ├── pdf/                # Subkomponen PDF Tools (MergePdfTab, SplitPdfTab, CompressPdfTab, ImageToPdfTab, RotatePdfTab, PdfZoomModal)
 │   │   │   ├── AdminRoute.jsx      # Guard rute khusus Administrator
+│   │   │   ├── BatchTransitModal.jsx # Modal kirim berkas secara batch pada Dasbor Monitoring
 │   │   │   ├── CariBerkasPetugas.jsx
+│   │   │   ├── DashboardFileCard.jsx # Kartu item berkas modular pada Dasbor Monitoring
 │   │   │   ├── ErrorBoundary.jsx   # Global Error Boundary pencegah layar putih & pemulihan otomatis
 │   │   │   ├── KPIDashboard.jsx    # Analitik kinerja petugas & grafik Recharts
+│   │   │   ├── LoginHelpModal.jsx  # Modal bantuan pemulihan akun pada halaman Login
 │   │   │   ├── Navbar.jsx          # Navigasi adaptif, akses profil cepat, lonceng notifikasi, & modal ubah sandi
 │   │   │   ├── NotificationBell.jsx# Lonceng notifikasi kiriman berkas (Transit) & Web Audio Chime
 │   │   │   ├── SuggestionModal.jsx # Modal kotak saran fitur baru, riwayat pengajuan, & review admin
@@ -239,14 +244,16 @@ pantau-kantah-tangsel/
 │   │   │   └── Top50Berkas.jsx     # Tabel 50 berkas aktif terlama
 │   │   ├── pages/                  # Halaman aplikasi:
 │   │   │   ├── admin/
-│   │   │   │   ├── AdminDashboard.jsx  # Dasbor eksekutif, filter periode/kegiatan, & ekspor Excel 2-Sheet
+│   │   │   │   ├── AdminDashboard.jsx  # Dasbor eksekutif terpadu (kelola berkas, surat, & ekspor Excel 2-Sheet)
 │   │   │   │   └── UserManagement.jsx  # CRUD pengguna, paginasi per 10 baris, & pengaturan multi-role
+│   │   │   ├── Dashboard.css       # Stylesheet terpisah untuk tata letak responsif Dasbor Monitoring
 │   │   │   ├── Dashboard.jsx       # Monitoring berkas utama, kartu metrik, & filter
 │   │   │   ├── EntryForm.jsx       # Formulir registrasi berkas & cetak QR Code
 │   │   │   ├── FileDetails.jsx     # Detail berkas, transit, pause SOP, catatan, & disposisi
 │   │   │   ├── HomeHub.jsx         # Portal utama pemilihan modul layanan
+│   │   │   ├── Login.css           # Stylesheet terpisah untuk antarmuka autentikasi tema ganda
 │   │   │   ├── Login.jsx           # Halaman autentikasi pengguna
-│   │   │   ├── PdfTools.jsx        # Utilitas manipulasi dokumen PDF in-browser (Gabung, Pisah, Kompres, dsb.)
+│   │   │   ├── PdfTools.jsx        # Shell orkestrasi utilitas PDF in-browser (Gabung, Pisah, Kompres, Gambar->PDF, Putar)
 │   │   │   ├── Profile.jsx         # Profil pengguna, unggah avatar, & ruang pertukaran berkas DWG (Petugas Ukur, ASK, & Pemetaan)
 │   │   │   ├── Scanner.jsx         # Pemindai QR Code kamera & unggah gambar berkas
 │   │   │   ├── SuratDashboard.jsx  # Daftar agenda surat masuk, unduh PDF, & cetak slip QR
@@ -254,10 +261,18 @@ pantau-kantah-tangsel/
 │   │   │   ├── SuratEntryForm.jsx  # Formulir input surat masuk & unggah PDF
 │   │   │   └── SuratScanner.jsx    # Pemindai QR agenda surat untuk terima kiriman surat
 │   │   ├── utils/
-│   │   │   ├── api.js              # Konfigurasi instance Axios & interceptor JWT
-│   │   │   ├── audioUtils.js       # Synthesizer Web Audio API nada sukses scan QR, beep, & error
-│   │   │   ├── dateUtils.js        # Kalkulator hari kerja, kalender libur, target SOP, & formatter tanggal (DD/MM/YYYY)
-│   │   │   └── dateUtils.test.js   # Unit test Vitest untuk kalkulator hari kerja, libur nasional, pause SLA, & format tanggal
+│   │   │   ├── adminExcelExport.js      # Pembangun sheet & ekspor Excel SLA berkas dan persuratan Admin
+│   │   │   ├── adminExcelExport.test.js # Unit test Vitest untuk rekapitulasi sheet Excel & label periode
+│   │   │   ├── api.js                   # Konfigurasi instance Axios & interceptor JWT
+│   │   │   ├── audioUtils.js            # Synthesizer Web Audio API nada sukses scan QR, beep, & error
+│   │   │   ├── authSession.js           # Helper cookie, persistensi sesi storage, & login fallback request
+│   │   │   ├── authSession.test.js      # Unit test Vitest untuk cookie, persistensi sesi, & request login
+│   │   │   ├── dateUtils.js             # Kalkulator hari kerja, kalender libur, target SOP, & formatter tanggal (DD/MM/YYYY)
+│   │   │   ├── dateUtils.test.js        # Unit test Vitest untuk kalkulator hari kerja, libur nasional, pause SLA, & format tanggal
+│   │   │   ├── pdfOperations.js         # Mesin manipulasi PDF client-side berbasis pdf-lib & thumbnail progresif
+│   │   │   ├── pdfPreview.js            # Loader on-demand pdfjs-dist untuk rendering pratinjau halaman PDF
+│   │   │   ├── pdfUtils.js              # Helper ukuran file, pengurai rentang halaman PDF, & konversi gambar canvas
+│   │   │   └── pdfUtils.test.js         # Unit test Vitest untuk parser rentang halaman, konversi indeks, & format byte
 │   │   ├── App.jsx                 # Konfigurasi routing utama & Role-based Route Guards
 │   │   └── index.css               # Sistem desain global (Dark Glassmorphism)
 │   └── package.json                # Dependensi frontend
@@ -405,6 +420,11 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
 - **Tahap 20 — CI Otomatis GitHub Actions, Endpoint `/api/health`, & Docker `HEALTHCHECK`:**
   - **GitHub Actions Workflow (`.github/workflows/ci.yml`):** Menjalankan pengecekan sintaks backend, suite test backend (Node 20), Oxlint frontend, Vitest, serta build produksi Vite secara otomatis di setiap `push` maupun `pull_request` ke `main`.
   - **Endpoint Kesehatan Sistem (`GET /api/health`):** Memeriksa kesiapan aplikasi dan kueri `SELECT 1` ke SQLite (`200 ok` / `503 unhealthy`), terhubung langsung dengan konfigurasi `healthcheck` container `pantau-sp` di `docker-compose.yml`.
+- **Tahap 21 — Modularisasi Halaman Frontend, Ekstraksi CSS Eksternal, Optimasi LCP/CLS, & Ekspansi Unit Test (`31 Tes Vitest`):**
+  - **Optimasi Prioritas Aset Kritis (`index.html`, `Navbar.jsx`, `Login.jsx`):** Menambahkan `<link rel="preload" as="image" href="/logo-atr-bpn.png" fetchpriority="high" />` serta atribut native `width`/`height` + `fetchpriority="high"` pada logo utama untuk mempercepat LCP (*Largest Contentful Paint*) dan menghilangkan pergeseran tata letak (*CLS*).
+  - **Ekstraksi CSS Terpisah (`Login.css` & `Dashboard.css`):** Memindahkan lebih dari 1.375 baris `<style>` inline dari bundel JavaScript ke berkas CSS eksternal yang diminifikasi Vite (`dist/assets/*.css`) dan tetap kompatibel penuh dengan mekanisme classic `<script defer>` iOS WebKit.
+  - **Modularisasi 4 Halaman Monolitik & Deduplikasi Komponen:** Memecah `Login.jsx` (1.626 -> **287 baris**), `PdfTools.jsx` (1.669 -> **90 baris** ke 5 sub-tab `components/pdf/` + `PdfZoomModal.jsx` + `pdfOperations.js` + `pdfUtils.js`), `AdminDashboard.jsx` (1.420 -> **659 baris** ke `AdminBerkasTab.jsx`, `AdminSuratTab.jsx`, `CloseReasonModal.jsx`, `RecordRowActions.jsx`, & `adminExcelExport.js`), serta `Dashboard.jsx` (1.163 -> **706 baris** ke `DashboardFileCard.jsx`, `BatchTransitModal.jsx`, & `Dashboard.css`).
+  - **Perluasan Suite Test Frontend (`Vitest`):** Menambahkan pengujian unit untuk utilitas autentikasi (`authSession.test.js`, 6 tes — sekaligus memperbaiki kasus kedaluwarsa cookie `-1`), pengurai rentang PDF (`pdfUtils.test.js`, 4 tes), dan pembangun workbook Excel admin (`adminExcelExport.test.js`, 3 tes) sehingga total mencapai **31/31 tes Vitest lulus** dengan **0 peringatan Oxlint** pada 54 berkas frontend.
 
 ---
 
