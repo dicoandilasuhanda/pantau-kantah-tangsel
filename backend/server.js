@@ -2,18 +2,18 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const rateLimit = require('express-rate-limit');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
-const multer = require('multer');
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
+
 const { validateBody, schemas } = require('./validation');
 const { getWorkingDays } = require('./src/utils/workingDays');
-const { createReportsRouter } = require('./src/routes/reports');
-const { createSuggestionsRouter } = require('./src/routes/suggestions');
-const { createStatsRouter } = require('./src/routes/stats');
+const { initDatabase } = require('./src/db/initDatabase');
+const { createAuthMiddleware } = require('./src/middleware/auth');
+const { createUploadMiddlewares } = require('./src/middleware/uploads');
 const { createTelegramService } = require('./src/services/telegramService');
 const {
   validateFileEntryAccess,
@@ -22,2306 +22,300 @@ const {
   resolveScanTransition,
 } = require('./src/services/fileFlowService');
 
-const app = express();
-app.set('trust proxy', 1);
+const { createAuthRouter } = require('./src/routes/auth');
+const { createSuratRouter, createSuratDisposisiRouter } = require('./src/routes/surat');
+const { createUsersRouter, createUserProfileRouter } = require('./src/routes/users');
+const { createDwgRouter } = require('./src/routes/dwg');
+const { createSuggestionsRouter } = require('./src/routes/suggestions');
+const { createStatsRouter } = require('./src/routes/stats');
+const { createNotificationsRouter } = require('./src/routes/notifications');
+const { createFilesRouter, createDisposisiRouter } = require('./src/routes/files');
+const { createReportsRouter } = require('./src/routes/reports');
+
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-file-tracker'; 
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-file-tracker';
 
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3001',
   'https://localhost:3002',
   'https://pantaukantahtangsel.web.id',
-  'http://pantaukantahtangsel.web.id'
+  'http://pantaukantahtangsel.web.id',
 ];
 
-// Helper verifikasi QR Code: mendukung JWT_SECRET aktif maupun legacy secret
-function verifyQRCodeToken(token) {
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (err) {
-    if (JWT_SECRET !== 'super-secret-key-for-file-tracker') {
-      return jwt.verify(token, 'super-secret-key-for-file-tracker');
-    }
-    throw err;
-  }
-}
-
-app.use(helmet({
-  contentSecurityPolicy: {
-    useDefaults: true,
-    directives: {
-      "upgrade-insecure-requests": null,
-      "default-src": ["'self'"],
-      "script-src": ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com"],
-      "script-src-elem": ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com"],
-      "connect-src": ["'self'", "https://cloudflareinsights.com", "https://*.cloudflareinsights.com"],
-      "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
-      "img-src": ["'self'", "data:", "blob:"],
-      "worker-src": ["'self'", "blob:"],
-    },
-  },
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (
-      allowedOrigins.indexOf(origin) !== -1 ||
-      origin.startsWith('http://10.2.0.') ||
-      origin.startsWith('http://192.168.') ||
-      origin.endsWith('.pantaukantahtangsel.web.id')
-    ) {
-      return callback(null, true);
-    }
-    return callback(null, true);
-  },
-  credentials: true
-}));
-app.use(express.json());
-
-// Setup multer for surat upload
-const uploadDir = path.join(__dirname, 'uploads', 'surat');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 15 * 1024 * 1024 }, // Maksimal 15 MB
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (ext !== '.pdf' || file.mimetype !== 'application/pdf') {
-      return cb(new Error('Hanya file dokumen PDF yang diperbolehkan!'));
-    }
-    cb(null, true);
-  }
-});
-
-// Setup multer for avatar upload
-const avatarDir = path.join(__dirname, 'uploads', 'avatars');
-if (!fs.existsSync(avatarDir)) {
-  fs.mkdirSync(avatarDir, { recursive: true });
-}
-
-const avatarStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, avatarDir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const uniqueSuffix = 'avatar-' + req.user.id + '-' + Date.now() + ext;
-    cb(null, uniqueSuffix);
-  }
-});
-const avatarUpload = multer({
-  storage: avatarStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Maksimal 5 MB
-  fileFilter: (req, file, cb) => {
-    const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (!allowed.includes(ext)) {
-      return cb(new Error('Hanya file gambar (JPG, JPEG, PNG, WEBP) yang diperbolehkan!'));
-    }
-    cb(null, true);
-  }
-});
-
-const handleAvatarUpload = (req, res, next) => {
-  avatarUpload.single('avatar')(req, res, (err) => {
-    if (err) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'Ukuran foto melebihi batas maksimal 5 MB.' });
-      }
-      return res.status(400).json({ error: err.message || 'Gagal memproses unggahan foto.' });
-    }
-    next();
-  });
-};
-
-// Setup multer for dwg upload
-const dwgDir = path.join(__dirname, 'uploads', 'dwg');
-if (!fs.existsSync(dwgDir)) {
-  fs.mkdirSync(dwgDir, { recursive: true });
-}
-
-const dwgStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, dwgDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = 'dwg-' + req.user.id + '-' + Date.now() + '-' + Math.round(Math.random() * 1E6) + '.dwg';
-    cb(null, uniqueSuffix);
-  }
-});
-const dwgUpload = multer({
-  storage: dwgStorage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // Maksimal 100 MB
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (ext !== '.dwg') {
-      return cb(new Error('Hanya file dokumen AutoCAD (.dwg) yang diperbolehkan!'));
-    }
-    cb(null, true);
-  }
-});
-
-const handleDwgUpload = (req, res, next) => {
-  dwgUpload.single('dwg_file')(req, res, (err) => {
-    if (err) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'Ukuran file DWG melebihi batas maksimal 100 MB.' });
-      }
-      return res.status(400).json({ error: err.message || 'Gagal memproses unggahan file DWG.' });
-    }
-    next();
-  });
-};
-
-// Proteksi folder uploads: Tidak lagi disajikan secara publik via express.static
-// Dokumen hanya dapat diunduh lewat endpoint terotentikasi /api/surat/file/:filename
-
-// --- Database Setup ---
-const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) => {
-  if (err) {
-    console.error('Error opening database', err.message);
-  } else {
-    console.log('Connected to the SQLite database.');
-    
-    // Create Tables
-    db.serialize(() => {
-      db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        password TEXT,
-        role TEXT,
-        full_name TEXT
-      )`);
-
-      // Try to alter table for existing databases (ignore error if column already exists)
-      db.run(`ALTER TABLE users ADD COLUMN full_name TEXT`, (err) => {});
-      db.run(`ALTER TABLE users ADD COLUMN session_id TEXT`, (err) => {});
-      db.run(`ALTER TABLE users ADD COLUMN avatar_url TEXT`, (err) => {});
-      db.run(`ALTER TABLE users ADD COLUMN last_active_at DATETIME`, (err) => {});
-      db.run(`ALTER TABLE users ADD COLUMN last_ip TEXT`, (err) => {});
-
-      db.run(`CREATE TABLE IF NOT EXISTS user_dwg_files (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        sender_id INTEGER,
-        recipient_id INTEGER,
-        original_name TEXT,
-        file_name TEXT,
-        file_size INTEGER,
-        notes TEXT,
-        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-      )`);
-      db.run(`ALTER TABLE user_dwg_files ADD COLUMN sender_id INTEGER`, (err) => {});
-      db.run(`ALTER TABLE user_dwg_files ADD COLUMN recipient_id INTEGER`, (err) => {});
-      db.run(`ALTER TABLE user_dwg_files ADD COLUMN notes TEXT`, (err) => {});
-
-      db.run(`CREATE TABLE IF NOT EXISTS files (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        qr_code TEXT UNIQUE,
-        nomor_berkas TEXT,
-        tahun_berkas TEXT,
-        nama_kegiatan TEXT,
-        nama_pemohon TEXT,
-        current_location TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      db.run(`CREATE TABLE IF NOT EXISTS file_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        file_id INTEGER,
-        scanned_by_role TEXT,
-        scanned_by_username TEXT,
-        location TEXT,
-        scanned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        scanned_ip TEXT,
-        FOREIGN KEY(file_id) REFERENCES files(id)
-      )`);
-
-      // Alter file_history
-      db.run(`ALTER TABLE file_history ADD COLUMN scanned_by_username TEXT`, (err) => {});
-      
-      // Alter files to add catatan dan pause SOP
-      db.run(`ALTER TABLE files ADD COLUMN catatan TEXT`, (err) => {});
-      db.run(`ALTER TABLE files ADD COLUMN is_paused INTEGER DEFAULT 0`, (err) => {});
-      db.run(`ALTER TABLE files ADD COLUMN paused_at DATETIME`, (err) => {});
-      db.run(`ALTER TABLE files ADD COLUMN total_paused_days INTEGER DEFAULT 0`, (err) => {});
-      
-      // Alter files for transit feature
-      db.run(`ALTER TABLE files ADD COLUMN is_transit INTEGER DEFAULT 0`, (err) => {});
-      db.run(`ALTER TABLE files ADD COLUMN transit_to_username TEXT`, (err) => {});
-      db.run(`ALTER TABLE files ADD COLUMN transit_by_username TEXT`, (err) => {});
-      db.run(`ALTER TABLE files ADD COLUMN transit_at DATETIME`, (err) => {});
-
-      // Alter users for Telegram Bot notification feature
-      db.run(`ALTER TABLE users ADD COLUMN telegram_chat_id TEXT`, (err) => {});
-
-      // Tabel Disposisi Pimpinan
-      db.run(`CREATE TABLE IF NOT EXISTS disposisi (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        file_id INTEGER,
-        isi_disposisi TEXT,
-        dibuat_oleh TEXT,
-        dibuat_pada DATETIME DEFAULT CURRENT_TIMESTAMP,
-        status TEXT DEFAULT 'Menunggu Tindak Lanjut',
-        dilaksanakan_oleh TEXT,
-        dilaksanakan_pada DATETIME,
-        FOREIGN KEY(file_id) REFERENCES files(id)
-      )`);
-
-      // Tabel Surat
-      db.run(`CREATE TABLE IF NOT EXISTS surat (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nomor_agenda TEXT UNIQUE,
-        asal_surat TEXT,
-        nomor_surat TEXT,
-        tanggal_diterima TEXT,
-        perihal TEXT,
-        file_path TEXT,
-        current_location TEXT DEFAULT 'Petugas Entry Surat',
-        catatan TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      db.run(`ALTER TABLE surat ADD COLUMN current_location TEXT DEFAULT 'Petugas Entry Surat'`, (err) => {});
-      db.run(`ALTER TABLE surat ADD COLUMN catatan TEXT`, (err) => {});
-      db.run(`ALTER TABLE surat ADD COLUMN is_transit INTEGER DEFAULT 0`, (err) => {});
-      db.run(`ALTER TABLE surat ADD COLUMN transit_to_username TEXT`, (err) => {});
-      db.run(`ALTER TABLE surat ADD COLUMN transit_by_username TEXT`, (err) => {});
-      db.run(`ALTER TABLE surat ADD COLUMN transit_at DATETIME`, (err) => {});
-      db.run(`ALTER TABLE surat ADD COLUMN client_ip TEXT`, (err) => {});
-      db.run(`ALTER TABLE surat ADD COLUMN qr_code TEXT`, (err) => {});
-      db.run(`UPDATE surat SET current_location = 'Petugas Entry Surat' WHERE current_location IS NULL OR current_location = ''`, (err) => {});
-
-      // Backfill token kriptografis QR Code untuk surat lama
-      db.all("SELECT id, nomor_agenda FROM surat WHERE qr_code IS NULL OR qr_code = ''", (err, rows) => {
-        if (!err && rows && rows.length > 0) {
-          rows.forEach(r => {
-            const suratIdentifier = `SURAT-${r.nomor_agenda}-${Date.now()}`;
-            const token = jwt.sign({ suratIdentifier, nomor_agenda: r.nomor_agenda }, JWT_SECRET);
-            db.run("UPDATE surat SET qr_code = ? WHERE id = ?", [token, r.id]);
-          });
-        }
-      });
-
-      db.run(`CREATE TABLE IF NOT EXISTS surat_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        surat_id INTEGER,
-        scanned_by_role TEXT,
-        scanned_by_username TEXT,
-        location TEXT,
-        scanned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        scanned_ip TEXT,
-        FOREIGN KEY(surat_id) REFERENCES surat(id)
-      )`);
-
-      db.run(`CREATE TABLE IF NOT EXISTS surat_disposisi (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        surat_id INTEGER,
-        isi_disposisi TEXT,
-        dibuat_oleh TEXT,
-        dibuat_pada DATETIME DEFAULT CURRENT_TIMESTAMP,
-        status TEXT DEFAULT 'Menunggu Tindak Lanjut',
-        dilaksanakan_oleh TEXT,
-        dilaksanakan_pada DATETIME,
-        FOREIGN KEY(surat_id) REFERENCES surat(id)
-      )`);
-
-      // Backfill surat_history untuk surat lama yang belum memiliki histori awal
-      db.run(`
-        INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_at)
-        SELECT s.id, 'Petugas Entry Surat', 'admin', COALESCE(s.current_location, 'Petugas Entry Surat'), COALESCE(s.created_at, CURRENT_TIMESTAMP)
-        FROM surat s
-        WHERE NOT EXISTS (SELECT 1 FROM surat_history sh WHERE sh.surat_id = s.id)
-      `, (err) => {});
-
-      // Index performa query SQLite
-      db.run(`CREATE INDEX IF NOT EXISTS idx_file_history_file_id ON file_history(file_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_file_history_scanned_at ON file_history(scanned_at)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_surat_history_surat_id ON surat_history(surat_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_surat_history_scanned_at ON surat_history(scanned_at)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_files_nomor_tahun ON files(nomor_berkas, tahun_berkas)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_files_transit ON files(is_transit, transit_to_username)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_users_telegram ON users(telegram_chat_id)`);
-
-      // Tabel Saran & Ide Fitur Pengguna
-      db.run(`CREATE TABLE IF NOT EXISTS suggestions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        username TEXT,
-        full_name TEXT,
-        role TEXT,
-        title TEXT NOT NULL,
-        category TEXT DEFAULT 'Fitur Baru',
-        description TEXT NOT NULL,
-        status TEXT DEFAULT 'Menunggu Review',
-        admin_notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
-      )`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_suggestions_user_id ON suggestions(user_id)`);
-      db.run(`CREATE INDEX IF NOT EXISTS idx_suggestions_created_at ON suggestions(created_at)`);
-
-      db.run(`PRAGMA foreign_keys = ON`);
-
-      // One-time patch for Syahrul's orphaned history (flexible matching)
-      db.run(`UPDATE file_history SET scanned_by_username = 'syahrul' WHERE scanned_by_username LIKE '%yahrul%' AND scanned_by_username != 'syahrul'`, (err) => {});
-
-      // Auto-repair file_history records where full_name was missing (only role was saved)
-      db.run(`
-        UPDATE file_history
-        SET scanned_by_role = (
-          SELECT u.full_name || ' (' || file_history.scanned_by_role || ')'
-          FROM users u
-          WHERE u.username = file_history.scanned_by_username
-            AND u.full_name IS NOT NULL
-            AND u.full_name != ''
-        )
-        WHERE scanned_by_role NOT LIKE '%(%'
-          AND scanned_by_username IS NOT NULL
-          AND EXISTS (
-            SELECT 1 FROM users u
-            WHERE u.username = file_history.scanned_by_username
-              AND u.full_name IS NOT NULL
-              AND u.full_name != ''
-          )
-      `, (err) => {});
-
-      // Seed Users ONLY if table is empty
-      db.get('SELECT COUNT(*) AS count FROM users', (err, row) => {
-        if (!err && row.count === 0) {
-          const users = [
-            ['admin', 'admin123', 'Administrator', 'Sistem Administrator'],
-            ['entry', 'entry123', 'Petugas Entry Berkas', 'Petugas Loket Pendaftaran'],
-            ['ukur', 'ukur123', 'Petugas Ukur', 'Budi Pengukur'],
-            ['pemetaan', 'pemetaan123', 'Petugas Pemetaan', 'Andi Pemetaan'],
-            ['koordinator', 'koor123', 'Koordinator Kelompok Substansi Pengukuran dan Pemetaan Kadastral', 'Bapak Koordinator'],
-            ['asisten_surveyor', 'asisten123', 'Asisten Surveyor Kadastral', 'Asisten Surveyor'],
-            ['kasi', 'kasi123', 'Kepala Seksi Survei dan Pemetaan', 'Bapak Kepala Seksi'],
-            ['penyelesaian', 'selesai123', 'Petugas Penyelesaian Berkas', 'Petugas Finalisasi'],
-            ['entry_php', 'entryphp123', 'Petugas Entry Berkas PHP', 'Petugas Loket PHP'],
-            ['alih_media', 'alih123', 'Petugas Alih Media', 'Petugas Digitalisasi'],
-            ['penyerahan', 'serah123', 'Petugas Loket Penyerahan Produk', 'Petugas Loket Penyerahan']
-          ];
-          
-          const insertUser = db.prepare(`INSERT OR IGNORE INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)`);
-          users.forEach(u => {
-            const hashedPassword = bcrypt.hashSync(u[1], 10);
-            insertUser.run([u[0], hashedPassword, u[2], u[3]]);
-          });
-          insertUser.finalize();
-        }
-      });
-    });
-  }
-});
-
-// Inisialisasi Telegram Bot Notification Engine (@pantaukantahtangsel_bot)
-const telegramService = createTelegramService({ db, bcrypt });
-const TELEGRAM_BOT_USERNAME = telegramService.botUsername;
-const sendTelegramMessage = telegramService.sendTelegramMessage;
-telegramService.startPolling();
-
-// --- Rate Limiter for Login ---
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500,
-  message: { error: 'Terlalu banyak percobaan login dari IP ini, silakan coba lagi setelah 15 menit.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
-});
-
-// --- API Routes ---
-
-// Helper to extract clean client IP
-function getClientIp(req) {
-  const rawIp = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || '';
-  const firstIp = String(rawIp).split(',')[0].trim();
-  return firstIp.replace(/^::ffff:/, '') || '127.0.0.1';
-}
-
-// Endpoint to retrieve client IP
-app.get('/api/my-ip', (req, res) => {
-  res.json({ ip: getClientIp(req) });
-});
-
-// Login API
-app.post('/api/login', loginLimiter, validateBody(schemas.loginSchema), (req, res) => {
-  const { username, password } = req.body;
-
-  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!user) {
-      return res.status(401).json({ error: 'Username atau password salah' });
-    }
-
-    const isValid = bcrypt.compareSync(password, user.password);
-    if (!isValid) {
-      return res.status(401).json({ error: 'Username atau password salah' });
-    }
-
-    const sessionId = require('crypto').randomBytes(16).toString('hex');
-
-    // Mengelola sesi login (Maksimal 2 device)
-    let activeSessions = user.session_id ? user.session_id.split(',') : [];
-    if (activeSessions.length >= 2) {
-      activeSessions.shift();
-    }
-    activeSessions.push(sessionId);
-    const newSessionString = activeSessions.join(',');
-
-    const rawIp = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
-    const clientIp = rawIp.split(',')[0].trim();
-
-    db.run('UPDATE users SET session_id = ?, last_active_at = CURRENT_TIMESTAMP, last_ip = ? WHERE id = ?', [newSessionString, clientIp || null, user.id], (updateErr) => {
-      if (updateErr) {
-        return res.status(500).json({ error: 'Gagal membuat sesi login' });
-      }
-
-      const token = jwt.sign(
-        { id: user.id, username: user.username, role: user.role, full_name: user.full_name, session_id: sessionId },
-        JWT_SECRET,
-        { expiresIn: '2h' }
-      );
-
-      res.json({
-        token,
-        role: user.role,
-        username: user.username,
-        full_name: user.full_name,
-        fullName: user.full_name,
-        avatar_url: user.avatar_url || null
-      });
-    });
-  });
-});
-
-// Cache throttle last_active_at update (max 1 update per 30s per user)
-const userLastActiveMap = new Map();
-
-// Middleware to verify JWT and Multi-Device Session
-const authenticateJWT = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader) {
-    const token = authHeader.split(' ')[1];
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-      if (err) {
-        return res.status(403).json({ error: 'Sesi berakhir atau tidak valid. Silakan login kembali.' });
-      }
-      
-      db.get('SELECT session_id, full_name FROM users WHERE id = ?', [user.id], (dbErr, row) => {
-        if (dbErr || !row) return res.sendStatus(403);
-        
-        const activeSessions = row.session_id ? row.session_id.split(',') : [];
-        if (!activeSessions.includes(user.session_id)) {
-          return res.status(403).json({ error: 'Sesi Ditolak: Anda telah login di perangkat lain melebihi batas (Maksimal 2). Perangkat ini dikeluarkan.' });
-        }
-        
-        // Pastikan full_name terbaru dari DB selalu tersedia di req.user
-        user.full_name = row.full_name || user.full_name;
-        req.user = user;
-
-        // Throttle pembaruan waktu aktif user
-        const now = Date.now();
-        const lastUpdated = userLastActiveMap.get(user.id) || 0;
-        if (now - lastUpdated > 30000) {
-          userLastActiveMap.set(user.id, now);
-          const rawClientIp = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
-          const clientIp = rawClientIp.split(',')[0].trim();
-          db.run(
-            'UPDATE users SET last_active_at = CURRENT_TIMESTAMP, last_ip = ? WHERE id = ?',
-            [clientIp || null, user.id]
-          );
-        }
-
-        next();
-      });
-    });
-  } else {
-    res.sendStatus(401);
-  }
-};
-
-// Middleware for Admin only
-const requireAdmin = (req, res, next) => {
-  if (req.user && req.user.role.includes('Administrator')) {
-    next();
-  } else {
-    res.status(403).json({ error: 'Akses ditolak. Memerlukan hak akses Administrator.' });
-  }
-};
-
-// Middleware for Admin, Kepala Seksi, or Koordinator
-const requireAdminOrKasi = (req, res, next) => {
-  if (req.user && (req.user.role.includes('Administrator') || req.user.role.includes('Kepala Seksi') || req.user.role.includes('Koordinator'))) {
-    next();
-  } else {
-    res.status(403).json({ error: 'Akses ditolak. Memerlukan hak akses pimpinan.' });
-  }
-};
-
-
-// ==========================================
-// SURAT API
-// ==========================================
-
-// Middleware upload PDF dengan penanganan error ramah pengguna
-const handlePdfUpload = (req, res, next) => {
-  upload.single('pdf_file')(req, res, (err) => {
-    if (err) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'Ukuran file PDF melebihi batas maksimal 15 MB.' });
-      }
-      return res.status(400).json({ error: err.message || 'Gagal memproses file unggahan.' });
-    }
-    next();
-  });
-};
-
-// Create new surat
-app.post('/api/surat', authenticateJWT, handlePdfUpload, validateBody(schemas.createSuratSchema), (req, res) => {
-  const { asal_surat, nomor_surat, tanggal_diterima, perihal } = req.body;
-  const filePath = req.file ? `/uploads/surat/${req.file.filename}` : null;
-  const initialLocation = 'Petugas Entry Surat';
-  const fullName = req.user.full_name || req.user.username;
-  const roleUsed = req.user.role && req.user.role.includes('Petugas Entry Surat') ? 'Petugas Entry Surat' : (req.user.role || 'Petugas Entry Surat');
-  const scannedBy = `${fullName} (${roleUsed})`;
-  const clientIp = getClientIp(req);
-
-  db.get('SELECT COALESCE(MAX(CAST(nomor_agenda AS INTEGER)), 0) + 1 AS next_agenda FROM surat', (err, row) => {
-    if (err) return res.status(500).json({ error: 'Gagal mengambil nomor agenda surat.' });
-    const nextAgendaNumber = row ? row.next_agenda : 1;
-    const nomorAgendaStr = nextAgendaNumber.toString().padStart(5, '0');
-    const suratIdentifier = `SURAT-${nomorAgendaStr}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const qr_code = jwt.sign({ suratIdentifier, nomor_agenda: nomorAgendaStr }, JWT_SECRET);
-
-    db.run(`INSERT INTO surat (nomor_agenda, asal_surat, nomor_surat, tanggal_diterima, perihal, file_path, current_location, client_ip, qr_code) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nomorAgendaStr, asal_surat, nomor_surat, tanggal_diterima, perihal, filePath, initialLocation, clientIp, qr_code],
-      function (err2) {
-        if (err2) return res.status(500).json({ error: err2.message });
-        const suratId = this.lastID;
-        db.run(
-          `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
-          [suratId, scannedBy, req.user.username, initialLocation, clientIp],
-          () => {
-            res.json({ id: suratId, nomor_agenda: nomorAgendaStr, qr_code, current_location: initialLocation, client_ip: clientIp, message: 'Surat berhasil ditambahkan' });
-          }
-        );
-      }
-    );
-  });
-});
-
-// Get all surat
-app.get('/api/surat', authenticateJWT, (req, res) => {
-  const query = `
-    SELECT s.*,
-           u_to.full_name as transit_to_fullname,
-           u_by.full_name as transit_by_fullname,
-           COALESCE(s.current_location, 'Petugas Entry Surat') as current_location,
-           (SELECT scanned_at FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as updated_at,
-           (SELECT scanned_by_username FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as latest_scanned_by_username,
-           (SELECT scanned_by_role FROM surat_history sh WHERE sh.surat_id = s.id ORDER BY scanned_at DESC, id DESC LIMIT 1) as latest_scan_info,
-           COALESCE(s.client_ip, (SELECT scanned_ip FROM surat_history sh WHERE sh.surat_id = s.id AND scanned_ip IS NOT NULL AND scanned_ip != 'Unknown' AND scanned_ip != '' ORDER BY id ASC LIMIT 1)) as client_ip
-    FROM surat s
-    LEFT JOIN users u_to ON s.transit_to_username = u_to.username
-    LEFT JOIN users u_by ON s.transit_by_username = u_by.username
-    ORDER BY s.id DESC
-  `;
-  db.all(query, (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-// Scan / Terima / Selesaikan Surat
-app.post('/api/surat/scan', authenticateJWT, validateBody(schemas.scanSuratSchema), (req, res) => {
-  const { id, nomor_agenda, qr_code, isFinishing, selected_role, catatan } = req.body;
-  const fullName = req.user.full_name || req.user.username;
-  const userRoles = (req.user.role || '').split(',').map(r => r.trim()).filter(Boolean);
-  const roleUsed = (selected_role && userRoles.includes(selected_role)) ? selected_role : (userRoles[0] || 'Petugas');
-  const scannedBy = `${fullName} (${roleUsed})`;
-  const clientIp = getClientIp(req);
-
-  let whereClause = 'id = ?';
-  let paramVal = [id];
-
-  if (!id) {
-    if (qr_code) {
-      let extractedAgenda = null;
-      try {
-        const verified = verifyQRCodeToken(qr_code);
-        if (verified && verified.nomor_agenda) {
-          extractedAgenda = verified.nomor_agenda;
-        }
-      } catch {
-        // legacy qr_code or non-jwt
-      }
-      if (extractedAgenda) {
-        whereClause = 'qr_code = ? OR LOWER(nomor_agenda) = LOWER(?)';
-        paramVal = [qr_code, extractedAgenda];
-      } else {
-        whereClause = 'qr_code = ?';
-        paramVal = [qr_code];
-      }
-    } else {
-      whereClause = 'LOWER(nomor_agenda) = LOWER(?)';
-      paramVal = [String(nomor_agenda || '').trim().padStart(5, '0')];
-    }
-  }
-
-  db.get(`SELECT * FROM surat WHERE ${whereClause}`, paramVal, (err, surat) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan dalam sistem.' });
-
-    if (surat.current_location === 'Selesai' || surat.current_location === 'Ditutup') {
-      return res.status(400).json({ error: `Surat ini sudah berstatus ${surat.current_location} dan tidak dapat diproses lagi.` });
-    }
-
-    const isAdmin = userRoles.includes('Administrator');
-    if (surat.is_transit === 1 && surat.transit_to_username && req.user.username !== surat.transit_to_username && !isAdmin) {
-      return res.status(403).json({ error: `Surat ini sedang dikirim ke meja petugas lain (${surat.transit_to_username}). Hanya petugas tersebut yang bisa memindai terima.` });
-    }
-
-    const newLocation = isFinishing ? 'Selesai' : roleUsed;
-    const historyLocation = isFinishing ? `Selesai (${roleUsed})` : roleUsed;
-
-    let updatedCatatan = surat.catatan || '';
-    if (catatan && catatan.trim()) {
-      const ts = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-      const noteLine = `[${ts} - ${fullName}]: ${catatan.trim()}`;
-      updatedCatatan = updatedCatatan ? `${updatedCatatan}\n${noteLine}` : noteLine;
-    }
-
-    db.run(
-      `UPDATE surat SET current_location = ?, catatan = ?, is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?`,
-      [newLocation, updatedCatatan, surat.id],
-      (updateErr) => {
-        if (updateErr) return res.status(500).json({ error: updateErr.message });
-
-        db.run(
-          `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
-          [surat.id, scannedBy, req.user.username, historyLocation, clientIp],
-          (histErr) => {
-            if (histErr) return res.status(500).json({ error: histErr.message });
-
-            db.all(
-              `SELECT * FROM surat_history WHERE surat_id = ? ORDER BY scanned_at DESC, id DESC`,
-              [surat.id],
-              (hErr, historyRows) => {
-                res.json({
-                  message: isFinishing
-                    ? `Surat Agenda ${surat.nomor_agenda} berhasil diselesaikan!`
-                    : `Surat Agenda ${surat.nomor_agenda} diterima oleh ${fullName} (${roleUsed})`,
-                  current_location: newLocation,
-                  surat: {
-                    ...surat,
-                    current_location: newLocation,
-                    catatan: updatedCatatan,
-                    is_transit: 0,
-                    transit_to_username: null,
-                    transit_by_username: null,
-                    transit_at: null,
-                    latest_scan_info: scannedBy,
-                    history: historyRows || []
-                  }
-                });
-              }
-            );
-          }
-        );
-      }
-    );
-  });
-});
-
-// Admin: Selesaikan Surat Manual
-app.put('/api/surat/:id/complete', authenticateJWT, requireAdmin, (req, res) => {
-  const suratId = req.params.id;
-  const fullName = req.user.full_name || req.user.username;
-  const scannedBy = `${fullName} (Administrator)`;
-  const clientIp = getClientIp(req);
-
-  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
-
-    db.run('UPDATE surat SET current_location = ?, is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?', ['Selesai', suratId], (uErr) => {
-      if (uErr) return res.status(500).json({ error: uErr.message });
-      db.run(
-        `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
-        [suratId, scannedBy, req.user.username, 'Selesai (Oleh Admin)', clientIp],
-        () => {
-          res.json({ message: `Surat Agenda ${surat.nomor_agenda} berhasil diselesaikan.` });
-        }
-      );
-    });
-  });
-});
-
-// Admin: Tutup / Arsipkan Surat dengan Alasan
-app.put('/api/surat/:id/close', authenticateJWT, requireAdmin, (req, res) => {
-  const suratId = req.params.id;
-  const { alasan } = req.body;
-  if (!alasan || !alasan.trim()) {
-    return res.status(400).json({ error: 'Alasan penutupan/pengarsipan surat wajib diisi.' });
-  }
-
-  const fullName = req.user.full_name || req.user.username;
-  const scannedBy = `${fullName} (Administrator)`;
-  const clientIp = getClientIp(req);
-
-  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
-
-    const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-    const closeNote = `-- Surat ditutup/diarsipkan oleh ${fullName} pada ${timestamp}:\nAlasan: ${alasan.trim()}`;
-    const finalCatatan = surat.catatan ? `${surat.catatan}\n\n${closeNote}` : closeNote;
-
-    db.run('UPDATE surat SET current_location = ?, catatan = ?, is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?', ['Ditutup', finalCatatan, suratId], (uErr) => {
-      if (uErr) return res.status(500).json({ error: uErr.message });
-      db.run(
-        `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
-        [suratId, scannedBy, req.user.username, 'Ditutup (Oleh Admin)', clientIp],
-        () => {
-          res.json({ message: `Surat Agenda ${surat.nomor_agenda} berhasil ditutup/diarsipkan.`, catatan: finalCatatan });
-        }
-      );
-    });
-  });
-});
-
-// Admin: Hapus Surat Permanen
-app.delete('/api/surat/:id', authenticateJWT, requireAdmin, (req, res) => {
-  const suratId = req.params.id;
-  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
-
-    db.run('DELETE FROM surat_disposisi WHERE surat_id = ?', [suratId], () => {
-      db.run('DELETE FROM surat_history WHERE surat_id = ?', [suratId], (hErr) => {
-        if (hErr) return res.status(500).json({ error: hErr.message });
-        db.run('DELETE FROM surat WHERE id = ?', [suratId], (dErr) => {
-          if (dErr) return res.status(500).json({ error: dErr.message });
-          res.json({ message: `Surat Agenda ${surat.nomor_agenda} berhasil dihapus.` });
-        });
-      });
-    });
-  });
-});
-
-// Get surat detail & history
-app.get('/api/surat/:id', authenticateJWT, (req, res) => {
-  const param = req.params.id;
-  const isNumeric = /^\d+$/.test(param);
-  const whereClause = isNumeric ? 's.id = ?' : 's.qr_code = ? OR s.nomor_agenda = ?';
-  const paramVal = isNumeric ? [param] : [param, param];
-
-  const query = `
-    SELECT s.*,
-           u_to.full_name as transit_to_fullname,
-           u_by.full_name as transit_by_fullname
-    FROM surat s
-    LEFT JOIN users u_to ON s.transit_to_username = u_to.username
-    LEFT JOIN users u_by ON s.transit_by_username = u_by.username
-    WHERE ${whereClause}
-  `;
-  db.get(query, paramVal, (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: 'Surat tidak ditemukan' });
-    db.all('SELECT * FROM surat_history WHERE surat_id = ? ORDER BY scanned_at DESC, id DESC', [row.id], (hErr, history) => {
-      res.json({
-        ...row,
-        current_location: row.current_location || 'Petugas Entry Surat',
-        client_ip: getClientIp(req),
-        history: history || []
-      });
-    });
-  });
-});
-
-// Update catatan surat
-app.put('/api/surat/:id/note', authenticateJWT, validateBody(schemas.noteSchema), (req, res) => {
-  const suratId = req.params.id;
-  const { catatan } = req.body;
-
-  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
-
-    let finalCatatan = catatan;
-    if (catatan && catatan !== surat.catatan) {
-      const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-      const fullName = req.user.full_name || req.user.username;
-      const cleanCatatan = catatan.replace(/\n\n-- Terakhir diubah oleh.*?$/s, '');
-      finalCatatan = cleanCatatan + `\n\n-- Terakhir diubah oleh ${fullName} pada ${timestamp}`;
-    }
-
-    db.run('UPDATE surat SET catatan = ? WHERE id = ?', [finalCatatan, suratId], (uErr) => {
-      if (uErr) return res.status(500).json({ error: uErr.message });
-      res.json({ message: 'Catatan surat berhasil disimpan', catatan: finalCatatan });
-    });
-  });
-});
-
-// Kirim Surat (Transit)
-app.post('/api/surat/:id/transit', authenticateJWT, validateBody(schemas.transitTargetSchema), (req, res) => {
-  const suratId = req.params.id;
-  const { target_username } = req.body;
-  if (!target_username) return res.status(400).json({ error: 'Pilih petugas tujuan terlebih dahulu.' });
-
-  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
-
-    db.get('SELECT full_name, telegram_chat_id FROM users WHERE username = ?', [target_username], (userErr, targetUser) => {
-      const targetFullName = targetUser && targetUser.full_name ? targetUser.full_name : target_username;
-      const senderFullName = req.user.full_name || req.user.username;
-      const scannedBy = `${senderFullName} (${req.user.role})`;
-      const clientIp = getClientIp(req);
-      const transitLocation = `Dikirim (Transit) ke ${targetFullName}`;
-
-      db.run(
-        'UPDATE surat SET is_transit = 1, transit_to_username = ?, transit_by_username = ?, transit_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [target_username, req.user.username, suratId],
-        function (uErr) {
-          if (uErr) return res.status(500).json({ error: uErr.message });
-
-          // Catat ke surat_history
-          db.run(
-            'INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)',
-            [suratId, scannedBy, req.user.username, transitLocation, clientIp],
-            function (hErr) {
-              if (hErr) console.error("Error inserting surat transit history:", hErr);
-
-              // Kirim notifikasi langsung ke Telegram petugas tujuan jika sudah terhubung bot
-              if (targetUser && targetUser.telegram_chat_id) {
-                const waktuWib = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-                const tgMsg =
-                  `<b>SURAT KIRIMAN MASUK (TRANSIT)</b>\n\n` +
-                  `Halo <b>${targetFullName}</b>, ada surat masuk yang sedang dikirim menuju meja Anda:\n\n` +
-                  `No. Agenda: <b>${surat.nomor_agenda}</b>\n` +
-                  `Asal Surat: <b>${surat.asal_surat || '-'}</b>\n` +
-                  `No. Surat: <b>${surat.nomor_surat || '-'}</b>\n` +
-                  `Perihal: <b>${surat.perihal || '-'}</b>\n` +
-                  `Dikirim Oleh: <b>${senderFullName}</b> (${req.user.role})\n` +
-                  `Waktu Kirim: ${waktuWib} WIB\n\n` +
-                  `<i>Silakan buka aplikasi Pantau.Kantah Tangsel dan lakukan <b>Scan QR Surat</b> saat surat fisik tiba di meja Anda.</i>`;
-                sendTelegramMessage(targetUser.telegram_chat_id, tgMsg);
-              }
-
-              res.json({ message: 'Surat berhasil dikirim (Transit).' });
-            }
-          );
-        }
-      );
-    });
-  });
-});
-
-// Batal Kirim Surat (Cancel Transit)
-app.post('/api/surat/:id/cancel-transit', authenticateJWT, (req, res) => {
-  const suratId = req.params.id;
-
-  db.get('SELECT * FROM surat WHERE id = ?', [suratId], (err, surat) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!surat) return res.status(404).json({ error: 'Surat tidak ditemukan' });
-
-    const prevTarget = surat.transit_to_username;
-    db.get('SELECT full_name, telegram_chat_id FROM users WHERE username = ?', [prevTarget], (userErr, targetUser) => {
-      const senderFullName = req.user.full_name || req.user.username;
-      const scannedBy = `${senderFullName} (${req.user.role})`;
-      const clientIp = getClientIp(req);
-      const cancelLocation = `Pengiriman Dibatalkan oleh ${senderFullName}`;
-
-      db.run(
-        'UPDATE surat SET is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?',
-        [suratId],
-        function (uErr) {
-          if (uErr) return res.status(500).json({ error: uErr.message });
-
-          db.run(
-            'INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)',
-            [suratId, scannedBy, req.user.username, cancelLocation, clientIp],
-            function (hErr) {
-              if (hErr) console.error("Error inserting cancel transit history:", hErr);
-
-              if (targetUser && targetUser.telegram_chat_id) {
-                const tgCancelMsg =
-                  `<b>PENGIRIMAN SURAT DIBATALKAN</b>\n\n` +
-                  `Pengiriman surat No. Agenda <b>${surat.nomor_agenda}</b> (${surat.asal_surat || '-'}) menuju meja Anda telah dibatalkan oleh pengirim (<b>${senderFullName}</b>).`;
-                sendTelegramMessage(targetUser.telegram_chat_id, tgCancelMsg);
-              }
-
-              res.json({ message: 'Pengiriman surat berhasil dibatalkan.' });
-            }
-          );
-        }
-      );
-    });
-  });
-});
-
-// GET Disposisi Surat
-app.get('/api/surat/:id/disposisi', authenticateJWT, (req, res) => {
-  db.all('SELECT * FROM surat_disposisi WHERE surat_id = ? ORDER BY dibuat_pada DESC, id DESC', [req.params.id], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Gagal mengambil disposisi surat' });
-    res.json(rows || []);
-  });
-});
-
-// POST Disposisi Surat
-app.post('/api/surat/:id/disposisi', authenticateJWT, validateBody(schemas.disposisiSchema), (req, res) => {
-  const isPimpinan = req.user.role.includes('Koordinator') || req.user.role.includes('Kepala Seksi') || req.user.role.includes('Administrator');
-  if (!isPimpinan) {
-    return res.status(403).json({ error: 'Akses ditolak. Hanya pimpinan yang dapat membuat disposisi.' });
-  }
-  const { isi_disposisi } = req.body;
-  if (!isi_disposisi || !isi_disposisi.trim()) {
-    return res.status(400).json({ error: 'Isi disposisi tidak boleh kosong' });
-  }
-  const fullName = req.user.full_name || req.user.username;
-  db.run(
-    `INSERT INTO surat_disposisi (surat_id, isi_disposisi, dibuat_oleh) VALUES (?, ?, ?)`,
-    [req.params.id, isi_disposisi.trim(), fullName],
-    function (err) {
-      if (err) return res.status(500).json({ error: 'Gagal menyimpan disposisi surat' });
-      res.json({ message: 'Disposisi surat berhasil ditambahkan', id: this.lastID });
-    }
+/**
+ * Membangun instance Express lengkap dengan security middleware, seluruh router domain,
+ * serta penyajian static bundle frontend. Dipisahkan dari listen() agar dapat diuji langsung.
+ */
+function createApp({
+  db,
+  jwtSecret = JWT_SECRET,
+  uploadDir = path.join(__dirname, 'uploads', 'surat'),
+  avatarDir = path.join(__dirname, 'uploads', 'avatars'),
+  dwgDir = path.join(__dirname, 'uploads', 'dwg'),
+  telegramService,
+  loginLimiter,
+  serveFrontend = true,
+}) {
+  const app = express();
+  app.set('trust proxy', 1);
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          'upgrade-insecure-requests': null,
+          'default-src': ["'self'"],
+          'script-src': ["'self'", "'unsafe-inline'", 'https://static.cloudflareinsights.com'],
+          'script-src-elem': ["'self'", "'unsafe-inline'", 'https://static.cloudflareinsights.com'],
+          'connect-src': [
+            "'self'",
+            'https://cloudflareinsights.com',
+            'https://*.cloudflareinsights.com',
+          ],
+          'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
+          'img-src': ["'self'", 'data:', 'blob:'],
+          'worker-src': ["'self'", 'blob:'],
+        },
+      },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    })
   );
-});
 
-// PUT Selesaikan Disposisi Surat
-app.put('/api/surat-disposisi/:id/selesai', authenticateJWT, (req, res) => {
-  const fullName = req.user.full_name || req.user.username;
-  db.run(
-    `UPDATE surat_disposisi SET status = 'Sudah Dilaksanakan', dilaksanakan_oleh = ?, dilaksanakan_pada = CURRENT_TIMESTAMP WHERE id = ?`,
-    [fullName, req.params.id],
-    function (err) {
-      if (err) return res.status(500).json({ error: 'Gagal mengupdate disposisi surat' });
-      res.json({ message: 'Disposisi surat telah ditandai selesai' });
-    }
-  );
-});
-
-// Endpoint aman untuk streaming/download dokumen surat (hanya untuk pengguna yang login)
-app.get('/api/surat/file/:filename', (req, res) => {
-  const token = req.query.token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
-  if (!token) {
-    return res.status(401).send('Akses Ditolak: Anda harus login untuk mengakses dokumen surat ini.');
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).send('Akses Ditolak: Sesi token tidak valid atau telah berakhir.');
-    }
-
-    const filename = path.basename(req.params.filename); // sanitasi path traversal
-    const safeFilePath = path.join(uploadDir, filename);
-
-    if (!fs.existsSync(safeFilePath)) {
-      return res.status(404).send('File dokumen tidak ditemukan.');
-    }
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    res.sendFile(safeFilePath);
-  });
-});
-
-// ==========================================
-// USER MANAGEMENT API (Admin Only)
-// ==========================================
-
-// Get all users
-app.get('/api/users', authenticateJWT, requireAdmin, (req, res) => {
-  db.all('SELECT id, username, role, full_name, telegram_chat_id FROM users', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-// Get simple user list for dropdowns (All logged-in users can access)
-app.get('/api/users/list', authenticateJWT, (req, res) => {
-  db.all('SELECT username, full_name, role, telegram_chat_id FROM users', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-// Create new user
-app.post('/api/users', authenticateJWT, requireAdmin, validateBody(schemas.createUserSchema), (req, res) => {
-  const { username, password, role, full_name, telegram_chat_id } = req.body;
-  if (!username || !password || !role || !full_name) {
-    return res.status(400).json({ error: 'Semua field termasuk Nama Lengkap harus diisi.' });
-  }
-
-  const hashedPassword = bcrypt.hashSync(password, 10);
-  const cleanChatId = telegram_chat_id ? String(telegram_chat_id).trim() : null;
-  db.run('INSERT INTO users (username, password, role, full_name, telegram_chat_id) VALUES (?, ?, ?, ?, ?)', [username, hashedPassword, role, full_name, cleanChatId], function(err) {
-    if (err) {
-      if (err.message.includes('UNIQUE constraint failed')) {
-        return res.status(400).json({ error: 'Username sudah digunakan.' });
-      }
-      return res.status(500).json({ error: err.message });
-    }
-    res.json({ id: this.lastID, username, role, full_name, telegram_chat_id: cleanChatId, message: 'User berhasil ditambahkan.' });
-  });
-});
-
-// Change own password
-app.put('/api/users/change-password', authenticateJWT, validateBody(schemas.changePasswordSchema), (req, res) => {
-  const userId = req.user.id;
-  const { oldPassword, newPassword } = req.body;
-
-  if (!oldPassword || !newPassword) {
-    return res.status(400).json({ error: 'Kata sandi lama dan baru wajib diisi.' });
-  }
-
-  db.get('SELECT password FROM users WHERE id = ?', [userId], (err, user) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
-
-    const isValid = bcrypt.compareSync(oldPassword, user.password);
-    if (!isValid) return res.status(400).json({ error: 'Kata sandi lama salah' });
-
-    const hashedNewPassword = bcrypt.hashSync(newPassword, 10);
-    db.run('UPDATE users SET password = ? WHERE id = ?', [hashedNewPassword, userId], function(err) {
-      if (err) return res.status(500).json({ error: 'Gagal memperbarui kata sandi' });
-      res.json({ message: 'Kata sandi berhasil diubah' });
-    });
-  });
-});
-
-// Update user
-app.put('/api/users/:id', authenticateJWT, requireAdmin, validateBody(schemas.updateUserSchema), (req, res) => {
-  const { username, password, role, full_name, telegram_chat_id } = req.body;
-  const userId = req.params.id;
-  const cleanChatId = telegram_chat_id !== undefined ? (telegram_chat_id ? String(telegram_chat_id).trim() : null) : undefined;
-
-  db.get('SELECT username, telegram_chat_id FROM users WHERE id = ?', [userId], (err, oldUser) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    if (!oldUser) return res.status(404).json({ error: 'User tidak ditemukan' });
-
-    const finalChatId = cleanChatId !== undefined ? cleanChatId : oldUser.telegram_chat_id;
-
-    const updateCallback = (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      
-      if (oldUser.username !== username) {
-        db.run('UPDATE file_history SET scanned_by_username = ? WHERE scanned_by_username = ?', [username, oldUser.username], (err2) => {
-          if (err2) console.error("Error cascading username update to file_history:", err2);
-          res.json({ message: 'User dan histori berhasil diperbarui.' });
-        });
-      } else {
-        res.json({ message: 'User berhasil diperbarui.' });
-      }
-    };
-
-    if (password) {
-      const hashedPassword = bcrypt.hashSync(password, 10);
-      db.run('UPDATE users SET username = ?, password = ?, role = ?, full_name = ?, telegram_chat_id = ? WHERE id = ?', [username, hashedPassword, role, full_name, finalChatId, userId], updateCallback);
-    } else {
-      db.run('UPDATE users SET username = ?, role = ?, full_name = ?, telegram_chat_id = ? WHERE id = ?', [username, role, full_name, finalChatId, userId], updateCallback);
-    }
-  });
-});
-
-// Delete user
-app.delete('/api/users/:id', authenticateJWT, requireAdmin, (req, res) => {
-  const userId = req.params.id;
-  db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: 'User berhasil dihapus.' });
-  });
-});
-
-// ==========================================
-// USER PROFILE & DWG WORKSPACE API
-// ==========================================
-
-// Get Current User Profile
-app.get('/api/user/profile', authenticateJWT, (req, res) => {
-  db.get(
-    'SELECT id, username, role, full_name, telegram_chat_id, avatar_url FROM users WHERE id = ?',
-    [req.user.id],
-    (err, user) => {
-      if (err) return res.status(500).json({ error: 'Gagal mengambil data profil' });
-      if (!user) return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
-      res.json(user);
-    }
-  );
-});
-
-// Update Profile Info (Full Name)
-app.put('/api/user/profile', authenticateJWT, validateBody(schemas.updateProfileSchema), (req, res) => {
-  const { full_name } = req.body;
-  if (!full_name || !full_name.trim()) {
-    return res.status(400).json({ error: 'Nama lengkap wajib diisi.' });
-  }
-
-  db.run(
-    'UPDATE users SET full_name = ? WHERE id = ?',
-    [full_name.trim(), req.user.id],
-    function (err) {
-      if (err) return res.status(500).json({ error: 'Gagal memperbarui profil' });
-      res.json({ message: 'Profil berhasil diperbarui.', full_name: full_name.trim() });
-    }
-  );
-});
-
-// Upload User Profile Avatar
-app.post('/api/user/profile/avatar', authenticateJWT, handleAvatarUpload, (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'File foto profil tidak ditemukan.' });
-  }
-  const avatarUrl = `/api/user/avatar/${req.file.filename}`;
-
-  db.get('SELECT avatar_url FROM users WHERE id = ?', [req.user.id], (err, user) => {
-    if (user && user.avatar_url) {
-      const oldFilename = path.basename(user.avatar_url);
-      const oldPath = path.join(avatarDir, oldFilename);
-      if (fs.existsSync(oldPath)) {
-        try { fs.unlinkSync(oldPath); } catch (_) {}
-      }
-    }
-
-    db.run(
-      'UPDATE users SET avatar_url = ? WHERE id = ?',
-      [avatarUrl, req.user.id],
-      (upErr) => {
-        if (upErr) return res.status(500).json({ error: 'Gagal menyimpan foto profil ke database.' });
-        res.json({ message: 'Foto profil berhasil diperbarui.', avatar_url: avatarUrl });
-      }
-    );
-  });
-});
-
-// Delete User Profile Avatar
-app.delete('/api/user/profile/avatar', authenticateJWT, (req, res) => {
-  db.get('SELECT avatar_url FROM users WHERE id = ?', [req.user.id], (err, user) => {
-    if (user && user.avatar_url) {
-      const oldFilename = path.basename(user.avatar_url);
-      const oldPath = path.join(avatarDir, oldFilename);
-      if (fs.existsSync(oldPath)) {
-        try { fs.unlinkSync(oldPath); } catch (_) {}
-      }
-    }
-
-    db.run(
-      'UPDATE users SET avatar_url = NULL WHERE id = ?',
-      [req.user.id],
-      (upErr) => {
-        if (upErr) return res.status(500).json({ error: 'Gagal menghapus foto profil.' });
-        res.json({ message: 'Foto profil berhasil dihapus.' });
-      }
-    );
-  });
-});
-
-// Serve User Profile Avatar
-app.get('/api/user/avatar/:filename', (req, res) => {
-  const safeFilename = path.basename(req.params.filename);
-  const filePath = path.join(avatarDir, safeFilename);
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send('Foto profil tidak ditemukan');
-  }
-  res.setHeader('Cache-Control', 'public, max-age=86400');
-  res.sendFile(filePath);
-});
-
-// Helper: Cek hak akses DWG (Petugas Ukur, Asisten Surveyor Kadastral, Petugas Pemetaan, Administrator)
-function canAccessDwg(userRoles) {
-  if (!userRoles) return false;
-  const roles = Array.isArray(userRoles) ? userRoles : String(userRoles).split(',').map(r => r.trim());
-  return roles.includes('Asisten Surveyor Kadastral') ||
-         roles.includes('Petugas Pemetaan') ||
-         roles.includes('Petugas Ukur') ||
-         roles.includes('Administrator');
-}
-
-// Middleware pelindung akses DWG
-const requireDwgAccess = (req, res, next) => {
-  if (!canAccessDwg(req.user.role)) {
-    return res.status(403).json({ 
-      error: 'Akses ditolak. Fitur penyimpanan & pertukaran file DWG hanya untuk Petugas Ukur, Asisten Surveyor Kadastral, dan Petugas Pemetaan.' 
-    });
-  }
-  next();
-};
-
-// Get Eligible DWG Recipients (Petugas Ukur, ASK, Pemetaan, Admin)
-app.get('/api/user/dwg/recipients', authenticateJWT, requireDwgAccess, (req, res) => {
-  const userRoles = String(req.user.role || '').split(',').map(r => r.trim());
-  const isASK = userRoles.includes('Asisten Surveyor Kadastral');
-  const isPemetaan = userRoles.includes('Petugas Pemetaan');
-  const isUkur = userRoles.includes('Petugas Ukur');
-  const isAdmin = userRoles.includes('Administrator');
-
-  let roleFilter = [];
-  if (isAdmin) {
-    roleFilter = ['%Petugas Pemetaan%', '%Asisten Surveyor Kadastral%', '%Petugas Ukur%'];
-  } else {
-    const targets = new Set();
-    targets.add('%Administrator%');
-    if (isUkur) {
-      targets.add('%Petugas Pemetaan%');
-      targets.add('%Asisten Surveyor Kadastral%');
-    }
-    if (isASK) {
-      targets.add('%Petugas Pemetaan%');
-      targets.add('%Petugas Ukur%');
-    }
-    if (isPemetaan) {
-      targets.add('%Asisten Surveyor Kadastral%');
-      targets.add('%Petugas Ukur%');
-    }
-    roleFilter = Array.from(targets);
-  }
-
-  const whereClauses = roleFilter.map(() => 'role LIKE ?').join(' OR ');
-  const sql = `
-    SELECT id, username, full_name, role 
-    FROM users 
-    WHERE id != ? AND (${whereClauses})
-    ORDER BY full_name ASC
-  `;
-
-  db.all(sql, [req.user.id, ...roleFilter], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Gagal mengambil daftar penerima.' });
-    res.json(rows || []);
-  });
-});
-
-// Get User DWG Files List (Inbox, My Files, Sent)
-app.get('/api/user/dwg', authenticateJWT, requireDwgAccess, (req, res) => {
-  const sql = `
-    SELECT 
-      f.id,
-      f.user_id,
-      f.sender_id,
-      f.recipient_id,
-      f.original_name,
-      f.file_name,
-      f.file_size,
-      f.notes,
-      f.uploaded_at,
-      s.full_name AS sender_name,
-      s.role AS sender_role,
-      s.username AS sender_username,
-      r.full_name AS recipient_name,
-      r.role AS recipient_role,
-      r.username AS recipient_username
-    FROM user_dwg_files f
-    LEFT JOIN users s ON f.sender_id = s.id
-    LEFT JOIN users r ON f.recipient_id = r.id
-    WHERE f.user_id = ?
-    ORDER BY f.uploaded_at DESC
-  `;
-
-  db.all(sql, [req.user.id], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Gagal mengambil daftar file DWG' });
-    res.json(rows || []);
-  });
-});
-
-// Upload DWG File to Own Storage
-app.post('/api/user/dwg', authenticateJWT, requireDwgAccess, handleDwgUpload, (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'File DWG tidak ditemukan.' });
-  }
-
-  const originalName = req.file.originalname;
-  const fileName = req.file.filename;
-  const fileSize = req.file.size;
-  const notes = req.body.notes ? String(req.body.notes).trim() : null;
-
-  db.run(
-    'INSERT INTO user_dwg_files (user_id, sender_id, recipient_id, original_name, file_name, file_size, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [req.user.id, req.user.id, req.user.id, originalName, fileName, fileSize, notes],
-    function (err) {
-      if (err) {
-        const uploadedPath = path.join(dwgDir, fileName);
-        if (fs.existsSync(uploadedPath)) {
-          try { fs.unlinkSync(uploadedPath); } catch (_) {}
+  app.use(
+    cors({
+      origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (
+          allowedOrigins.indexOf(origin) !== -1 ||
+          origin.startsWith('http://10.2.0.') ||
+          origin.startsWith('http://192.168.') ||
+          origin.endsWith('.pantaukantahtangsel.web.id')
+        ) {
+          return callback(null, true);
         }
-        return res.status(500).json({ error: 'Gagal mencatat file DWG ke database.' });
-      }
-
-      res.json({
-        id: this.lastID,
-        original_name: originalName,
-        file_name: fileName,
-        file_size: fileSize,
-        notes,
-        uploaded_at: new Date().toISOString(),
-        message: 'File DWG berhasil disimpan ke folder pribadi.'
-      });
-    }
+        return callback(null, true);
+      },
+      credentials: true,
+    })
   );
-});
+  app.use(express.json());
 
-// Upload and Send DWG File Directly to Recipient
-app.post('/api/user/dwg/send', authenticateJWT, requireDwgAccess, handleDwgUpload, (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'File DWG tidak ditemukan.' });
-  }
-
-  const recipientId = parseInt(req.body.recipient_id, 10);
-  const notes = req.body.notes ? String(req.body.notes).trim() : null;
-
-  if (!recipientId || isNaN(recipientId)) {
-    return res.status(400).json({ error: 'Penerima berkas DWG wajib dipilih.' });
-  }
-
-  // Cek apakah penerima valid & memenuhi syarat role
-  db.get('SELECT id, username, full_name, role, telegram_chat_id FROM users WHERE id = ?', [recipientId], (err, recipient) => {
-    if (err || !recipient) {
-      const uploadedPath = path.join(dwgDir, req.file.filename);
-      if (fs.existsSync(uploadedPath)) {
-        try { fs.unlinkSync(uploadedPath); } catch (_) {}
-      }
-      return res.status(400).json({ error: 'Penerima tidak ditemukan di sistem.' });
-    }
-
-    if (!canAccessDwg(recipient.role)) {
-      const uploadedPath = path.join(dwgDir, req.file.filename);
-      if (fs.existsSync(uploadedPath)) {
-        try { fs.unlinkSync(uploadedPath); } catch (_) {}
-      }
-      return res.status(400).json({ error: 'Penerima tidak memiliki hak akses berkas DWG.' });
-    }
-
-    const originalName = req.file.originalname;
-    const fileName = req.file.filename;
-    const fileSize = req.file.size;
-    const now = new Date().toISOString();
-
-    // Buat 2 record: 1 untuk Inbox penerima, 1 untuk Outbox pengirim
-    const insertSql = 'INSERT INTO user_dwg_files (user_id, sender_id, recipient_id, original_name, file_name, file_size, notes, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-
-    db.run(insertSql, [recipientId, req.user.id, recipientId, originalName, fileName, fileSize, notes, now], function (err1) {
-      if (err1) {
-        return res.status(500).json({ error: 'Gagal mengirim berkas ke penerima.' });
-      }
-
-      // Record outbox pengirim
-      db.run(insertSql, [req.user.id, req.user.id, recipientId, originalName, fileName, fileSize, notes, now], function () {
-        // Kirim notifikasi Telegram jika penerima terhubung bot
-        if (recipient.telegram_chat_id) {
-          const senderName = req.user.full_name || req.user.username;
-          const sizeText = (fileSize / (1024 * 1024)).toFixed(2) + ' MB';
-          const tgMsg = 
-            `📥 <b>BERKAS DWG MASUK</b>\n\n` +
-            `Halo <b>${recipient.full_name}</b>,\n` +
-            `Anda menerima kiriman berkas AutoCAD (.dwg) baru:\n\n` +
-            `📁 Berkas: <b>${originalName}</b> (${sizeText})\n` +
-            `👤 Pengirim: <b>${senderName}</b> (${req.user.role})\n` +
-            (notes ? `📝 Catatan: <i>${notes}</i>\n\n` : `\n`) +
-            `<i>Buka menu <b>Profil</b> di web Pantau.Kantah Tangsel untuk mengunduh berkas.</i>`;
-          sendTelegramMessage(recipient.telegram_chat_id, tgMsg);
-        }
-
-        res.json({
-          message: `Berkas DWG berhasil dikirim kepada ${recipient.full_name}!`,
-          original_name: originalName,
-          recipient_name: recipient.full_name
-        });
-      });
-    });
+  // Proteksi folder uploads: Tidak lagi disajikan secara publik via express.static
+  // Dokumen hanya dapat diunduh lewat endpoint terotentikasi (mis. /api/surat/file/:filename)
+  const { handlePdfUpload, handleAvatarUpload, handleDwgUpload } = createUploadMiddlewares({
+    uploadDir,
+    avatarDir,
+    dwgDir,
   });
-});
 
-// Forward/Send Existing DWG File to Recipient
-app.post('/api/user/dwg/:id/forward', authenticateJWT, requireDwgAccess, (req, res) => {
-  const dwgId = req.params.id;
-  const recipientId = parseInt(req.body.recipient_id, 10);
-  const notes = req.body.notes ? String(req.body.notes).trim() : null;
-
-  if (!recipientId || isNaN(recipientId)) {
-    return res.status(400).json({ error: 'Penerima berkas DWG wajib dipilih.' });
-  }
-
-  db.get('SELECT * FROM user_dwg_files WHERE id = ? AND user_id = ?', [dwgId, req.user.id], (err, fileRecord) => {
-    if (err || !fileRecord) {
-      return res.status(404).json({ error: 'Berkas DWG tidak ditemukan di ruang penyimpanan Anda.' });
-    }
-
-    db.get('SELECT id, username, full_name, role, telegram_chat_id FROM users WHERE id = ?', [recipientId], (err2, recipient) => {
-      if (err2 || !recipient) {
-        return res.status(400).json({ error: 'Penerima tidak ditemukan di sistem.' });
-      }
-
-      if (!canAccessDwg(recipient.role)) {
-        return res.status(400).json({ error: 'Penerima tidak memiliki hak akses berkas DWG.' });
-      }
-
-      const now = new Date().toISOString();
-      const insertSql = 'INSERT INTO user_dwg_files (user_id, sender_id, recipient_id, original_name, file_name, file_size, notes, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-
-      // Record untuk inbox penerima
-      db.run(insertSql, [recipientId, req.user.id, recipientId, fileRecord.original_name, fileRecord.file_name, fileRecord.file_size, notes, now], function (err3) {
-        if (err3) {
-          return res.status(500).json({ error: 'Gagal mengirim berkas ke penerima.' });
-        }
-
-        // Record untuk outbox pengirim
-        db.run(insertSql, [req.user.id, req.user.id, recipientId, fileRecord.original_name, fileRecord.file_name, fileRecord.file_size, notes, now], function () {
-          // Kirim notifikasi Telegram jika ada
-          if (recipient.telegram_chat_id) {
-            const senderName = req.user.full_name || req.user.username;
-            const sizeText = (fileRecord.file_size / (1024 * 1024)).toFixed(2) + ' MB';
-            const tgMsg = 
-              `📥 <b>BERKAS DWG MASUK</b>\n\n` +
-              `Halo <b>${recipient.full_name}</b>,\n` +
-              `Anda menerima kiriman berkas AutoCAD (.dwg) baru:\n\n` +
-              `📁 Berkas: <b>${fileRecord.original_name}</b> (${sizeText})\n` +
-              `👤 Pengirim: <b>${senderName}</b> (${req.user.role})\n` +
-              (notes ? `📝 Catatan: <i>${notes}</i>\n\n` : `\n`) +
-              `<i>Buka menu <b>Profil</b> di web Pantau.Kantah Tangsel untuk mengunduh berkas.</i>`;
-            sendTelegramMessage(recipient.telegram_chat_id, tgMsg);
-          }
-
-          res.json({
-            message: `Berkas DWG berhasil diteruskan kepada ${recipient.full_name}!`,
-            original_name: fileRecord.original_name,
-            recipient_name: recipient.full_name
-          });
-        });
-      });
-    });
-  });
-});
-
-// Download DWG File
-app.get('/api/user/dwg/:id/download', authenticateJWT, requireDwgAccess, (req, res) => {
-  const dwgId = req.params.id;
-  db.get(
-    'SELECT * FROM user_dwg_files WHERE id = ? AND user_id = ?',
-    [dwgId, req.user.id],
-    (err, fileRecord) => {
-      if (err) return res.status(500).json({ error: 'Gagal mencari file' });
-      if (!fileRecord) return res.status(404).json({ error: 'File DWG tidak ditemukan atau bukan milik Anda' });
-
-      const filePath = path.join(dwgDir, fileRecord.file_name);
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'Fisik file di server tidak ditemukan' });
-      }
-
-      res.download(filePath, fileRecord.original_name);
-    }
-  );
-});
-
-// Delete DWG File
-app.delete('/api/user/dwg/:id', authenticateJWT, requireDwgAccess, (req, res) => {
-  const dwgId = req.params.id;
-  db.get(
-    'SELECT * FROM user_dwg_files WHERE id = ? AND user_id = ?',
-    [dwgId, req.user.id],
-    (err, fileRecord) => {
-      if (err) return res.status(500).json({ error: 'Gagal mencari file' });
-      if (!fileRecord) return res.status(404).json({ error: 'File tidak ditemukan atau bukan milik Anda' });
-
-      const fileName = fileRecord.file_name;
-
-      db.run('DELETE FROM user_dwg_files WHERE id = ? AND user_id = ?', [dwgId, req.user.id], (delErr) => {
-        if (delErr) return res.status(500).json({ error: 'Gagal menghapus file dari database' });
-
-        // Periksa apakah masih ada record lain (pengirim atau penerima) yang merujuk file fisik ini
-        db.get('SELECT COUNT(*) AS cnt FROM user_dwg_files WHERE file_name = ?', [fileName], (cntErr, cntRow) => {
-          if (!cntErr && cntRow && cntRow.cnt === 0) {
-            const filePath = path.join(dwgDir, fileName);
-            if (fs.existsSync(filePath)) {
-              try { fs.unlinkSync(filePath); } catch (_) {}
-            }
-          }
-          res.json({ message: 'File DWG berhasil dihapus.' });
-        });
-      });
-    }
-  );
-});
-
-
-// ==========================================
-// KOTAK SARAN & IDE FITUR (SUGGESTIONS API)
-// ==========================================
-app.use(
-  '/api/suggestions',
-  createSuggestionsRouter({
-    db,
+  const {
+    userLastActiveMap,
     authenticateJWT,
     requireAdmin,
-    validateBody,
-    schemas,
-    sendTelegramMessage: (...args) => sendTelegramMessage(...args),
-  })
-);
+    requireAdminOrKasi,
+    requireDwgAccess,
+    canAccessDwg,
+  } = createAuthMiddleware({ db, jwt, jwtSecret });
 
-// Logout endpoint to immediately mark user offline
-app.post('/api/logout', authenticateJWT, (req, res) => {
-  userLastActiveMap.delete(req.user.id);
-  const currentSessions = (req.user.session_id ? req.user.session_id.split(',') : []).filter(s => s !== req.user.session_id);
-  db.run(
-    "UPDATE users SET session_id = ?, last_active_at = datetime('now', '-10 minutes') WHERE id = ?",
-    [currentSessions.join(',') || null, req.user.id],
-    () => res.json({ message: 'Berhasil keluar.' })
+  const sendTelegramMessage = (...args) => telegramService.sendTelegramMessage(...args);
+
+  // --- API Routes ---
+  app.use(
+    '/api',
+    createAuthRouter({
+      db,
+      bcrypt,
+      jwt,
+      jwtSecret,
+      authenticateJWT,
+      userLastActiveMap,
+      validateBody,
+      schemas,
+      loginLimiter,
+    })
   );
-});
 
-
-// ==========================================
-// WEB-APP STATS & ONLINE USERS API
-// ==========================================
-app.use('/api/admin', createStatsRouter({ db, authenticateJWT, requireAdmin, userLastActiveMap }));
-
-
-// ==========================================
-// FILE TRACKING API
-// ==========================================
-
-// Delete a file entry (Admin only)
-app.delete('/api/files/:id', authenticateJWT, requireAdmin, (req, res) => {
-  const fileId = req.params.id;
-  db.run('DELETE FROM file_history WHERE file_id = ?', [fileId], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    
-    db.run('DELETE FROM files WHERE id = ?', [fileId], function(err2) {
-      if (err2) return res.status(500).json({ error: err2.message });
-      res.json({ message: 'Berkas dan histori berhasil dihapus.' });
-    });
-  });
-});
-
-// Force complete a file entry (Admin only)
-app.put('/api/files/:id/complete', authenticateJWT, requireAdmin, (req, res) => {
-  const fileId = req.params.id;
-  const fullName = req.user.full_name || req.user.username;
-
-  db.get('SELECT * FROM files WHERE id = ?', [fileId], (err, file) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!file) return res.status(404).json({ error: 'File tidak ditemukan' });
-
-    if (file.current_location === 'Selesai') {
-      return res.status(400).json({ error: 'Berkas sudah berstatus Selesai.' });
-    }
-    if (file.current_location === 'Ditutup') {
-      return res.status(400).json({ error: 'Berkas berstatus Ditutup tidak bisa diselesaikan secara manual.' });
-    }
-
-    const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-    let existingCatatan = file.catatan ? file.catatan + '\n\n' : '';
-    const closeNote = existingCatatan + `-- Berkas diselesaikan secara manual oleh ${fullName} (Admin) pada ${timestamp}`;
-    const newLocation = 'Selesai';
-    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || 'Unknown';
-
-    db.run(
-      'UPDATE files SET current_location = ?, catatan = ?, is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?',
-      [newLocation, closeNote, fileId],
-      function (updateErr) {
-        if (updateErr) return res.status(500).json({ error: updateErr.message });
-        
-        db.run(
-          'INSERT INTO file_history (file_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)',
-          [fileId, `${fullName} (Administrator)`, req.user.username, 'Selesai (Oleh Admin)', clientIp],
-          function(historyErr) {
-            if (historyErr) return res.status(500).json({ error: historyErr.message });
-            res.json({ message: 'Berkas berhasil diselesaikan secara manual.' });
-          }
-        );
-      }
-    );
-  });
-});
-
-// Close a file entry (Admin only)
-app.put('/api/files/:id/close', authenticateJWT, requireAdmin, (req, res) => {
-  const fileId = req.params.id;
-  const { alasan } = req.body;
-  const fullName = req.user.full_name || req.user.username;
-
-  if (!alasan || alasan.trim() === '') {
-    return res.status(400).json({ error: 'Alasan penutupan wajib diisi.' });
-  }
-
-  db.get('SELECT * FROM files WHERE id = ?', [fileId], (err, file) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!file) return res.status(404).json({ error: 'File tidak ditemukan' });
-
-    if (file.current_location === 'Selesai') {
-      return res.status(400).json({ error: 'Berkas berstatus Selesai tidak bisa ditutup.' });
-    }
-    if (file.current_location === 'Ditutup') {
-      return res.status(400).json({ error: 'Berkas ini sudah berstatus Ditutup.' });
-    }
-
-    const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-    const closeNote = `-- Berkas ditutup oleh ${fullName} pada ${timestamp}:\nAlasan: ${alasan}`;
-    
-    let finalCatatan = file.catatan ? file.catatan + '\n\n' + closeNote : closeNote;
-
-    const newLocation = 'Ditutup';
-    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || 'Unknown';
-    const roleUsed = req.user.role.includes('Administrator') ? 'Administrator' : req.user.role;
-    const scannedBy = `${fullName} (${roleUsed})`;
-
-    db.run(
-      'UPDATE files SET current_location = ?, catatan = ?, is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?',
-      [newLocation, finalCatatan, fileId],
-      (updateErr) => {
-        if (updateErr) return res.status(500).json({ error: updateErr.message });
-
-        db.run('INSERT INTO file_history (file_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)',
-          [fileId, scannedBy, req.user.username, 'Ditutup (Oleh Admin)', clientIp],
-          (historyErr) => {
-            if (historyErr) return res.status(500).json({ error: historyErr.message });
-            res.json({ message: 'Berkas berhasil ditutup.' });
-          }
-        );
-      }
-    );
-  });
-});
-
-
-// Create a new file entry (Only Petugas Entry Berkas should do this ideally)
-app.post('/api/files', authenticateJWT, validateBody(schemas.createFileSchema), (req, res) => {
-  const { nomor_berkas, tahun_berkas, nama_kegiatan, nama_pemohon, fullName } = req.body;
-  const entryAccess = validateFileEntryAccess(req.user.role, nama_kegiatan);
-  if (!entryAccess.ok) {
-    return res.status(entryAccess.status).json({ error: entryAccess.error });
-  }
-
-  db.get('SELECT id FROM files WHERE nomor_berkas = ? AND tahun_berkas = ?', [nomor_berkas, tahun_berkas], (checkErr, row) => {
-    if (checkErr) return res.status(500).json({ error: 'Kesalahan database saat memeriksa duplikasi.' });
-    if (row) return res.status(400).json({ error: `Berkas dengan nomor ${nomor_berkas}/${tahun_berkas} sudah pernah didaftarkan!` });
-
-    const fileIdentifier = 'FILE-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-    const qr_code = jwt.sign({ fileIdentifier }, JWT_SECRET);
-    const initial_location = entryAccess.initialLocation;
-    const effectiveFullName = fullName || req.user.full_name;
-    const scannedBy = effectiveFullName ? `${effectiveFullName} (${req.user.role})` : req.user.role;
-    const clientIp = getClientIp(req);
-
-    db.run(
-      'INSERT INTO files (qr_code, nomor_berkas, tahun_berkas, nama_kegiatan, nama_pemohon, current_location) VALUES (?, ?, ?, ?, ?, ?)',
-      [qr_code, nomor_berkas, tahun_berkas, nama_kegiatan, nama_pemohon, initial_location],
-      function(err) {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
-        const fileId = this.lastID;
-        
-        db.run('INSERT INTO file_history (file_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)',
-          [fileId, scannedBy, req.user.username, initial_location, clientIp],
-          (historyErr) => {
-            if (historyErr) console.error(historyErr);
-            res.json({ id: fileId, qr_code, nomor_berkas, tahun_berkas, nama_kegiatan, nama_pemohon, current_location: initial_location, client_ip: clientIp });
-          }
-        );
-      }
-    );
-  });
-});
-
-// Get all files (Dashboard)
-app.get('/api/files', authenticateJWT, (req, res) => {
-  const query = `
-    SELECT f.*, 
-           u_to.full_name as transit_to_fullname,
-           u_by.full_name as transit_by_fullname,
-           (SELECT scanned_at FROM file_history fh WHERE fh.file_id = f.id ORDER BY scanned_at DESC LIMIT 1) as updated_at,
-           (SELECT scanned_by_username FROM file_history fh WHERE fh.file_id = f.id ORDER BY scanned_at DESC LIMIT 1) as latest_scanned_by_username,
-           (SELECT scanned_by_role FROM file_history fh WHERE fh.file_id = f.id ORDER BY scanned_at DESC LIMIT 1) as latest_scan_info,
-           (SELECT COUNT(*) FROM file_history fh WHERE fh.file_id = f.id AND fh.location = 'Loket Pendaftaran (Entry)') as loket_entry_count
-    FROM files f 
-    LEFT JOIN users u_to ON f.transit_to_username = u_to.username
-    LEFT JOIN users u_by ON f.transit_by_username = u_by.username
-    ORDER BY f.created_at DESC
-  `;
-  db.all(query, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-// Get active transit notifications for the logged-in user (berkas & surat)
-app.get('/api/notifications/transit', authenticateJWT, (req, res) => {
-  const username = req.user.username;
-  const query = `
-    SELECT * FROM (
-      SELECT f.id, 
-             'file' as item_type,
-             f.qr_code, 
-             f.nomor_berkas, 
-             f.tahun_berkas, 
-             f.nama_kegiatan, 
-             f.nama_pemohon,
-             NULL as nomor_agenda,
-             NULL as asal_surat,
-             NULL as nomor_surat,
-             NULL as perihal,
-             f.current_location, 
-             f.is_transit, 
-             f.transit_to_username, 
-             f.transit_by_username, 
-             f.transit_at,
-             u_by.full_name as transit_by_fullname,
-             u_by.role as transit_by_role
-      FROM files f
-      LEFT JOIN users u_by ON f.transit_by_username = u_by.username
-      WHERE f.is_transit = 1
-        AND f.transit_to_username = ?
-        AND f.current_location NOT IN ('Selesai', 'Ditutup')
-      
-      UNION ALL
-
-      SELECT s.id, 
-             'surat' as item_type,
-             s.qr_code, 
-             NULL as nomor_berkas, 
-             NULL as tahun_berkas, 
-             NULL as nama_kegiatan, 
-             NULL as nama_pemohon,
-             s.nomor_agenda,
-             s.asal_surat,
-             s.nomor_surat,
-             s.perihal,
-             s.current_location, 
-             s.is_transit, 
-             s.transit_to_username, 
-             s.transit_by_username, 
-             s.transit_at,
-             u_by.full_name as transit_by_fullname,
-             u_by.role as transit_by_role
-      FROM surat s
-      LEFT JOIN users u_by ON s.transit_by_username = u_by.username
-      WHERE s.is_transit = 1
-        AND s.transit_to_username = ?
-        AND s.current_location NOT IN ('Selesai', 'Ditutup')
-    )
-    ORDER BY transit_at DESC, id DESC
-  `;
-  db.all(query, [username, username], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows || []);
-  });
-});
-
-// Get specific file and history by QR Code
-app.get('/api/files/:qr_code', authenticateJWT, (req, res) => {
-  const qr_code = req.params.qr_code;
-  
-  try {
-    verifyQRCodeToken(qr_code);
-  } catch (err) {
-    return res.status(400).json({ error: 'QR Code tidak valid atau palsu.' });
-  }
-  db.get(`
-    SELECT f.*, 
-           u_to.full_name as transit_to_fullname,
-           u_by.full_name as transit_by_fullname
-    FROM files f
-    LEFT JOIN users u_to ON f.transit_to_username = u_to.username
-    LEFT JOIN users u_by ON f.transit_by_username = u_by.username
-    WHERE f.qr_code = ?
-  `, [qr_code], (err, file) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!file) return res.status(404).json({ error: 'File tidak ditemukan' });
-
-    db.all(`
-      SELECT fh.*, u.full_name as user_full_name 
-      FROM file_history fh
-      LEFT JOIN users u ON fh.scanned_by_username = u.username
-      WHERE fh.file_id = ? 
-      ORDER BY fh.scanned_at DESC
-    `, [file.id], (err, history) => {
-      if (err) return res.status(500).json({ error: err.message });
-      file.history = (history || []).map(h => {
-        if (h.user_full_name && h.scanned_by_role && !h.scanned_by_role.includes('(')) {
-          return {
-            ...h,
-            scanned_by_role: `${h.user_full_name} (${h.scanned_by_role})`
-          };
-        }
-        return h;
-      });
-      file.client_ip = getClientIp(req);
-      res.json(file);
-    });
-  });
-});
-
-// Update catatan file (Only for current handler or Administrator)
-app.put('/api/files/:qr_code/note', authenticateJWT, validateBody(schemas.noteSchema), (req, res) => {
-  const qr_code = req.params.qr_code;
-  const { catatan } = req.body;
-  
-  db.get('SELECT * FROM files WHERE qr_code = ?', [qr_code], (err, file) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!file) return res.status(404).json({ error: 'File tidak ditemukan' });
-
-    const userRoles = req.user.role ? req.user.role.split(',').map(r => r.trim()) : [];
-    if (!userRoles.includes('Administrator') && !userRoles.includes(file.current_location)) {
-      return res.status(403).json({ error: 'Akses ditolak. Hanya pemegang berkas ini atau Administrator yang dapat mengubah catatan.' });
-    }
-
-    let finalCatatan = catatan;
-    if (catatan && catatan !== file.catatan) {
-        const timestamp = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-        const fullName = req.user.full_name || req.user.username;
-        let cleanCatatan = catatan.replace(/\n\n-- Terakhir diubah oleh.*?$/s, '');
-        finalCatatan = cleanCatatan + `\n\n-- Terakhir diubah oleh ${fullName} pada ${timestamp}`;
-    }
-
-    db.run('UPDATE files SET catatan = ? WHERE qr_code = ?', [finalCatatan, qr_code], function(updateErr) {
-      if (updateErr) return res.status(500).json({ error: updateErr.message });
-      res.json({ message: 'Catatan berhasil disimpan', catatan: finalCatatan });
-    });
-  });
-});
-
-// Aturan alur kegiatan & kalender hari kerja memakai Single Source of Truth dari ./src/services/fileFlowService.js & ./src/utils/workingDays.js
-// Engine Bot Telegram dikelola oleh ./src/services/telegramService.js
-
-// Cek status koneksi Telegram untuk user yang sedang login
-app.get('/api/notifications/telegram-status', authenticateJWT, (req, res) => {
-  db.get('SELECT username, full_name, telegram_chat_id FROM users WHERE id = ?', [req.user.id], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({
-      connected: Boolean(row && row.telegram_chat_id),
-      telegram_chat_id: row ? row.telegram_chat_id : null,
-      bot_username: TELEGRAM_BOT_USERNAME,
-      username: row ? row.username : req.user.username
-    });
-  });
-});
-
-// Kirim pesan tes ke Telegram user yang sedang login
-app.post('/api/notifications/telegram-test', authenticateJWT, (req, res) => {
-  db.get('SELECT username, full_name, telegram_chat_id FROM users WHERE id = ?', [req.user.id], async (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!row || !row.telegram_chat_id) {
-      return res.status(400).json({ error: 'Akun Anda belum terhubung dengan Bot Telegram.' });
-    }
-    const chatStr = String(row.telegram_chat_id).trim();
-    if (chatStr.startsWith('08') || chatStr.startsWith('+62') || chatStr.startsWith('628')) {
-      return res.status(400).json({
-        error: `Telegram tidak menggunakan Nomor HP (${chatStr}). Silakan buka @pantaukantahtangsel_bot di aplikasi Telegram lalu ketik: /daftar ${row.username}`
-      });
-    }
-    const result = await sendTelegramMessage(
-      chatStr,
-      `<b>Tes Notifikasi Pantau.Kantah Tangsel</b>\n\nHalo <b>${row.full_name}</b>, koneksi notifikasi Telegram Anda sudah aktif dan berjalan normal!`
-    );
-    if (!result.ok) {
-      return res.status(500).json({
-        error: `Gagal mengirim ke Chat ID (${chatStr}). Pastikan Anda sudah membuka @pantaukantahtangsel_bot di aplikasi Telegram dan mengetik /daftar ${row.username}`
-      });
-    }
-    res.json({ message: 'Pesan tes berhasil dikirim ke Telegram Anda!' });
-  });
-});
-
-// Putuskan / reset koneksi Telegram user yang sedang login
-app.post('/api/notifications/telegram-unlink', authenticateJWT, (req, res) => {
-  db.run('UPDATE users SET telegram_chat_id = NULL WHERE id = ?', [req.user.id], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: 'Koneksi Telegram berhasil direset. Silakan hubungkan ulang melalui @pantaukantahtangsel_bot.' });
-  });
-});
-
-// Get files currently transiting to the logged-in user
-app.get('/api/files/my-transits', authenticateJWT, (req, res) => {
-  db.all('SELECT * FROM files WHERE is_transit = 1 AND transit_to_username = ?', [req.user.username], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-// Send a file to transit (Kirim Berkas)
-app.post('/api/files/:qr_code/transit', authenticateJWT, validateBody(schemas.transitTargetSchema), (req, res) => {
-  const { qr_code } = req.params;
-  const { target_username } = req.body;
-
-  if (!target_username) {
-    return res.status(400).json({ error: 'Target pengguna tujuan harus dipilih.' });
-  }
-
-  db.get(`SELECT * FROM files WHERE qr_code = ?`, [qr_code], (err, file) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!file) return res.status(404).json({ error: 'Berkas tidak ditemukan' });
-    
-    if (file.current_location === 'Selesai' || file.current_location === 'Ditutup') {
-      return res.status(400).json({ error: 'Berkas Selesai/Ditutup tidak bisa ditransit.' });
-    }
-
-    if (file.is_transit) {
-      return res.status(400).json({ error: 'Berkas sudah dalam status transit.' });
-    }
-
-    db.get('SELECT full_name, telegram_chat_id FROM users WHERE username = ?', [target_username], (userErr, targetUser) => {
-      const targetFullName = targetUser && targetUser.full_name ? targetUser.full_name : target_username;
-      const senderFullName = req.user.full_name || req.user.username;
-      const scannedBy = `${senderFullName} (${req.user.role})`;
-      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || 'Unknown';
-      const transitLocation = `Dikirim (Transit) ke ${targetFullName}`;
-
-      db.run(
-        `UPDATE files SET is_transit = 1, transit_to_username = ?, transit_by_username = ?, transit_at = CURRENT_TIMESTAMP WHERE qr_code = ?`,
-        [target_username, req.user.username, qr_code],
-        function (updateErr) {
-          if (updateErr) return res.status(500).json({ error: updateErr.message });
-
-          db.run(
-            `INSERT INTO file_history (file_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
-            [file.id, scannedBy, req.user.username, transitLocation, clientIp],
-            function (historyErr) {
-              if (historyErr) console.error("Error inserting transit history:", historyErr);
-
-              // Kirim notifikasi langsung ke Telegram petugas tujuan jika sudah terhubung
-              if (targetUser && targetUser.telegram_chat_id) {
-                const waktuWib = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
-                const tgMsg =
-                  `<b>BERKAS KIRIMAN MASUK (TRANSIT)</b>\n\n` +
-                  `Halo <b>${targetFullName}</b>, ada berkas yang sedang dikirim menuju meja Anda:\n\n` +
-                  `No. Berkas: <b>${file.nomor_berkas}/${file.tahun_berkas}</b>\n` +
-                  `Kegiatan: <b>${file.nama_kegiatan}</b>\n` +
-                  `Pemohon: <b>${file.nama_pemohon}</b>\n` +
-                  `Dikirim Oleh: <b>${senderFullName}</b> (${req.user.role})\n` +
-                  `Waktu Kirim: ${waktuWib} WIB\n\n` +
-                  `<i>Silakan buka aplikasi Pantau.Kantah Tangsel dan lakukan <b>Scan Terima</b> saat berkas fisik tiba di meja Anda.</i>`;
-                sendTelegramMessage(targetUser.telegram_chat_id, tgMsg);
-              }
-
-              res.json({ message: 'Berkas berhasil dikirim (transit).' });
-            }
-          );
-        }
-      );
-    });
-  });
-});
-
-// Cancel transit
-app.post('/api/files/:qr_code/cancel-transit', authenticateJWT, (req, res) => {
-  const { qr_code } = req.params;
-
-  db.get(`SELECT * FROM files WHERE qr_code = ?`, [qr_code], (err, file) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!file) return res.status(404).json({ error: 'Berkas tidak ditemukan' });
-
-    if (!file.is_transit) {
-      return res.status(400).json({ error: 'Berkas tidak sedang dalam status transit.' });
-    }
-
-    const isAdmin = req.user.role && req.user.role.includes('Administrator');
-    if (file.transit_by_username !== req.user.username && !isAdmin) {
-      return res.status(403).json({ error: 'Hanya pengirim asli atau Administrator yang bisa membatalkan kiriman.' });
-    }
-
-    db.get('SELECT full_name, telegram_chat_id FROM users WHERE username = ?', [file.transit_to_username], (userErr, targetUser) => {
-      const targetFullName = targetUser && targetUser.full_name ? targetUser.full_name : file.transit_to_username;
-      const cancelerFullName = req.user.full_name || req.user.username;
-      const scannedBy = `${cancelerFullName} (${req.user.role})`;
-      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || 'Unknown';
-      const cancelLocation = `Batal Kirim (Transit ke ${targetFullName} dibatalkan)`;
-
-      db.run(
-        `UPDATE files SET is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE qr_code = ?`,
-        [qr_code],
-        function (updateErr) {
-          if (updateErr) return res.status(500).json({ error: updateErr.message });
-
-          db.run(
-            `INSERT INTO file_history (file_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
-            [file.id, scannedBy, req.user.username, cancelLocation, clientIp],
-            function (historyErr) {
-              if (historyErr) console.error("Error inserting cancel transit history:", historyErr);
-
-              if (targetUser && targetUser.telegram_chat_id) {
-                const tgCancelMsg =
-                  `<b>PEMBATALAN KIRIMAN BERKAS</b>\n\n` +
-                  `Kiriman berkas <b>No. ${file.nomor_berkas}/${file.tahun_berkas}</b> (${file.nama_kegiatan} - Pemohon: ${file.nama_pemohon}) ke meja Anda telah <b>dibatalkan</b> oleh <b>${cancelerFullName}</b>.`;
-                sendTelegramMessage(targetUser.telegram_chat_id, tgCancelMsg);
-              }
-
-              res.json({ message: 'Kiriman berkas berhasil dibatalkan.' });
-            }
-          );
-        }
-      );
-    });
-  });
-});
-
-// Pause SOP
-app.post('/api/files/:qr_code/pause', authenticateJWT, (req, res) => {
-  if (!req.user.role.includes('Administrator')) {
-    return res.status(403).json({ error: 'Hanya Administrator yang dapat mem-pause berkas.' });
-  }
-
-  const { qr_code } = req.params;
-  
-  db.get(`SELECT * FROM files WHERE qr_code = ?`, [qr_code], (err, file) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!file) return res.status(404).json({ error: 'Berkas tidak ditemukan' });
-    if (file.is_paused) {
-      return res.status(400).json({ error: 'Berkas sudah dalam status pause.' });
-    }
-
-    db.run(
-      `UPDATE files SET is_paused = 1, paused_at = CURRENT_TIMESTAMP WHERE qr_code = ?`,
-      [qr_code],
-      function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'SOP Berkas berhasil di-pause.' });
-      }
-    );
-  });
-});
-
-// Resume SOP
-app.post('/api/files/:qr_code/resume', authenticateJWT, (req, res) => {
-  if (!req.user.role.includes('Administrator')) {
-    return res.status(403).json({ error: 'Hanya Administrator yang dapat melanjutkan berkas.' });
-  }
-
-  const { qr_code } = req.params;
-  
-  db.get(`SELECT * FROM files WHERE qr_code = ?`, [qr_code], (err, file) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!file) return res.status(404).json({ error: 'Berkas tidak ditemukan' });
-    if (!file.is_paused) {
-      return res.status(400).json({ error: 'Berkas tidak dalam status pause.' });
-    }
-
-    const pausedDays = getWorkingDays(file.paused_at, new Date().toISOString());
-    const newTotal = (file.total_paused_days || 0) + pausedDays;
-
-    db.run(
-      `UPDATE files SET is_paused = 0, paused_at = NULL, total_paused_days = ? WHERE qr_code = ?`,
-      [newTotal, qr_code],
-      function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'SOP Berkas berhasil dilanjutkan kembali.' });
-      }
-    );
-  });
-});
-
-// Scan & Update file location
-app.post('/api/files/scan', authenticateJWT, validateBody(schemas.scanFileSchema), (req, res) => {
-  const { qr_code, fullName, isFinishing, selected_role } = req.body;
-  
-  try {
-    verifyQRCodeToken(qr_code);
-  } catch (err) {
-    return res.status(400).json({ error: 'QR Code tidak valid atau palsu.' });
-  }
-
-  const userRoles = req.user.role ? req.user.role.split(',').map(r => r.trim()) : [];
-
-  db.get('SELECT * FROM files WHERE qr_code = ?', [qr_code], (err, file) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!file) return res.status(404).json({ error: 'File tidak ditemukan' });
-
-    const precondition = validateScanPreconditions(file, req.user);
-    if (!precondition.ok) {
-      return res.status(precondition.status).json({ error: precondition.error });
-    }
-
-    if (userRoles.length > 1 && !selected_role) {
-      db.all('SELECT scanned_by_role FROM file_history WHERE file_id = ? AND scanned_by_username = ? ORDER BY scanned_at ASC', [file.id, req.user.username], (historyErr, rows) => {
-        if (historyErr) return res.status(500).json({ error: historyErr.message });
-        return res.status(400).json(analyzeMultiRoleSelection(userRoles, rows));
-      });
-      return;
-    }
-
-    let activeRole = selected_role || userRoles[0];
-
-    if (!userRoles.includes(activeRole)) {
-      return res.status(403).json({ error: 'Akses ditolak. Anda tidak memiliki izin untuk jabatan tersebut.' });
-    }
-
-    const transition = resolveScanTransition(file, activeRole);
-    if (!transition.ok) {
-      return res.status(transition.status).json({ error: transition.error });
-    }
-
-    const { newLocation: new_location, customMessage: custom_message } = transition;
-
-    if (file.current_location === new_location) {
-      db.get('SELECT scanned_by_username, scanned_by_role FROM file_history WHERE file_id = ? ORDER BY scanned_at DESC LIMIT 1', [file.id], (historyErr, row) => {
-        const lastUsername = row ? row.scanned_by_username : null;
-        
-        if (lastUsername && lastUsername !== req.user.username) {
-          return proceedUpdate(activeRole, new_location, `Berkas dipindahtangankan ke Anda di posisi ${activeRole}.`);
-        } else {
-          const nama = row ? row.scanned_by_role : file.current_location;
-          return res.status(400).json({ error: `Posisi berkas sudah berada di ${nama}` });
-        }
-      });
-      return;
-    }
-
-    proceedUpdate(activeRole, new_location, custom_message);
-
-    function proceedUpdate(roleUsed, locationToSet, successMessage) {
-      const effectiveFullName = fullName || req.user.full_name;
-      const scannedBy = effectiveFullName ? `${effectiveFullName} (${roleUsed})` : roleUsed;
-      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || 'Unknown';
-
-      db.run('UPDATE files SET current_location = ?, is_transit = 0, transit_to_username = NULL, transit_by_username = NULL, transit_at = NULL WHERE id = ?', [locationToSet, file.id], (updateErr) => {
-        if (updateErr) return res.status(500).json({ error: updateErr.message });
-
-        db.run('INSERT INTO file_history (file_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)',
-          [file.id, scannedBy, req.user.username, locationToSet, clientIp],
-          (historyErr) => {
-            if (historyErr) return res.status(500).json({ error: historyErr.message });
-            res.json({ message: successMessage || 'Lokasi berkas berhasil diperbarui.', current_location: locationToSet });
-          }
-        );
-      });
-    }
-  });
-});
-
-// ==========================================
-// LEADERSHIP REPORTING API
-// ==========================================
-
-// ==========================================
-// REPORTS & KPI ANALYTICS API
-// ==========================================
-app.use('/api/reports', createReportsRouter({ db, authenticateJWT, requireAdminOrKasi }));
-
-// --- API DISPOSISI PIMPINAN ---
-
-// GET /api/files/:qrcode/disposisi
-app.get('/api/files/:qrcode/disposisi', authenticateJWT, (req, res) => {
-  const qrCode = req.params.qrcode;
-  db.get('SELECT id FROM files WHERE qr_code = ?', [qrCode], (err, file) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    if (!file) return res.status(404).json({ error: 'Berkas tidak ditemukan' });
-
-    db.all('SELECT * FROM disposisi WHERE file_id = ? ORDER BY dibuat_pada DESC', [file.id], (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Gagal mengambil disposisi' });
-      res.json(rows || []);
-    });
-  });
-});
-
-// POST /api/files/:qrcode/disposisi
-app.post('/api/files/:qrcode/disposisi', authenticateJWT, validateBody(schemas.disposisiSchema), (req, res) => {
-  const isPimpinan = req.user.role.includes('Koordinator') || req.user.role.includes('Kepala Seksi') || req.user.role.includes('Administrator');
-  if (!isPimpinan) {
-    return res.status(403).json({ error: 'Akses ditolak. Hanya pimpinan yang dapat membuat disposisi.' });
-  }
-
-  const qrCode = req.params.qrcode;
-  const { isi_disposisi } = req.body;
-  if (!isi_disposisi) return res.status(400).json({ error: 'Isi disposisi tidak boleh kosong' });
-
-  db.get('SELECT id FROM files WHERE qr_code = ?', [qrCode], (err, file) => {
-    if (err || !file) return res.status(404).json({ error: 'Berkas tidak ditemukan' });
-
-    const fullName = req.user.full_name || req.user.username;
-    db.run(
-      `INSERT INTO disposisi (file_id, isi_disposisi, dibuat_oleh) VALUES (?, ?, ?)`,
-      [file.id, isi_disposisi, fullName],
-      function (err) {
-        if (err) return res.status(500).json({ error: 'Gagal menyimpan disposisi' });
-        res.json({ message: 'Disposisi berhasil ditambahkan', id: this.lastID });
-      }
-    );
-  });
-});
-
-// PUT /api/disposisi/:id/selesai
-app.put('/api/disposisi/:id/selesai', authenticateJWT, (req, res) => {
-  const id = req.params.id;
-  const fullName = req.user.full_name || req.user.username;
-  
-  db.run(
-    `UPDATE disposisi SET status = 'Sudah Dilaksanakan', dilaksanakan_oleh = ?, dilaksanakan_pada = CURRENT_TIMESTAMP WHERE id = ?`,
-    [fullName, id],
-    function (err) {
-      if (err) return res.status(500).json({ error: 'Gagal mengupdate disposisi' });
-      res.json({ message: 'Disposisi telah ditandai selesai' });
-    }
+  app.use(
+    '/api/surat',
+    createSuratRouter({
+      db,
+      jwt,
+      jwtSecret,
+      uploadDir,
+      authenticateJWT,
+      requireAdmin,
+      handlePdfUpload,
+      validateBody,
+      schemas,
+      sendTelegramMessage,
+    })
   );
-});
+  app.use('/api/surat-disposisi', createSuratDisposisiRouter({ db, authenticateJWT }));
 
-// Serve frontend static files
-app.use(express.static(path.join(__dirname, '../frontend/dist'), {
-  setHeaders: (res, filePath) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    if (filePath.endsWith('index.html') || filePath.endsWith('recovery.js')) {
+  app.use(
+    '/api/users',
+    createUsersRouter({
+      db,
+      bcrypt,
+      authenticateJWT,
+      requireAdmin,
+      validateBody,
+      schemas,
+    })
+  );
+
+  app.use(
+    '/api/user/dwg',
+    createDwgRouter({
+      db,
+      dwgDir,
+      authenticateJWT,
+      requireDwgAccess,
+      canAccessDwg,
+      handleDwgUpload,
+      sendTelegramMessage,
+    })
+  );
+
+  app.use(
+    '/api/user',
+    createUserProfileRouter({
+      db,
+      avatarDir,
+      authenticateJWT,
+      handleAvatarUpload,
+      validateBody,
+      schemas,
+    })
+  );
+
+  app.use(
+    '/api/suggestions',
+    createSuggestionsRouter({
+      db,
+      authenticateJWT,
+      requireAdmin,
+      validateBody,
+      schemas,
+      sendTelegramMessage,
+    })
+  );
+
+  app.use(
+    '/api/admin',
+    createStatsRouter({
+      db,
+      authenticateJWT,
+      requireAdmin,
+      userLastActiveMap,
+    })
+  );
+
+  app.use(
+    '/api/notifications',
+    createNotificationsRouter({
+      db,
+      authenticateJWT,
+      telegramBotUsername: telegramService.botUsername,
+      sendTelegramMessage,
+    })
+  );
+
+  app.use(
+    '/api/files',
+    createFilesRouter({
+      db,
+      jwt,
+      jwtSecret,
+      authenticateJWT,
+      requireAdmin,
+      validateBody,
+      schemas,
+      getWorkingDays,
+      validateFileEntryAccess,
+      validateScanPreconditions,
+      analyzeMultiRoleSelection,
+      resolveScanTransition,
+      sendTelegramMessage,
+    })
+  );
+
+  app.use('/api/disposisi', createDisposisiRouter({ db, authenticateJWT }));
+  app.use('/api/reports', createReportsRouter({ db, authenticateJWT, requireAdminOrKasi }));
+
+  if (serveFrontend) {
+    app.use(
+      express.static(path.join(__dirname, '../frontend/dist'), {
+        setHeaders: (res, filePath) => {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          if (filePath.endsWith('index.html') || filePath.endsWith('recovery.js')) {
+            res.setHeader(
+              'Cache-Control',
+              'no-store, no-cache, must-revalidate, proxy-revalidate'
+            );
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+          } else {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+        },
+      })
+    );
+    app.get(/.*/, (req, res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
-    } else {
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    }
-  }
-}));
-app.get(/.*/, (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-});
-
-const http = require('http');
-const https = require('https');
-
-app.listen(PORT, () => {
-  console.log(`HTTP Backend server is running on http://localhost:${PORT}`);
-});
-
-// Start HTTPS server if certificates exist
-try {
-  const keyPath = path.join(__dirname, 'key.pem');
-  const certPath = path.join(__dirname, 'cert.pem');
-  
-  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-    const privateKey = fs.readFileSync(keyPath, 'utf8');
-    const certificate = fs.readFileSync(certPath, 'utf8');
-    const credentials = { key: privateKey, cert: certificate };
-    
-    const httpsServer = https.createServer(credentials, app);
-    const HTTPS_PORT = PORT + 1;
-    
-    httpsServer.listen(HTTPS_PORT, () => {
-      console.log(`HTTPS Backend server is running on https://localhost:${HTTPS_PORT}`);
+      res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
     });
   }
-} catch (err) {
-  console.error("Failed to start HTTPS server:", err.message);
+
+  return app;
 }
+
+if (require.main === module) {
+  const db = initDatabase({
+    dbPath: path.join(__dirname, 'database.sqlite'),
+    jwt,
+    jwtSecret: JWT_SECRET,
+    bcrypt,
+  });
+
+  // Inisialisasi Telegram Bot Notification Engine (@pantaukantahtangsel_bot)
+  const telegramService = createTelegramService({ db, bcrypt });
+  telegramService.startPolling();
+
+  const app = createApp({ db, telegramService });
+
+  app.listen(PORT, () => {
+    console.log(`HTTP Backend server is running on http://localhost:${PORT}`);
+  });
+
+  // Start HTTPS server if certificates exist
+  try {
+    const keyPath = path.join(__dirname, 'key.pem');
+    const certPath = path.join(__dirname, 'cert.pem');
+
+    if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+      const privateKey = fs.readFileSync(keyPath, 'utf8');
+      const certificate = fs.readFileSync(certPath, 'utf8');
+      const credentials = { key: privateKey, cert: certificate };
+
+      const httpsServer = https.createServer(credentials, app);
+      const HTTPS_PORT = PORT + 1;
+
+      httpsServer.listen(HTTPS_PORT, () => {
+        console.log(`HTTPS Backend server is running on https://localhost:${HTTPS_PORT}`);
+      });
+    }
+  } catch (err) {
+    console.error('Failed to start HTTPS server:', err.message);
+  }
+}
+
+module.exports = {
+  createApp,
+};

@@ -2,7 +2,7 @@
 
 Dokumen ini merupakan **Single Source of Truth (SSOT)**, panduan serah terima (*handover*), sekaligus cetak biru arsitektur (*system blueprint*) dari aplikasi **Pantau.Kantah Tangsel** — Portal Aplikasi Pelacakan Berkas & Persuratan Terpadu di **Kantor Pertanahan (Kantah) ATR/BPN Kota Tangerang Selatan**.
 
-seluruh spesifikasi di dalam dokumen ini telah **diverifikasi 100% sesuai dengan implementasi kode aktual** pada *backend* (`backend/server.js`) dan *frontend* (`frontend/src/`). Berikan dokumen ini kepada pengembang atau asisten AI di awal sesi agar konteks sistem dapat dipahami secara utuh dan presisi tanpa perlu menjelaskan dari awal.
+seluruh spesifikasi di dalam dokumen ini telah **diverifikasi 100% sesuai dengan implementasi kode aktual** pada *backend* (`backend/server.js` & `backend/src/`) dan *frontend* (`frontend/src/`). Berikan dokumen ini kepada pengembang atau asisten AI di awal sesi agar konteks sistem dapat dipahami secara utuh dan presisi tanpa perlu menjelaskan dari awal.
 
 ---
 
@@ -377,7 +377,7 @@ erDiagram
 
 ---
 
-## 8. Daftar Lengkap Endpoint REST API (`backend/server.js`)
+## 8. Daftar Lengkap Endpoint REST API (`backend/src/routes/*.js` & `backend/server.js`)
 
 | Grup Modul | Method & Path | Middleware / Akses | Deskripsi Fungsi |
 | :--- | :--- | :--- | :--- |
@@ -519,8 +519,8 @@ Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / 
 ## 10. Rencana Arsitektur Masa Depan (Skalabilitas Enterprise PostgreSQL)
 
 Jika proyek ini dikembangkan ulang atau dimigrasikan ke skala **Enterprise Kantah Penuh** pada repositori baru, gunakan rancangan target berikut:
-- **Backend:** Node.js + Express/Fastify dengan **TypeScript** berpola *Modular Clean Architecture* (`/src/modules/{auth,berkas,surat,dwg,kpi,suggestions,stats}`) — *(modularisasi JS bertahap sudah berjalan di `backend/src/` untuk `routes/{reports,suggestions,stats}`, `services/{fileFlowService,kpiService,telegramService}`, dan `utils/workingDays`)*.
+- **Backend:** Node.js + Express/Fastify dengan **TypeScript** berpola *Modular Clean Architecture* (`/src/modules/{auth,berkas,surat,dwg,kpi,suggestions,stats}`) — *(modularisasi JS penuh pada `backend/src/` sudah selesai dilaksanakan melalui `db/initDatabase.js`, `middleware/{auth,uploads}.js`, `utils/{workingDays,networkAndQr}.js`, `services/{fileFlowService,kpiService,telegramService}.js`, dan `routes/{auth,users,dwg,surat,files,notifications,reports,suggestions,stats}.js`, memangkas `backend/server.js` menjadi 290 baris bootstrap murni)*.
 - **Database Utama:** **PostgreSQL 16+** dengan **Prisma ORM** atau **Drizzle ORM** (menggantikan SQLite untuk mendukung konkurensi tulis tinggi lintas seluruh seksi).
 - **In-Memory Store & Queue:** **Redis** untuk manajemen sesi multi-perangkat, pencatatan *real-time online presence*, *rate-limiting*, dan *message queue* (**BullMQ**) untuk pengiriman notifikasi Telegram asinkron.
 - **Object Storage:** **MinIO** (self-hosted di QNAP) atau **Cloudflare R2 / AWS S3** untuk menyimpan arsip PDF surat, gambar kadastral `.dwg`, dan foto profil secara terpisah dari container aplikasi.
-- **Validasi & Pengujian:** Validasi skema input menggunakan **Zod** (`backend/validation.js`, unit test di `backend/validation.test.js`) serta pengujian unit otomatis untuk utilitas tanggal/libur SLA (`frontend/src/utils/dateUtils.test.js` via **Vitest**, `backend/src/utils/workingDays.test.js` via `node --test`), mesin perhitungan KPI (`backend/src/services/kpiService.test.js`), aturan alur berkas K1/K2 (`backend/src/services/fileFlowService.test.js`), dan bot Telegram (`backend/src/services/telegramService.test.js`).
+- **Validasi & Pengujian:** Validasi skema input menggunakan **Zod** (`backend/validation.js`, unit test di `backend/validation.test.js`) serta pengujian otomatis untuk utilitas tanggal/libur SLA (`frontend/src/utils/dateUtils.test.js` 18 tes via **Vitest**; serta total 32 tes backend via `node --test` yang mencakup `workingDays.test.js`, `kpiService.test.js`, `fileFlowService.test.js`, `telegramService.test.js`, `middleware/auth.test.js`, `validation.test.js`, dan E2E smoke test seluruh router `routes.smoke.test.js`).

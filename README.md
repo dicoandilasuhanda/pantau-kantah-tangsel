@@ -187,11 +187,24 @@ pantau-kantah-tangsel/
 │   │   ├── avatars/                # Direktori penyimpanan foto profil pengguna
 │   │   ├── dwg/                    # Direktori penyimpanan arsip berkas gambar AutoCAD (.dwg)
 │   │   └── surat/                  # Direktori penyimpanan PDF surat masuk
-│   ├── src/                        # Modul domain & layanan backend terpisah:
+│   ├── src/                        # Arsitektur modular backend berbasis domain:
+│   │   ├── db/
+│   │   │   └── initDatabase.js     # Inisialisasi SQLite, migrasi kolom idempotent, & seeding
+│   │   ├── middleware/
+│   │   │   ├── auth.js             # Guard JWT, batas maks 2 sesi aktif, & pengecekan role
+│   │   │   ├── auth.test.js        # Unit test middleware auth, role guard, IP & verifikasi QR
+│   │   │   └── uploads.js          # Factory upload Multer (PDF 15MB, Avatar 5MB, DWG 100MB)
 │   │   ├── routes/
+│   │   │   ├── auth.js             # Router /api/my-ip, /api/login (rate-limit), & /api/logout
+│   │   │   ├── dwg.js              # Router /api/user/dwg/* (repositori & transfer DWG)
+│   │   │   ├── files.js            # Router /api/files/* & /api/disposisi/*
+│   │   │   ├── notifications.js    # Router /api/notifications/* (transit & bot Telegram)
 │   │   │   ├── reports.js          # Router /api/reports/* (dashboard, files, kpi, kpi-surat)
+│   │   │   ├── routes.smoke.test.js# Smoke/integration test E2E Express + SQLite seluruh router
 │   │   │   ├── stats.js            # Router /api/admin/* (web-app stats & kick session)
-│   │   │   └── suggestions.js      # Router /api/suggestions/* (kotak saran fitur)
+│   │   │   ├── suggestions.js      # Router /api/suggestions/* (kotak saran fitur)
+│   │   │   ├── surat.js            # Router /api/surat/* & /api/surat-disposisi/*
+│   │   │   └── users.js            # Router /api/users/* & /api/user/profile*
 │   │   ├── services/
 │   │   │   ├── fileFlowService.js      # Aturan bisnis K1/K2, hak entri, smart role, & transisi scan
 │   │   │   ├── fileFlowService.test.js # Unit test aturan alur & penyelesaian berkas
@@ -200,9 +213,10 @@ pantau-kantah-tangsel/
 │   │   │   ├── telegramService.js      # Bot Telegram engine (@pantaukantahtangsel_bot)
 │   │   │   └── telegramService.test.js # Unit test perintah bot (/start, /daftar, /cek, /stop)
 │   │   └── utils/
+│   │       ├── networkAndQr.js     # Ekstraktor IP klien & verifikator QR token (secret aktif + legacy)
 │   │       ├── workingDays.js      # Single Source of Truth kalender libur, hari kerja, & jam efektif
 │   │       └── workingDays.test.js # Unit test hari kerja & pemotongan libur/akhir pekan
-│   ├── server.js                   # Entry point utama backend, skema DB, & router inti API
+│   ├── server.js                   # Bootstrap ringan Express (createApp, security middleware, & server listen)
 │   ├── validation.js               # Middleware & skema validasi input REST API berbasis Zod
 │   ├── validation.test.js          # Unit test skema validasi Zod backend (node --test)
 │   ├── database.sqlite             # File database utama SQLite (diabaikan oleh Git demi keamanan)
@@ -267,7 +281,7 @@ Aplikasi dapat dijalankan secara terpisah antara *Backend* dan *Frontend* untuk 
 cd backend
 npm install
 node server.js
-# Menjalankan unit test validasi input backend (Zod)
+# Menjalankan seluruh unit test & smoke test backend (node --test)
 npm test
 ```
 > Server HTTP berjalan di `http://localhost:3001` (dan HTTPS di `https://localhost:3002` bila `key.pem` & `cert.pem` tersedia).
@@ -380,6 +394,10 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Penyederhanaan Merek Navigasi Mobile (`Navbar.jsx`):** Menyembunyikan teks sekunder pada resolusi `<= 600px` sehingga hanya menampilkan `Pantau.Kantah Tangsel` secara konsisten pada seluruh bilah navigasi modul tanpa risiko teks membungkus baris (*anti-wrapping*).
 - **Tahap 18 — Standarisasi Workspace Skills Terpadu Multi-Perangkat (`.agents/skills/`):**
   - Mengintegrasikan seluruh koleksi *Agent Skills* langsung ke dalam repository pada direktori `.agents/skills/` (mencakup suite `antislop`, `antislop-ui`, `antislop-code`, `antislop-copywriting`, `antislop-layoutmobile`, `antislop-human`, `modern-web-guidance`, serta proteksi data dan analisis cloud) sehingga saat pengguna berpindah perangkat antara **PC Kantor** dan **MacBook Pribadi**, seluruh skill langsung tersinkronisasi otomatis via `git pull` tanpa perlu instalasi manual ulang.
+- **Tahap 19 — Suite Pengujian Otomatis, Validasi Zod, & Modularisasi Penuh Backend (`backend/src/`):**
+  - **Unit Test Frontend (`Vitest`):** Penambahan suite `frontend/src/utils/dateUtils.test.js` (18 kasus uji) yang mengawal akurasi kalkulator hari kerja, hari libur nasional, dan logika *pause/resume* SLA.
+  - **Schema Validation REST API (`Zod`):** Penambahan `backend/validation.js` dan middleware `validateBody` untuk mengamankan endpoint otentikasi, entri berkas/surat, transit, disposisi, user, hingga kotak saran dari muatan invalid sebelum menyentuh SQLite.
+  - **Modularisasi Penuh Backend (`backend/src/`):** Memecah file monolit `backend/server.js` (dari ~2.327 baris menjadi **290 baris** bootstrap murni `createApp`) ke dalam modul terstruktur: `db/initDatabase.js`, `middleware/{auth,uploads}.js`, `utils/{workingDays,networkAndQr}.js`, `services/{fileFlowService,kpiService,telegramService}.js`, dan seluruh 9 file router di `routes/{auth,users,dwg,surat,files,notifications,reports,suggestions,stats}.js` — disertai **32 automated tests** (`node --test`) termasuk E2E Express + SQLite smoke test (`routes.smoke.test.js`) dan mount Docker volume `./backend/src:/app/backend/src`.
 
 ---
 
