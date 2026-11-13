@@ -55,6 +55,7 @@ function createApp({
   uploadDir = path.join(__dirname, 'uploads', 'surat'),
   avatarDir = path.join(__dirname, 'uploads', 'avatars'),
   dwgDir = path.join(__dirname, 'uploads', 'dwg'),
+  uploadsDir = path.resolve(uploadDir, '..'),
   backupsDir = path.join(__dirname, '../backups'),
   telegramService,
   loginLimiter,
@@ -214,10 +215,12 @@ function createApp({
     createBackupsRouter({
       db,
       backupsDir,
+      uploadsDir,
       authenticateJWT,
       requireAdmin,
       validateBody,
       schemas,
+      sendTelegramMessage,
     })
   );
 

@@ -146,6 +146,10 @@ const verifyBackupSchema = z.object({
   filename: requiredText('Nama file backup'),
 });
 
+const runBackupSchema = z.object({
+  includeUploads: z.boolean().optional(),
+});
+
 /**
  * Middleware Express untuk memvalidasi req.body menggunakan skema Zod.
  * Jika validasi gagal setelah multer mengunggah file sementara, file tersebut ikut dibersihkan.
@@ -189,6 +193,7 @@ module.exports = {
     scanFileSchema,
     noteSchema,
     verifyBackupSchema,
+    runBackupSchema,
   },
 };
 

@@ -32,10 +32,23 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   const db = initDatabase({ dbPath, jwt, jwtSecret, bcrypt });
   await waitForSeededAdmin(db);
 
+  const sentTelegramMessages = [];
   const mockTelegramService = {
     botUsername: 'pantaukantahtangsel_bot',
-    sendTelegramMessage: async () => ({ ok: true }),
+    sendTelegramMessage: async (chatId, text) => {
+      sentTelegramMessages.push({ chatId, text });
+      return { ok: true };
+    },
   };
+
+  const uploadsDir = path.join(tmpDir, 'uploads');
+  const uploadDir = path.join(uploadsDir, 'surat');
+  const avatarDir = path.join(uploadsDir, 'avatars');
+  const dwgDir = path.join(uploadsDir, 'dwg');
+  fs.mkdirSync(uploadDir, { recursive: true });
+  fs.mkdirSync(avatarDir, { recursive: true });
+  fs.mkdirSync(dwgDir, { recursive: true });
+  fs.writeFileSync(path.join(uploadDir, 'contoh-surat.pdf'), '%PDF-1.4 mock-content');
 
   const backupsDir = path.join(tmpDir, 'backups');
   fs.mkdirSync(backupsDir, { recursive: true });
@@ -43,9 +56,10 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   const app = createApp({
     db,
     jwtSecret,
-    uploadDir: path.join(tmpDir, 'surat'),
-    avatarDir: path.join(tmpDir, 'avatars'),
-    dwgDir: path.join(tmpDir, 'dwg'),
+    uploadDir,
+    avatarDir,
+    dwgDir,
+    uploadsDir,
     backupsDir,
     telegramService: mockTelegramService,
     serveFrontend: false,
@@ -157,7 +171,15 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   const detailJson = await detailRes.json();
   assert.equal(detailJson.nomor_berkas, '12345');
 
-  // 4b. Backup & Restore verification endpoints enforce Admin access and integrity
+  // 4b. Backup & Restore verification endpoints enforce Admin access, archive uploads, and notify Telegram
+  await new Promise((resolve, reject) => {
+    db.run(
+      "UPDATE users SET telegram_chat_id = ? WHERE role = 'Administrator'",
+      ['11223344'],
+      (err) => (err ? reject(err) : resolve())
+    );
+  });
+
   const forbiddenBackupRes = await fetch(`${baseUrl}/api/admin/backups`, {
     headers: { Authorization: `Bearer ${entrySession.token}` },
   });
@@ -173,6 +195,19 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   assert.equal(runBackupJson.verification?.ok, true);
   assert.equal(runBackupJson.verification?.integrityCheck, 'ok');
   assert.equal(runBackupJson.verification?.tableCounts?.files, 1);
+  assert.match(runBackupJson.uploadsBackup?.filename || '', /^uploads_backup_.*\.tar\.gz$/);
+  assert.equal(runBackupJson.uploadsVerification?.ok, true);
+  assert.equal(runBackupJson.uploadsVerification?.fileCount, 1);
+  assert.equal(runBackupJson.telegramNotification?.sentCount, 1);
+  assert.equal(sentTelegramMessages.length, 1);
+  assert.equal(sentTelegramMessages[0].chatId, '11223344');
+
+  const listBackupsRes = await fetch(`${baseUrl}/api/admin/backups`, { headers: authHeaders });
+  assert.equal(listBackupsRes.status, 200);
+  const listBackupsJson = await listBackupsRes.json();
+  assert.equal(listBackupsJson.backups.length, 1);
+  assert.equal(listBackupsJson.uploadsBackups.length, 1);
+  assert.equal(listBackupsJson.allArchives.length, 2);
 
   const verifyBackupRes = await fetch(`${baseUrl}/api/admin/backups/verify`, {
     method: 'POST',
@@ -182,6 +217,16 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   assert.equal(verifyBackupRes.status, 200);
   const verifyBackupJson = await verifyBackupRes.json();
   assert.equal(verifyBackupJson.ok, true);
+
+  const verifyUploadsRes = await fetch(`${baseUrl}/api/admin/backups/verify`, {
+    method: 'POST',
+    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: runBackupJson.uploadsBackup.filename }),
+  });
+  assert.equal(verifyUploadsRes.status, 200);
+  const verifyUploadsJson = await verifyUploadsRes.json();
+  assert.equal(verifyUploadsJson.ok, true);
+  assert.equal(verifyUploadsJson.verification?.kind, 'uploads');
 
   const badVerifyRes = await fetch(`${baseUrl}/api/admin/backups/verify`, {
     method: 'POST',
@@ -197,6 +242,15 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   assert.equal(downloadBackupRes.status, 200);
   const sqliteHeader = Buffer.from(await downloadBackupRes.arrayBuffer()).subarray(0, 15).toString('utf8');
   assert.equal(sqliteHeader, 'SQLite format 3');
+
+  const downloadUploadsRes = await fetch(
+    `${baseUrl}/api/admin/backups/${encodeURIComponent(runBackupJson.uploadsBackup.filename)}/download`,
+    { headers: authHeaders }
+  );
+  assert.equal(downloadUploadsRes.status, 200);
+  const gzipMagic = Buffer.from(await downloadUploadsRes.arrayBuffer()).subarray(0, 2);
+  assert.equal(gzipMagic[0], 0x1f);
+  assert.equal(gzipMagic[1], 0x8b);
 
   // 5. Logout invalidates active session token
   const logoutRes = await fetch(`${baseUrl}/api/logout`, {

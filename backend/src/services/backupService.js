@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const sqlite3 = require('sqlite3');
+const { createTarGzFromDirectory, verifyTarGzArchive } = require('../utils/tarGzArchive');
 
 const EXPECTED_TABLES = Object.freeze([
   'disposisi',
@@ -18,18 +19,50 @@ const EXPECTED_TABLES = Object.freeze([
 
 const DEFAULT_RETENTION_DAYS = 30;
 const DEFAULT_MIN_RETAINED_BACKUPS = 3;
-const BACKUP_FILENAME_REGEX = /^database_backup_[0-9A-Za-z._-]+\.sqlite$/;
 
-/**
- * Memvalidasi nama berkas backup agar bebas karakter path traversal maupun ekstensi ilegal.
- */
-function isValidBackupFilename(filename) {
+const BACKUP_SPECS = Object.freeze({
+  sqlite: {
+    prefix: 'database_backup_',
+    ext: '.sqlite',
+    regex: /^database_backup_[0-9A-Za-z._-]+\.sqlite$/,
+  },
+  uploads: {
+    prefix: 'uploads_backup_',
+    ext: '.tar.gz',
+    regex: /^uploads_backup_[0-9A-Za-z._-]+\.tar\.gz$/,
+  },
+});
+
+function hasSafeFilenameShape(filename) {
   if (typeof filename !== 'string') return false;
   const trimmed = filename.trim();
   if (!trimmed || trimmed !== filename) return false;
   if (trimmed.includes('/') || trimmed.includes('\\') || trimmed.includes('..')) return false;
-  if (path.basename(trimmed) !== trimmed) return false;
-  return BACKUP_FILENAME_REGEX.test(trimmed);
+  return path.basename(trimmed) === trimmed;
+}
+
+/**
+ * Mengidentifikasi jenis arsip backup yang sah (`'sqlite'`, `'uploads'`, atau `null`).
+ */
+function getBackupKind(filename) {
+  if (!hasSafeFilenameShape(filename)) return null;
+  if (BACKUP_SPECS.sqlite.regex.test(filename)) return 'sqlite';
+  if (BACKUP_SPECS.uploads.regex.test(filename)) return 'uploads';
+  return null;
+}
+
+/**
+ * Memvalidasi nama berkas backup SQLite agar bebas path traversal maupun ekstensi ilegal.
+ */
+function isValidBackupFilename(filename) {
+  return getBackupKind(filename) === 'sqlite';
+}
+
+/**
+ * Memvalidasi nama berkas arsip `uploads/` `.tar.gz`.
+ */
+function isValidUploadsBackupFilename(filename) {
+  return getBackupKind(filename) === 'uploads';
 }
 
 /**
@@ -111,14 +144,15 @@ function computeFileSha256(filePath) {
 /**
  * Memilih nama file tujuan unik di dalam `backupsDir` tanpa menimpa arsip yang sudah ada.
  */
-function resolveUniqueBackupFilename(backupsDir, timestampLabel) {
+function resolveUniqueBackupFilename(backupsDir, timestampLabel, kind = 'sqlite') {
+  const spec = BACKUP_SPECS[kind] || BACKUP_SPECS.sqlite;
   const baseLabel = timestampLabel || formatJakartaTimestamp();
-  const baseName = `database_backup_${baseLabel}`;
-  let candidate = `${baseName}.sqlite`;
+  const baseName = `${spec.prefix}${baseLabel}`;
+  let candidate = `${baseName}${spec.ext}`;
   let suffix = 2;
 
   while (fs.existsSync(path.join(backupsDir, candidate))) {
-    candidate = `${baseName}-${suffix}.sqlite`;
+    candidate = `${baseName}-${suffix}${spec.ext}`;
     suffix += 1;
   }
 
@@ -139,6 +173,7 @@ async function verifyBackupFile(backupFilePath, { workDir } = {}) {
   if (!stat.isFile() || stat.size === 0) {
     return {
       ok: false,
+      kind: 'sqlite',
       filename: path.basename(backupFilePath),
       sizeBytes: stat.size || 0,
       sha256: null,
@@ -190,6 +225,7 @@ async function verifyBackupFile(backupFilePath, { workDir } = {}) {
     const ok = isIntegrityOk && missingTables.length === 0;
     return {
       ok,
+      kind: 'sqlite',
       filename: path.basename(backupFilePath),
       sizeBytes: stat.size,
       sha256,
@@ -208,6 +244,7 @@ async function verifyBackupFile(backupFilePath, { workDir } = {}) {
   } catch (err) {
     return {
       ok: false,
+      kind: 'sqlite',
       filename: path.basename(backupFilePath),
       sizeBytes: stat.size,
       sha256,
@@ -226,21 +263,74 @@ async function verifyBackupFile(backupFilePath, { workDir } = {}) {
 }
 
 /**
- * Mengembalikan daftar file backup `.sqlite` yang valid dari `backupsDir`, diurutkan terbaru dahulu.
+ * Memverifikasi keutuhan arsip berkas `uploads` (`.tar.gz`), checksum header USTAR, dan SHA-256.
  */
-function listBackups(backupsDir) {
+async function verifyUploadsBackupFile(tarGzPath) {
+  const startMs = Date.now();
+  if (!tarGzPath || !fs.existsSync(tarGzPath)) {
+    throw new Error('Berkas arsip uploads tidak ditemukan.');
+  }
+
+  const stat = fs.statSync(tarGzPath);
+  if (!stat.isFile() || stat.size === 0) {
+    return {
+      ok: false,
+      kind: 'uploads',
+      filename: path.basename(tarGzPath),
+      sizeBytes: stat.size || 0,
+      sha256: null,
+      integrityCheck: 'empty-file',
+      fileCount: 0,
+      dirCount: 0,
+      totalRawBytes: 0,
+      durationMs: Date.now() - startMs,
+      verifiedAt: new Date().toISOString(),
+      error: 'Ukuran berkas arsip uploads 0 byte atau bukan berkas reguler.',
+    };
+  }
+
+  const sha256 = await computeFileSha256(tarGzPath);
+  const check = await verifyTarGzArchive(tarGzPath);
+
+  return {
+    ok: check.ok,
+    kind: 'uploads',
+    filename: path.basename(tarGzPath),
+    sizeBytes: stat.size,
+    sha256,
+    integrityCheck: check.ok ? 'ok' : 'corrupt-archive',
+    fileCount: check.fileCount,
+    dirCount: check.dirCount,
+    totalRawBytes: check.totalRawBytes,
+    durationMs: Date.now() - startMs,
+    verifiedAt: new Date().toISOString(),
+    error: check.error,
+  };
+}
+
+/**
+ * Mengembalikan daftar file backup dari `backupsDir` berdasarkan jenis (`'sqlite'`, `'uploads'`, atau `'all'`),
+ * diurutkan dari yang terbaru dahulu.
+ */
+function listBackups(backupsDir, kind = 'sqlite') {
   if (!backupsDir || !fs.existsSync(backupsDir)) {
     return [];
   }
 
   return fs
     .readdirSync(backupsDir, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && isValidBackupFilename(entry.name))
+    .filter((entry) => {
+      if (!entry.isFile()) return false;
+      const detectedKind = getBackupKind(entry.name);
+      if (!detectedKind) return false;
+      return kind === 'all' ? true : detectedKind === kind;
+    })
     .map((entry) => {
       const fullPath = path.join(backupsDir, entry.name);
       const stat = fs.statSync(fullPath);
       return {
         filename: entry.name,
+        kind: getBackupKind(entry.name),
         sizeBytes: stat.size,
         modifiedAt: stat.mtime.toISOString(),
         mtimeMs: stat.mtimeMs,
@@ -267,17 +357,19 @@ function readBackupLogTail(backupsDir, maxLines = 25) {
 }
 
 /**
- * Menghapus backup usang melebihi `retentionDays`, sambil selalu menjaga minimal `minRetainedBackups` snapshot terbaru.
+ * Menghapus backup usang melebihi `retentionDays` sesuai `kind` (`'sqlite'` / `'uploads'`),
+ * sambil selalu menjaga minimal `minRetainedBackups` snapshot terbaru.
  */
 function pruneOldBackups(
   backupsDir,
   {
+    kind = 'sqlite',
     retentionDays = DEFAULT_RETENTION_DAYS,
     minRetainedBackups = DEFAULT_MIN_RETAINED_BACKUPS,
     nowMs = Date.now(),
   } = {}
 ) {
-  const entries = listBackups(backupsDir);
+  const entries = listBackups(backupsDir, kind);
   const cutoffMs = nowMs - retentionDays * 24 * 60 * 60 * 1000;
   const deleted = [];
   const kept = [];
@@ -328,7 +420,7 @@ async function createOnlineBackup(
 
   fs.mkdirSync(backupsDir, { recursive: true });
 
-  const filename = resolveUniqueBackupFilename(backupsDir, timestampLabel);
+  const filename = resolveUniqueBackupFilename(backupsDir, timestampLabel, 'sqlite');
   const finalPath = path.join(backupsDir, filename);
   const tmpStagePath = path.join(backupsDir, `.staging-${process.pid}-${Date.now()}-${filename}`);
 
@@ -350,6 +442,7 @@ async function createOnlineBackup(
   }
 
   const retention = pruneOldBackups(backupsDir, {
+    kind: 'sqlite',
     retentionDays,
     minRetainedBackups,
     nowMs,
@@ -358,6 +451,7 @@ async function createOnlineBackup(
   return {
     backup: {
       filename,
+      kind: 'sqlite',
       sizeBytes: verification.sizeBytes,
       sha256: verification.sha256,
       createdAt: verification.verifiedAt,
@@ -367,17 +461,159 @@ async function createOnlineBackup(
   };
 }
 
+/**
+ * Mengarsipkan seluruh berkas fisik `uploads/` (PDF surat, DWG kadastral, foto avatar)
+ * secara streaming menjadi `.tar.gz`, memverifikasi keutuhan USTAR + GZIP, lalu merotasi arsip lama.
+ */
+async function createUploadsBackup({
+  uploadsDir,
+  backupsDir,
+  retentionDays = DEFAULT_RETENTION_DAYS,
+  minRetainedBackups = DEFAULT_MIN_RETAINED_BACKUPS,
+  timestampLabel,
+  nowMs,
+} = {}) {
+  if (!backupsDir) {
+    throw new Error('Direktori tujuan backup wajib ditentukan.');
+  }
+
+  fs.mkdirSync(backupsDir, { recursive: true });
+
+  const filename = resolveUniqueBackupFilename(backupsDir, timestampLabel, 'uploads');
+  const finalPath = path.join(backupsDir, filename);
+  const tmpStagePath = path.join(backupsDir, `.staging-${process.pid}-${Date.now()}-${filename}`);
+
+  try {
+    fs.rmSync(tmpStagePath, { force: true });
+    await createTarGzFromDirectory(uploadsDir, tmpStagePath);
+    fs.renameSync(tmpStagePath, finalPath);
+  } catch (err) {
+    fs.rmSync(tmpStagePath, { force: true });
+    throw err;
+  }
+
+  const verification = await verifyUploadsBackupFile(finalPath);
+  if (!verification.ok) {
+    fs.rmSync(finalPath, { force: true });
+    const err = new Error(verification.error || 'Arsip uploads gagal melewati uji integritas.');
+    err.verification = verification;
+    throw err;
+  }
+
+  const retention = pruneOldBackups(backupsDir, {
+    kind: 'uploads',
+    retentionDays,
+    minRetainedBackups,
+    nowMs,
+  });
+
+  return {
+    backup: {
+      filename,
+      kind: 'uploads',
+      sizeBytes: verification.sizeBytes,
+      sha256: verification.sha256,
+      createdAt: verification.verifiedAt,
+    },
+    verification,
+    retention,
+  };
+}
+
+function formatSizeMbKb(bytes) {
+  if (!bytes || bytes <= 0) return '0 B';
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${bytes} B`;
+}
+
+function escapeHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * Mengirim ringkasan hasil backup/verifikasi ke seluruh Administrator yang telah menautkan Telegram.
+ */
+async function notifyAdminsBackupStatus(
+  db,
+  sendTelegramMessage,
+  { ok, triggerLabel = 'Cron / CLI', actorUsername = null, dbResult = null, uploadsResult = null, errorMessage = null } = {}
+) {
+  if (!db || typeof sendTelegramMessage !== 'function') {
+    return { targetAdmins: 0, sentCount: 0 };
+  }
+
+  const admins = await dbAll(
+    db,
+    "SELECT username, telegram_chat_id FROM users WHERE role LIKE '%Administrator%' AND telegram_chat_id IS NOT NULL AND TRIM(telegram_chat_id) != ''"
+  ).catch(() => []);
+
+  if (!admins || admins.length === 0) {
+    return { targetAdmins: 0, sentCount: 0 };
+  }
+
+  const triggerText = escapeHtml(actorUsername ? `${triggerLabel} (@${actorUsername})` : triggerLabel);
+  let message;
+
+  if (ok) {
+    const lines = [
+      '✅ <b>Laporan Backup &amp; Uji Restore Pantau.Kantah</b>',
+      `⚙️ <b>Pemicu:</b> ${triggerText}`,
+    ];
+
+    if (dbResult?.backup && dbResult?.verification) {
+      lines.push(
+        `🗄️ <b>Database SQLite:</b> <code>${escapeHtml(dbResult.backup.filename)}</code> (${formatSizeMbKb(dbResult.backup.sizeBytes)})`,
+        `🛡️ <b>Integritas DB:</b> <code>PRAGMA integrity_check=${escapeHtml(dbResult.verification.integrityCheck)}</code> • ${dbResult.verification.totalRows} baris (${dbResult.verification.durationMs} ms)`
+      );
+    }
+
+    if (uploadsResult?.backup && uploadsResult?.verification) {
+      lines.push(
+        `📁 <b>Arsip Uploads:</b> <code>${escapeHtml(uploadsResult.backup.filename)}</code> (${formatSizeMbKb(uploadsResult.backup.sizeBytes)}, ${uploadsResult.verification.fileCount} file)`
+      );
+    }
+
+    lines.push(`🕒 <i>${formatJakartaTimestamp()} WIB</i>`);
+    message = lines.join('\n');
+  } else {
+    message = [
+      '🚨 <b>PERINGATAN: Backup / Uji Integritas Gagal!</b>',
+      `⚙️ <b>Pemicu:</b> ${triggerText}`,
+      `❌ <b>Rincian:</b> <code>${escapeHtml(String(errorMessage || 'Kesalahan tidak diketahui').slice(0, 350))}</code>`,
+      `🕒 <i>${formatJakartaTimestamp()} WIB</i>`,
+    ].join('\n');
+  }
+
+  const deliveries = await Promise.allSettled(
+    admins.map((adm) => sendTelegramMessage(adm.telegram_chat_id, message))
+  );
+  const sentCount = deliveries.filter(
+    (res) => res.status === 'fulfilled' && res.value && res.value.ok
+  ).length;
+
+  return { targetAdmins: admins.length, sentCount };
+}
+
 module.exports = {
   EXPECTED_TABLES,
   DEFAULT_RETENTION_DAYS,
   DEFAULT_MIN_RETAINED_BACKUPS,
+  getBackupKind,
   isValidBackupFilename,
+  isValidUploadsBackupFilename,
   formatJakartaTimestamp,
   openSqliteDb,
   closeSqliteDb,
   verifyBackupFile,
+  verifyUploadsBackupFile,
   listBackups,
   readBackupLogTail,
   pruneOldBackups,
   createOnlineBackup,
+  createUploadsBackup,
+  notifyAdminsBackupStatus,
 };

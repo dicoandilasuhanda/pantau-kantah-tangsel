@@ -9,12 +9,17 @@ const bcrypt = require('bcryptjs');
 const { initDatabase } = require('../db/initDatabase');
 const {
   EXPECTED_TABLES,
+  getBackupKind,
   isValidBackupFilename,
+  isValidUploadsBackupFilename,
   formatJakartaTimestamp,
   createOnlineBackup,
+  createUploadsBackup,
   verifyBackupFile,
+  verifyUploadsBackupFile,
   listBackups,
   pruneOldBackups,
+  notifyAdminsBackupStatus,
   closeSqliteDb,
 } = require('./backupService');
 
@@ -163,4 +168,111 @@ test('backupService prunes expired backups >30 days while keeping minimum newest
       'database_backup_2026-10-01_02-30.sqlite',
     ]
   );
+});
+
+test('backupService validates uploads archive names, archives uploads/, verifies .tar.gz, and prunes independently', async (t) => {
+  assert.equal(isValidUploadsBackupFilename('uploads_backup_2026-11-13_02-30.tar.gz'), true);
+  assert.equal(isValidUploadsBackupFilename('uploads_backup_2026-11-13_02-30-2.tar.gz'), true);
+  assert.equal(isValidUploadsBackupFilename('../uploads_backup_2026-11-13.tar.gz'), false);
+  assert.equal(isValidUploadsBackupFilename('database_backup_2026-11-13.sqlite'), false);
+
+  assert.equal(getBackupKind('database_backup_2026-11-13_02-30.sqlite'), 'sqlite');
+  assert.equal(getBackupKind('uploads_backup_2026-11-13_02-30.tar.gz'), 'uploads');
+  assert.equal(getBackupKind('random.tar.gz'), null);
+
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'pantau-sp-uploads-test-'));
+  const uploadsDir = path.join(tmpRoot, 'uploads');
+  const backupsDir = path.join(tmpRoot, 'backups');
+  fs.mkdirSync(path.join(uploadsDir, 'surat'), { recursive: true });
+  fs.mkdirSync(path.join(uploadsDir, 'avatars'), { recursive: true });
+  fs.mkdirSync(path.join(uploadsDir, 'dwg'), { recursive: true });
+
+  fs.writeFileSync(path.join(uploadsDir, 'surat', 'dokumen.pdf'), '%PDF-1.4 sample');
+  fs.writeFileSync(path.join(uploadsDir, 'avatars', 'user1.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  fs.writeFileSync(path.join(uploadsDir, 'dwg', 'peta.dwg'), 'AC1027-sample-dwg');
+
+  t.after(() => {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  const result = await createUploadsBackup({
+    uploadsDir,
+    backupsDir,
+    timestampLabel: '2026-11-13_20-00-00',
+  });
+
+  assert.equal(result.backup.filename, 'uploads_backup_2026-11-13_20-00-00.tar.gz');
+  assert.equal(result.backup.kind, 'uploads');
+  assert.match(result.backup.sha256, /^[a-f0-9]{64}$/);
+  assert.equal(result.verification.ok, true);
+  assert.equal(result.verification.kind, 'uploads');
+  assert.equal(result.verification.fileCount, 3);
+  assert.ok(result.verification.totalRawBytes > 20);
+
+  const listedUploads = listBackups(backupsDir, 'uploads');
+  assert.equal(listedUploads.length, 1);
+  assert.equal(listedUploads[0].kind, 'uploads');
+
+  const corruptTarPath = path.join(backupsDir, 'uploads_backup_2026-11-13_corrupt.tar.gz');
+  fs.writeFileSync(corruptTarPath, 'not-a-gzip-file');
+  const badReport = await verifyUploadsBackupFile(corruptTarPath);
+  assert.equal(badReport.ok, false);
+  assert.equal(badReport.integrityCheck, 'corrupt-archive');
+});
+
+test('backupService notifies linked Administrator Telegram accounts on backup success and failure alerts', async (t) => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'pantau-sp-tg-notify-'));
+  const dbPath = path.join(tmpRoot, 'live.sqlite');
+  const backupsDir = path.join(tmpRoot, 'backups');
+
+  const db = initDatabase({ dbPath, jwt, jwtSecret: 'test-secret', bcrypt });
+  await waitForSeededAdmin(db);
+
+  t.after(async () => {
+    await closeSqliteDb(db);
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  await new Promise((resolve, reject) => {
+    db.run(
+      "UPDATE users SET telegram_chat_id = ? WHERE role = 'Administrator'",
+      ['99887766'],
+      (err) => (err ? reject(err) : resolve())
+    );
+  });
+
+  const sentMessages = [];
+  const mockSend = async (chatId, html) => {
+    sentMessages.push({ chatId, html });
+    return { ok: true };
+  };
+
+  const dbResult = await createOnlineBackup(db, {
+    backupsDir,
+    timestampLabel: '2026-11-13_20-10-00',
+  });
+
+  const okSummary = await notifyAdminsBackupStatus(db, mockSend, {
+    ok: true,
+    triggerLabel: 'Cron QNAP',
+    dbResult,
+  });
+
+  assert.equal(okSummary.targetAdmins, 1);
+  assert.equal(okSummary.sentCount, 1);
+  assert.equal(sentMessages[0].chatId, '99887766');
+  assert.match(sentMessages[0].html, /database_backup_2026-11-13_20-10-00\.sqlite/);
+  assert.match(sentMessages[0].html, /Cron QNAP/);
+
+  const errSummary = await notifyAdminsBackupStatus(db, mockSend, {
+    ok: false,
+    triggerLabel: 'Panel Admin',
+    actorUsername: 'admin',
+    errorMessage: 'Disk <full> & quota exceeded',
+  });
+
+  assert.equal(errSummary.targetAdmins, 1);
+  assert.equal(errSummary.sentCount, 1);
+  assert.match(sentMessages[1].html, /PERINGATAN/);
+  assert.match(sentMessages[1].html, /Disk &lt;full&gt; &amp; quota exceeded/);
 });

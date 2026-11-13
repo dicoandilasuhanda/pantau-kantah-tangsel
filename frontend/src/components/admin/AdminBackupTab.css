@@ -25,6 +25,114 @@
   color: var(--text-muted);
 }
 
+.backup-actions-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.backup-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.backup-automation-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.backup-uploads-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  font-size: 0.82rem;
+  color: var(--text-main);
+}
+
+.backup-tg-summary {
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.backup-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.backup-filter-pill {
+  width: auto;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.backup-filter-pill.is-active {
+  background: #1D4ED8;
+  border-color: #1D4ED8;
+  color: #FFFFFF;
+}
+
+.backup-filename-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.backup-kind-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.14rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.backup-kind-pill.is-sqlite {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+[data-theme="dark"] .backup-kind-pill.is-sqlite {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93C5FD;
+}
+
+.backup-kind-pill.is-uploads {
+  background: #EDE9FE;
+  color: #5B21B6;
+}
+
+[data-theme="dark"] .backup-kind-pill.is-uploads {
+  background: rgba(139, 92, 246, 0.22);
+  color: #C4B5FD;
+}
+
 .backup-actions {
   display: flex;
   gap: 0.65rem;

@@ -24,6 +24,7 @@ const dbPath = path.join(tmpDir, 'e2e.sqlite');
 const uploadDir = path.join(tmpDir, 'uploads', 'surat');
 const avatarDir = path.join(tmpDir, 'uploads', 'avatars');
 const dwgDir = path.join(tmpDir, 'uploads', 'dwg');
+const uploadsDir = path.join(tmpDir, 'uploads');
 
 fs.mkdirSync(uploadDir, { recursive: true });
 fs.mkdirSync(avatarDir, { recursive: true });
@@ -97,6 +98,7 @@ async function start() {
     uploadDir,
     avatarDir,
     dwgDir,
+    uploadsDir,
     backupsDir,
     telegramService: mockTelegramService,
     loginLimiter: permissiveLimiter,
