@@ -161,6 +161,7 @@ Sistem mendukung 14 peran spesifik yang dapat dikombinasikan pada satu akun:
 - **Audio & Notifikasi:** Web Audio API Synthesizer (*Dual-Oscillator Harmonic Chime* + *Dynamics Compressor*)
 - **QR Code Engine:** `qrcode.react` (Generator) & `html5-qrcode` (Camera/Image Scanner)
 - **Visualisasi & Pelaporan:** `recharts` (Grafik KPI) & `xlsx` (Ekspor Microsoft Excel Multi-Sheet)
+- **Progressive Web App (PWA):** Web App Manifest (`manifest.webmanifest`), Ikon PNG Multi-Ukuran (`180x180`, `192x192`, `512x512`, `maskable`), Service Worker Network-First Aman (`sw.js`), & Integrasi Instalasi (`navigator.install()` + `beforeinstallprompt`)
 - **HTTP Client:** Axios (dengan *interceptor* token JWT otomatis)
 
 ### Backend
@@ -225,7 +226,11 @@ pantau-kantah-tangsel/
 │   └── package.json                # Dependensi backend
 │
 ├── frontend/                       # Aplikasi Single Page Application (React + Vite)
-│   ├── public/                     # Aset statis publik (Logo Kantah, Favicon)
+│   ├── public/                     # Aset statis publik, manifest, & watchdog PWA:
+│   │   ├── icons/                  # Ikon PNG PWA (180x180 Apple, 192x192, 512x512, maskable 512x512)
+│   │   ├── manifest.webmanifest    # Metadata instalasi PWA (id "/", standalone, theme color)
+│   │   ├── recovery.js             # Watchdog pemulihan layar putih & unregister Service Worker
+│   │   └── sw.js                   # Service Worker network-first aman (hanya cache ikon statis)
 │   ├── src/
 │   │   ├── components/             # Komponen modular:
 │   │   │   ├── admin/              # Subkomponen Admin (AdminBerkasTab, AdminSuratTab, CloseReasonModal, RecordRowActions)
@@ -272,7 +277,9 @@ pantau-kantah-tangsel/
 │   │   │   ├── pdfOperations.js         # Mesin manipulasi PDF client-side berbasis pdf-lib & thumbnail progresif
 │   │   │   ├── pdfPreview.js            # Loader on-demand pdfjs-dist untuk rendering pratinjau halaman PDF
 │   │   │   ├── pdfUtils.js              # Helper ukuran file, pengurai rentang halaman PDF, & konversi gambar canvas
-│   │   │   └── pdfUtils.test.js         # Unit test Vitest untuk parser rentang halaman, konversi indeks, & format byte
+│   │   │   ├── pdfUtils.test.js         # Unit test Vitest untuk parser rentang halaman, konversi indeks, & format byte
+│   │   │   ├── pwa.js                   # Utilitas instalasi PWA (navigator.install, beforeinstallprompt, registrasi SW)
+│   │   │   └── pwa.test.js              # Unit test Vitest untuk deteksi standalone, Web Install API, & origin SW
 │   │   ├── App.jsx                 # Konfigurasi routing utama & Role-based Route Guards
 │   │   └── index.css               # Sistem desain global (Dark Glassmorphism)
 │   └── package.json                # Dependensi frontend
@@ -284,6 +291,7 @@ pantau-kantah-tangsel/
 │   ├── helpers.js                  # Utilitas login & pembacaan sesi token E2E
 │   ├── auth-and-theme.spec.js      # Uji autentikasi, HomeHub, dark/light theme, & navbar mobile 390px
 │   ├── berkas-and-print.spec.js    # Uji entri berkas, QR slip, isolasi CSS @media print, & transit berkas
+│   ├── pwa.spec.js                 # Uji webmanifest, ikon PNG, Service Worker no-store, Web Install API & fallback
 │   ├── surat-flow.spec.js          # Uji entri surat masuk, format DD/MM/YYYY, pencarian, & detail surat
 │   └── admin-and-pdftools.spec.js  # Uji 5 tab PDF Tools, Admin Panel, modal Tutup Berkas, & ekspor Excel .xlsx
 ├── playwright.config.mjs           # Konfigurasi Playwright Desktop Chrome & Mobile Pixel 5
@@ -443,6 +451,10 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
 - **Tahap 22 — Otomasi Pengujian Browser E2E (`10 Kasus Playwright`) & Perbaikan SPA Fallback `sendFile`:**
   - **Suite Playwright Terisolasi (`e2e/` & `playwright.config.mjs`):** Menguji alur kritis langsung pada bundle produksi Vite (`frontend/dist`) yang disajikan oleh Express dengan SQLite sementara di `os.tmpdir()` via `e2e/server-runner.cjs` (`127.0.0.1:3109`, tanpa menyentuh `database.sqlite` produksi): autentikasi gagal/berhasil, persistensi tema gelap/terang, responsivitas navbar mobile `390x844`, registrasi berkas + isolasi cetak `@media print` + transit, entri & format tanggal `DD/MM/YYYY` surat masuk, pergantian 5 tab PDF Tools, penutupan berkas modal Admin, serta verifikasi unduhan `.xlsx`. Total **10/10 tes Playwright lulus** (desktop & mobile Chromium) dan terintegrasi dalam job `e2e-check` pada `.github/workflows/ci.yml`.
   - **Perbaikan SPA Fallback Dot-Directory (`backend/server.js`):** Mengubah `res.sendFile(path.join(..., 'index.html'))` menjadi `res.sendFile('index.html', { root: frontendDistDir })` sehingga aplikasi tetap dapat menyajikan rute SPA (`/login`, `/berkas`, `/surat`, `/admin`, `/pdf-tools`) dengan status `200` meski berada di bawah direktori parent berawalan titik seperti `.gemini/`.
+- **Tahap 23 — Dukungan Progressive Web App (PWA), Ikon PNG Multi-Ukuran, & Service Worker Network-First Aman:**
+  - **Web App Manifest & Ikon PNG Resolusi Tinggi (`manifest.webmanifest`, `frontend/public/icons/`, & `index.html`):** Menambahkan metadata PWA standar (`id: "/"`, `start_url: "/"`, `display: "standalone"`, `theme_color: "#1D4ED8"`), tag `<link rel="manifest">` / `apple-touch-icon` / `theme-color` adaptif terang-gelap, serta menghasilkan ikon PNG persegi berkualitas tinggi (`icon-192x192.png`, `icon-512x512.png`, `icon-maskable-512x512.png`, dan `apple-touch-icon.png` `180x180`). Header HTTP `Cache-Control: no-store` ditegakkan di `backend/server.js` untuk `sw.js` maupun `manifest.webmanifest`.
+  - **Service Worker Aman Anti-Stale-Chunk (`frontend/public/sw.js` & `recovery.js`):** Hanya men-cache ikon statis PWA (`pantau-kantah-static-v1`) dan membiarkan seluruh endpoint `/api/*`, `index.html`, `/recovery.js`, serta bundel `/assets/*` tetap *network-first*, ditambah pencabutan Service Worker otomatis di dalam `__appSelfRepair()`.
+  - **Tombol Instalasi Adaptif & Pengujian Penuh (`HomeHub.jsx`, `pwa.js`, `pwa.test.js`, `e2e/pwa.spec.js`):** Menambahkan tombol instalasi `#pwa-install-btn` tersembunyi-sampai-siap di `HomeHub.jsx` yang mendukung *Web Install API* (`navigator.install()`) maupun *fallback* `beforeinstallprompt` & pelacakan `appinstalled`. Diverifikasi lulus **34/34 tes backend**, **0 peringatan Oxlint (57 berkas)**, **36/36 tes Vitest**, dan **13/13 skenario Browser E2E Playwright**.
 
 ---
 

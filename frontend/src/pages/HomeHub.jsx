@@ -1,11 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FolderKanban, Mail, ArrowRight, Shield, Files, BarChart2, Lightbulb } from 'lucide-react';
+import { FolderKanban, Mail, ArrowRight, Shield, Files, BarChart2, Lightbulb, Download } from 'lucide-react';
 import SuggestionModal from '../components/SuggestionModal';
+import {
+  isStandaloneApp,
+  supportsWebInstallApi,
+  subscribeInstallState,
+  consumeDeferredInstallPrompt,
+  triggerAppInstall,
+} from '../utils/pwa';
 
 export default function HomeHub() {
   const navigate = useNavigate();
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [installState, setInstallState] = useState({ hasDeferredPrompt: false, isInstalled: false });
+  const [localInstalled, setLocalInstalled] = useState(false);
+  const [isPromptingInstall, setIsPromptingInstall] = useState(false);
+  const supportsWebInstall = supportsWebInstallApi();
+  const canInstallApp =
+    !isStandaloneApp() &&
+    !installState.isInstalled &&
+    !localInstalled &&
+    (supportsWebInstall || installState.hasDeferredPrompt);
+
+  useEffect(() => {
+    return subscribeInstallState(setInstallState);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (isPromptingInstall) return;
+    setIsPromptingInstall(true);
+
+    const pendingPrompt = supportsWebInstall ? null : consumeDeferredInstallPrompt();
+
+    try {
+      const result = await triggerAppInstall({
+        supportsWebInstall,
+        deferredPrompt: pendingPrompt,
+        installFn: supportsWebInstall ? () => navigator.install() : null,
+      });
+      if (result.outcome === 'installed' || result.outcome === 'accepted') {
+        setLocalInstalled(true);
+      }
+    } finally {
+      setIsPromptingInstall(false);
+    }
+  };
   const roleStr = localStorage.getItem('role') || '';
   const userRoles = roleStr.split(',').map(r => r.trim()).filter(Boolean);
   const isAdmin = userRoles.includes('Administrator');
@@ -280,6 +320,52 @@ export default function HomeHub() {
           color: #07182D;
         }
 
+        .hub-pwa-install-btn[hidden] {
+          display: none !important;
+        }
+        .hub-pwa-install-btn {
+          margin: 1rem auto 0;
+          width: auto;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1.05rem;
+          border-radius: 10px;
+          background: #EFF6FF;
+          color: #1D4ED8;
+          border: 1px solid #93C5FD;
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.18s ease, border-color 0.18s ease;
+        }
+        .hub-pwa-install-btn:hover {
+          background: #DBEAFE;
+          border-color: #1D4ED8;
+        }
+        .hub-pwa-install-btn:focus-visible {
+          outline: 2px solid #1D4ED8;
+          outline-offset: 2px;
+        }
+        .hub-pwa-install-btn[aria-disabled="true"] {
+          opacity: 0.7;
+          cursor: wait;
+        }
+        [data-theme="dark"] .hub-pwa-install-btn {
+          background: #0B2545;
+          color: #93C5FD;
+          border-color: #3B82F6;
+        }
+        [data-theme="dark"] .hub-pwa-install-btn:hover {
+          background: #102D54;
+          border-color: #60A5FA;
+        }
+        [data-theme="dark"] .hub-pwa-install-btn:focus-visible {
+          outline: 2px solid #60A5FA;
+          outline-offset: 2px;
+        }
+
         @media (max-width: 640px) {
           .hub-container {
             padding: 1.5rem 1rem 1.5rem !important;
@@ -296,6 +382,17 @@ export default function HomeHub() {
           <h1 className="hub-title">
             Portal Aplikasi Pantau<span className="hub-title-accent">.Kantah Tangsel</span>
           </h1>
+          <button
+            id="pwa-install-btn"
+            type="button"
+            hidden={!canInstallApp}
+            aria-disabled={isPromptingInstall ? 'true' : undefined}
+            onClick={handleInstallApp}
+            className="hub-pwa-install-btn"
+          >
+            <Download size={15} aria-hidden="true" />
+            <span>Pasang Aplikasi</span>
+          </button>
         </div>
 
         {/* Module Grid */}

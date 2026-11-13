@@ -255,7 +255,12 @@ function createApp({
       express.static(frontendDistDir, {
         setHeaders: (res, filePath) => {
           res.setHeader('Access-Control-Allow-Origin', '*');
-          if (filePath.endsWith('index.html') || filePath.endsWith('recovery.js')) {
+          if (
+            filePath.endsWith('index.html') ||
+            filePath.endsWith('recovery.js') ||
+            filePath.endsWith('sw.js') ||
+            filePath.endsWith('manifest.webmanifest')
+          ) {
             res.setHeader(
               'Cache-Control',
               'no-store, no-cache, must-revalidate, proxy-revalidate'

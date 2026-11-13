@@ -90,6 +90,10 @@
   // Fungsi Pemulihan Mandiri / Bersihkan Cache
   window.__appSelfRepair = async function () {
     try {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function (reg) { return reg.unregister(); }));
+      }
       if ('caches' in window) {
         var cacheNames = await caches.keys();
         await Promise.all(cacheNames.map(function (name) { return caches.delete(name); }));
