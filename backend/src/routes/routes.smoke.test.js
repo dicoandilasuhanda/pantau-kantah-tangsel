@@ -32,6 +32,11 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   const db = initDatabase({ dbPath, jwt, jwtSecret, bcrypt });
   await waitForSeededAdmin(db);
 
+  const busyTimeoutRow = await new Promise((resolve, reject) => {
+    db.get('PRAGMA busy_timeout', (err, row) => (err ? reject(err) : resolve(row)));
+  });
+  assert.equal(busyTimeoutRow.timeout, 5000);
+
   const sentTelegramMessages = [];
   const mockTelegramService = {
     botUsername: 'pantaukantahtangsel_bot',

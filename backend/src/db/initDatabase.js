@@ -12,6 +12,8 @@ function initDatabase({ dbPath, jwt, jwtSecret, bcrypt }) {
     }
 
     console.log('Connected to the SQLite database.');
+    // Tunggu hingga 5 detik saat ada lock singkat (aman di single-file bind-mount tanpa file -wal/-shm).
+    db.configure('busyTimeout', 5000);
 
     db.serialize(() => {
       db.run(`CREATE TABLE IF NOT EXISTS users (

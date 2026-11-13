@@ -192,7 +192,7 @@ pantau-kantah-tangsel/
 │   │   └── surat/                  # Direktori penyimpanan PDF surat masuk
 │   ├── src/                        # Arsitektur modular backend berbasis domain:
 │   │   ├── db/
-│   │   │   └── initDatabase.js     # Inisialisasi SQLite, migrasi kolom idempotent, & seeding
+│   │   │   └── initDatabase.js     # Inisialisasi SQLite (busyTimeout 5s, PRAGMA FK), migrasi idempotent, & seeding
 │   │   ├── middleware/
 │   │   │   ├── auth.js             # Guard JWT, batas maks 2 sesi aktif, & pengecekan role
 │   │   │   ├── auth.test.js        # Unit test middleware auth, role guard, IP & verifikasi QR
@@ -490,6 +490,7 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
 - **Tahap 27 — Penuntasan Manajemen Secret `.env` (`JWT_SECRET`, `TELEGRAM_BOT_TOKEN`, & `.dockerignore`):**
   - **Eliminasi Fallback Secret Hardcoded (`telegramService.js` & `backend/server.js`):** Menghapus `DEFAULT_TELEGRAM_TOKEN_B64` dari `telegramService.js` (bot otomatis nonaktif rapi bila `TELEGRAM_BOT_TOKEN` kosong), mewajibkan `JWT_SECRET` acak $\ge 32$ karakter dan bukan nilai default saat `NODE_ENV=production` melalui `resolveRuntimeJwtSecret` (sambil mempertahankan fallback QR lama di `verifyQRCodeToken`), serta memperbaiki parsing numerik `PORT` agar port HTTPS lokal `3002` tidak berubah menjadi `30011`.
   - **Satu Sumber `.env` & Isolasi Build Docker (`.env.example`, `docker-compose.yml`, & `.dockerignore`):** Memusatkan konfigurasi `JWT_SECRET`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, dan `CLOUDFLARE_TUNNEL_TOKEN` ke `.env` root agar diteruskan ke container `pantau-sp` & `cloudflared`, serta memblokir `.env` dari context build Docker via `.dockerignore`. Diverifikasi lulus **45/45 tes backend**, **0 peringatan Oxlint (59 berkas)**, dan build produksi Vite.
+  - **Resiliensi Lock SQLite (`initDatabase.js`):** Menambahkan `db.configure('busyTimeout', 5000)` pada koneksi SQLite aplikasi agar kueri bersamaan maupun proses backup online menunggu hingga 5 detik sebelum melempar `SQLITE_BUSY`, tetap aman bagi *single-file bind-mount* `database.sqlite` di Docker tanpa membuat file `-wal`/`-shm`.
 
 ---
 
