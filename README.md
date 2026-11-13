@@ -361,7 +361,7 @@ npm run test:e2e
 Proyek ini telah dikonfigurasi agar *Backend* sekaligus menyajikan hasil *build* statis *Frontend* dalam satu kontainer yang ringan.
 
 ```bash
-# Salin template .env dan isi CLOUDFLARE_TUNNEL_TOKEN bila menjalankan service cloudflared
+# Salin template .env dan isi JWT_SECRET, TELEGRAM_BOT_TOKEN, serta CLOUDFLARE_TUNNEL_TOKEN
 cp .env.example .env
 
 # Build dan jalankan container di background
@@ -487,6 +487,9 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Pembersihan Rahasia Repo & Peringatan `JWT_SECRET` (`docker-compose.yml`, `.env.example`, & `backend/server.js`):** Menghapus token *fallback hardcoded* Cloudflare Tunnel dari `docker-compose.yml` menjadi `${CLOUDFLARE_TUNNEL_TOKEN:-}` dengan dokumentasi template `.env.example` di akar repositori (aman bagi eksekusi `docker compose exec` tanpa `.env`), serta menambahkan peringatan startup di `backend/server.js` jika `JWT_SECRET` masih memakai nilai default atau panjangnya `< 32` karakter.
   - **Middleware Kompresi Native Node (`backend/src/middleware/compression.js`):** Mengimplementasikan kompresi `br` / `gzip` berbasis `node:zlib` tanpa dependensi eksternal tambahan (`mount` di atas rute `/api` & berkas statis `frontend/dist`) dengan penanganan *backpressure* (`drain`) stream penuh, batas ambang `1024` byte, pemeliharaan `ETag` lemah (`W/...`), dan bypass otomatis untuk lampiran biner (`Content-Disposition: attachment`), permintaan `Range`, respons kecil/non-2xx, serta `text/event-stream`.
   - **Jejak Audit Aksi Sensitif (`initDatabase.js`, `auditService.js`, `routes/audit.js`, & `AdminAuditTab.jsx`):** Menambahkan tabel permanen `audit_logs` (beserta 3 indeks & kompatibilitas mundur verifikasi backup lama 9 tabel via `OPTIONAL_TABLES`), meredaksi field sensitif (`password`, `token`, dll.), merekam peristiwa penting pada `auth.js` (`LOGIN_FAILED`), `users.js` (`USER_CREATED`, `PASSWORD_CHANGED`, `USER_UPDATED`, `USER_DELETED`), `stats.js` (`SESSION_KICKED`), `files.js` (`FILE_DELETED`, `FILE_COMPLETED`, `FILE_CLOSED`, `FILE_PAUSED`, `FILE_RESUMED`), `surat.js` (`SURAT_COMPLETED`, `SURAT_CLOSED`, `SURAT_DELETED`), `backups.js` (`BACKUP_RUN`, `BACKUP_RUN_FAILED`, `BACKUP_VERIFY`, `BACKUP_DOWNLOAD`), serta skrip CLI `backup-db.js` (`BACKUP_RUN_CLI`, `BACKUP_RUN_CLI_FAILED`), lalu menyajikannya di tab **Audit Keamanan** (`AdminAuditTab.jsx`) lengkap dengan pencarian filter, kartu ringkasan 24 jam, paginasi, dan tampilan kartu responsif (`@container`). Diverifikasi lulus **44/44 tes backend**, **0 peringatan Oxlint (59 berkas)**, **36/36 tes Vitest**, dan **14/14 skenario Browser E2E Playwright**.
+- **Tahap 27 — Penuntasan Manajemen Secret `.env` (`JWT_SECRET`, `TELEGRAM_BOT_TOKEN`, & `.dockerignore`):**
+  - **Eliminasi Fallback Secret Hardcoded (`telegramService.js` & `backend/server.js`):** Menghapus `DEFAULT_TELEGRAM_TOKEN_B64` dari `telegramService.js` (bot otomatis nonaktif rapi bila `TELEGRAM_BOT_TOKEN` kosong), mewajibkan `JWT_SECRET` acak $\ge 32$ karakter dan bukan nilai default saat `NODE_ENV=production` melalui `resolveRuntimeJwtSecret` (sambil mempertahankan fallback QR lama di `verifyQRCodeToken`), serta memperbaiki parsing numerik `PORT` agar port HTTPS lokal `3002` tidak berubah menjadi `30011`.
+  - **Satu Sumber `.env` & Isolasi Build Docker (`.env.example`, `docker-compose.yml`, & `.dockerignore`):** Memusatkan konfigurasi `JWT_SECRET`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, dan `CLOUDFLARE_TUNNEL_TOKEN` ke `.env` root agar diteruskan ke container `pantau-sp` & `cloudflared`, serta memblokir `.env` dari context build Docker via `.dockerignore`. Diverifikasi lulus **45/45 tes backend**, **0 peringatan Oxlint (59 berkas)**, dan build produksi Vite.
 
 ---
 

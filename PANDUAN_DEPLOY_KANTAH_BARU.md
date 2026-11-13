@@ -44,11 +44,10 @@ mkdir -p ../backups
 
 ## Tahap 3: Konfigurasi `.env` & `docker-compose.yml` (Mencegah Bentrok Port & Container)
 
-1. Salin template `.env.example` menjadi `.env` di root direktori proyek jika menggunakan **Cloudflare Tunnel**, lalu isi token tunnel resmi:
+1. Salin template `.env.example` menjadi `.env` di root direktori proyek, lalu isi `JWT_SECRET` (acak minimal 32 karakter, misal `openssl rand -hex 32`), `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_USERNAME` (kosongkan bila belum memakai Bot Telegram), dan `CLOUDFLARE_TUNNEL_TOKEN` (jika menggunakan Cloudflare Tunnel):
    ```bash
    cp .env.example .env
    ```
-   Disarankan juga membuat `backend/.env` berisi `JWT_SECRET` acak minimal 32 karakter dan `TELEGRAM_BOT_TOKEN` (jika menggunakan Bot Telegram khusus Kantah baru).
 
 2. Buka berkas `docker-compose.yml` dan sesuaikan nama *service*, `container_name`, serta mapping *port*:
 
@@ -75,8 +74,9 @@ services:
       - ./frontend/dist:/app/frontend/dist
     environment:
       - NODE_ENV=production
-      # Opsional: Token Bot Telegram & JWT Secret khusus Kantah baru (atau atur di backend/.env)
-      - TELEGRAM_BOT_TOKEN=ISI_TOKEN_BOTFATHER_KANTAH_BARU
+      - JWT_SECRET=${JWT_SECRET:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:-}
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3001/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
@@ -108,7 +108,7 @@ Untuk menyesuaikan identitas nama kantor (mengubah *"Kantor Pertanahan Kota Tang
    - Sesuaikan kop institusi (*Kantor Pertanahan Kota Tangerang Selatan*) dan nama aplikasi pada panel cetak slip QR.
 6. **`backend/server.js` & `backend/src/services/telegramService.js`**
    - Sesuaikan daftar `allowedOrigins` (CORS) di `backend/server.js` dengan domain publik Kantah baru Anda.
-   - Jika menggunakan Bot Telegram baru, atur `TELEGRAM_BOT_TOKEN` melalui variabel lingkungan (`backend/.env` / Docker `environment`) dan sesuaikan `DEFAULT_TELEGRAM_BOT_USERNAME` di `backend/src/services/telegramService.js`.
+   - Jika menggunakan Bot Telegram baru, atur `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_BOT_USERNAME` melalui `.env` root (diteruskan oleh `docker-compose.yml`).
 
 Setelah mengubah kode frontend, jalankan kompilasi ulang agar folder bind-mount `frontend/dist` ikut terbarui:
 ```bash

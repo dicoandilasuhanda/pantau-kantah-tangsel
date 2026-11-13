@@ -3,7 +3,9 @@ const path = require('node:path');
 const bcrypt = require('bcryptjs');
 
 try {
-  require('dotenv').config({ path: path.join(__dirname, '../.env'), quiet: true });
+  const dotenv = require('dotenv');
+  dotenv.config({ path: path.join(__dirname, '../../.env'), quiet: true });
+  dotenv.config({ path: path.join(__dirname, '../.env'), quiet: true });
 } catch {
   // Abaikan bila dijalankan di lingkungan minimal tanpa .env lokal (misal container Docker)
 }

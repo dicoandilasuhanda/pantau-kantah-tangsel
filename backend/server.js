@@ -1,8 +1,11 @@
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+dotenv.config({ path: path.join(__dirname, '../.env'), quiet: true });
+dotenv.config({ path: path.join(__dirname, '.env'), quiet: true });
+
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const path = require('path');
 const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
 const fs = require('fs');
@@ -36,8 +39,30 @@ const { createHealthRouter } = require('./src/routes/health');
 const { createBackupsRouter } = require('./src/routes/backups');
 const { createAuditRouter } = require('./src/routes/audit');
 
-const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-file-tracker';
+const LEGACY_JWT_SECRET = 'super-secret-key-for-file-tracker';
+const PORT = Number(process.env.PORT) || 3001;
+
+/**
+ * Memastikan JWT_SECRET di mode production terkonfigurasi kuat di .env/environment.
+ */
+function resolveRuntimeJwtSecret(env = process.env) {
+  const configured = String(env.JWT_SECRET || '').trim();
+  const isWeak = !configured || configured === LEGACY_JWT_SECRET || configured.length < 32;
+
+  if (env.NODE_ENV === 'production' && isWeak) {
+    throw new Error(
+      '[SECURITY ERROR] JWT_SECRET wajib disetel di environment/.env minimal 32 karakter acak dan bukan nilai default pada mode production.'
+    );
+  }
+
+  if (isWeak) {
+    console.warn(
+      '[SECURITY WARNING] JWT_SECRET belum disetel, masih default, atau < 32 karakter. Atur JWT_SECRET acak yang kuat pada .env.'
+    );
+  }
+
+  return configured || LEGACY_JWT_SECRET;
+}
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -53,7 +78,7 @@ const allowedOrigins = [
  */
 function createApp({
   db,
-  jwtSecret = JWT_SECRET,
+  jwtSecret = process.env.JWT_SECRET || LEGACY_JWT_SECRET,
   uploadDir = path.join(__dirname, 'uploads', 'surat'),
   avatarDir = path.join(__dirname, 'uploads', 'avatars'),
   dwgDir = path.join(__dirname, 'uploads', 'dwg'),
@@ -315,19 +340,12 @@ function createApp({
 }
 
 if (require.main === module) {
-  if (
-    JWT_SECRET === 'super-secret-key-for-file-tracker' ||
-    String(JWT_SECRET).length < 32
-  ) {
-    console.warn(
-      '[SECURITY WARNING] JWT_SECRET masih menggunakan nilai default atau < 32 karakter. Atur JWT_SECRET acak yang kuat pada backend/.env.'
-    );
-  }
+  const runtimeJwtSecret = resolveRuntimeJwtSecret();
 
   const db = initDatabase({
     dbPath: path.join(__dirname, 'database.sqlite'),
     jwt,
-    jwtSecret: JWT_SECRET,
+    jwtSecret: runtimeJwtSecret,
     bcrypt,
   });
 
@@ -335,7 +353,7 @@ if (require.main === module) {
   const telegramService = createTelegramService({ db, bcrypt });
   telegramService.startPolling();
 
-  const app = createApp({ db, telegramService });
+  const app = createApp({ db, jwtSecret: runtimeJwtSecret, telegramService });
 
   app.listen(PORT, () => {
     console.log(`HTTP Backend server is running on http://localhost:${PORT}`);
@@ -365,4 +383,5 @@ if (require.main === module) {
 
 module.exports = {
   createApp,
+  resolveRuntimeJwtSecret,
 };

@@ -136,3 +136,30 @@ test('authenticateJWT menolak tanpa header, menolak sesi tertimpa, dan menyegark
   assert.equal(dbUpdates.length, 1);
   assert.deepEqual(dbUpdates[0].params, ['10.2.0.50', 1]);
 });
+
+test('resolveRuntimeJwtSecret menolak secret lemah di production dan mengizinkan secret >= 32 karakter', () => {
+  const { resolveRuntimeJwtSecret } = require('../../server');
+  const strongSecret = 'a'.repeat(32);
+
+  assert.throws(() => resolveRuntimeJwtSecret({ NODE_ENV: 'production' }), /SECURITY ERROR/);
+  assert.throws(
+    () =>
+      resolveRuntimeJwtSecret({
+        NODE_ENV: 'production',
+        JWT_SECRET: 'super-secret-key-for-file-tracker',
+      }),
+    /SECURITY ERROR/
+  );
+  assert.throws(
+    () => resolveRuntimeJwtSecret({ NODE_ENV: 'production', JWT_SECRET: 'terlalu-pendek' }),
+    /SECURITY ERROR/
+  );
+  assert.equal(
+    resolveRuntimeJwtSecret({ NODE_ENV: 'production', JWT_SECRET: strongSecret }),
+    strongSecret
+  );
+  assert.equal(
+    resolveRuntimeJwtSecret({ NODE_ENV: 'development' }),
+    'super-secret-key-for-file-tracker'
+  );
+});

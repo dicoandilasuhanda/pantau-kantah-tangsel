@@ -52,7 +52,7 @@ Masukkan kata sandi administrator QNAP Anda.
 cd "/share/Pantau SP Tangsel/file-tracker"
 ```
 > [!IMPORTANT]
-> Token Cloudflare Tunnel tidak lagi disimpan *hardcoded* di `docker-compose.yml`. Jika Anda menjalankan ulang seluruh *stack* (`docker compose up -d --build` tanpa menyebut `pantau-sp`), pastikan berkas `.env` di root direktori QNAP sudah dibuat dari `.env.example` dan berisi `CLOUDFLARE_TUNNEL_TOKEN` yang valid agar container `cloudflared` tetap terhubung. Untuk aplikasi backend, disarankan juga mengisi `JWT_SECRET` acak minimal 32 karakter pada `backend/.env`.
+> Token Cloudflare Tunnel, `JWT_SECRET`, dan `TELEGRAM_BOT_TOKEN` dikelola terpusat di berkas `.env` root (`/share/Pantau SP Tangsel/file-tracker/.env` berdasarkan `.env.example`). Pastikan berkas `.env` tersebut sudah terisi (`JWT_SECRET` acak $\ge 32$ karakter bukan nilai default, `TELEGRAM_BOT_TOKEN`, dan `CLOUDFLARE_TUNNEL_TOKEN`) sebelum menjalankan `docker compose up -d` agar aplikasi dan `cloudflared` dapat menyala dengan benar.
 
 ### Tahap 3: Build Ulang dan Jalankan Container Aplikasi
 ```bash

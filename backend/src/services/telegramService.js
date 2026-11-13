@@ -1,6 +1,4 @@
 const DEFAULT_TELEGRAM_BOT_USERNAME = 'pantaukantahtangsel_bot';
-const DEFAULT_TELEGRAM_TOKEN_B64 =
-  'ODU3MzQyNDM0MjpBQUhoZlkwZnZ5VFc0d2lEenpsQXhOV1VhSkpXU0Q1RjF4OA==';
 
 /**
  * Membangun layanan Bot Telegram (@pantaukantahtangsel_bot) untuk notifikasi dan polling perintah.
@@ -8,16 +6,18 @@ const DEFAULT_TELEGRAM_TOKEN_B64 =
 function createTelegramService({
   db,
   bcrypt,
-  botUsername = DEFAULT_TELEGRAM_BOT_USERNAME,
-  botToken = process.env.TELEGRAM_BOT_TOKEN ||
-    Buffer.from(DEFAULT_TELEGRAM_TOKEN_B64, 'base64').toString('utf8'),
+  botUsername = process.env.TELEGRAM_BOT_USERNAME || DEFAULT_TELEGRAM_BOT_USERNAME,
+  botToken = process.env.TELEGRAM_BOT_TOKEN || '',
   fetchFn = global.fetch,
 }) {
   let lastTelegramUpdateId = 0;
   let isPollingTelegram = false;
 
   async function sendTelegramMessage(chatId, text) {
-    if (!botToken || !chatId) return { ok: false, description: 'Chat ID kosong' };
+    if (!chatId) return { ok: false, description: 'Chat ID kosong' };
+    if (!botToken) {
+      return { ok: false, description: 'TELEGRAM_BOT_TOKEN belum dikonfigurasi' };
+    }
     try {
       const res = await fetchFn(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
@@ -186,6 +186,10 @@ function createTelegramService({
   }
 
   function startPolling(intervalMs = 5000, initialDelayMs = 2000) {
+    if (!botToken) {
+      console.warn('[Telegram] TELEGRAM_BOT_TOKEN tidak disetel; bot polling dinonaktifkan.');
+      return () => {};
+    }
     const intervalId = setInterval(pollTelegramUpdates, intervalMs);
     const timeoutId = setTimeout(pollTelegramUpdates, initialDelayMs);
     return () => {

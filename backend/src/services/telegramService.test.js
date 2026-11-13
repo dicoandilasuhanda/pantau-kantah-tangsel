@@ -122,5 +122,22 @@ describe('telegramService bot engine', () => {
     const offlineRes = await service.sendTelegramMessage('123', 'Halo');
     assert.equal(offlineRes.ok, false);
     assert.equal(offlineRes.description, 'offline');
+
+    const unconfiguredService = createTelegramService({
+      db: {},
+      bcrypt: {},
+      botToken: '',
+      fetchFn: async () => {
+        throw new Error('should not fetch without token');
+      },
+    });
+    const noTokenRes = await unconfiguredService.sendTelegramMessage('123', 'Halo');
+    assert.deepEqual(noTokenRes, {
+      ok: false,
+      description: 'TELEGRAM_BOT_TOKEN belum dikonfigurasi',
+    });
+    const stopPolling = unconfiguredService.startPolling();
+    assert.equal(typeof stopPolling, 'function');
+    stopPolling();
   });
 });
