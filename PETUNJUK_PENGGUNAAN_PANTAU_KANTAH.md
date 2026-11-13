@@ -40,6 +40,10 @@ Saat pertama kali membuka alamat aplikasi **`https://pantaukantahtangsel.web.id`
 5. **Lupa Sandi?**: Klik tautan **Lupa sandi?** untuk melihat petunjuk menghubungi Administrator guna melakukan *reset* kata sandi.
 6. Klik tombol **Masuk ke Sistem →** untuk melanjutkan ke Portal Utama.
 
+> [!NOTE]
+> **Keamanan Layar Perangkat Mobile (HP/Tablet):**  
+> Saat aplikasi dibuka melalui ponsel/tablet setelah login, sistem otomatis mengaktifkan **Watermark Identitas Petugas & Waktu WIB** di latar belakang, memblokir penyalinan/tekan-tahan (*long-press*), serta mengaktifkan **Privacy Blur Shield (*Layar Dilindungi*)** secara otomatis ketika Anda berpindah tab atau beralih ke aplikasi lain.
+
 ---
 
 ## 2. Portal Utama (Home Hub) & Navigasi Atas
@@ -77,16 +81,16 @@ Di pojok kanan atas bilah navigasi (Navbar) terdapat ikon **Lonceng Notifikasi (
 ![Lonceng Notifikasi & Tombol Hubungkan Telegram](docs/screenshots/02a_lonceng_telegram_belum_terhubung.png)
 
 1. **Indikator Angka Merah (*Badge Count*)**:
-   - Menampilkan jumlah berkas permohonan yang sedang dikirim (*Transit*) menuju meja Anda dan menunggu untuk di-scan terima.
+   - Menampilkan jumlah kiriman (**Berkas Permohonan maupun Surat Masuk**) yang sedang berstatus *Transit* menuju meja Anda dan menunggu untuk di-scan terima.
 2. **Nada Panggilan Otomatis (*Web Audio Chime* ~3,2 Detik)**:
-   - Saat Anda baru saja login (dan terdapat berkas kiriman yang menunggu) atau saat rekan kerja baru saja mengirimkan berkas ke meja Anda, aplikasi otomatis membunyikan **nada *chime* pengumuman 2 putaran** melalui speaker PC/HP Anda serta memunculkan *popup* pemberitahuan di bagian atas layar.
+   - Saat Anda baru saja login (dan terdapat kiriman berkas/surat yang menunggu) atau saat rekan kerja baru saja mengirimkan berkas/surat ke meja Anda, aplikasi otomatis membunyikan **nada *chime* pengumuman 2 putaran** melalui speaker PC/HP Anda serta memunculkan *popup* pemberitahuan di bagian atas layar.
    - Sistem melakukan pengecekan otomatis setiap **20 detik** di latar belakang tanpa perlu memuat ulang halaman.
-3. **Daftar Kiriman Berkas & Tombol Pintas**:
-   - Klik ikon **Lonceng (`🔔`)** untuk membuka daftar **Kiriman Berkas**.
-   - Setiap kartu menampilkan **Nomor Berkas**, **Waktu Kirim**, **Jenis Kegiatan**, **Nama Pemohon**, serta **Nama Petugas Pengirim** (kotak kuning).
-   - Tersedia 2 tombol tindakan langsung pada setiap berkas:
-     - **`Detail Berkas`**: Membuka halaman rincian berkas dan riwayat perjalanannya.
-     - **`Scan Terima`**: Langsung membuka halaman **Scanner QR** untuk memindai map fisik berkas yang tiba di meja Anda.
+3. **Daftar Kiriman Berkas & Surat beserta Tombol Pintas**:
+   - Klik ikon **Lonceng (`🔔`)** untuk membuka daftar **Kiriman Berkas & Surat**.
+   - Setiap kartu menampilkan **Nomor Berkas / Nomor Agenda Surat**, **Waktu Kirim**, **Jenis Kegiatan / Perihal**, **Nama Pemohon / Asal Surat**, serta **Nama Petugas Pengirim** (kotak kuning).
+   - Tersedia 2 tombol tindakan langsung pada setiap kartu kiriman:
+     - **`Detail Berkas` / `Detail Surat`**: Membuka halaman rincian berkas atau surat beserta riwayat perjalanannya.
+     - **`Scan Terima`**: Langsung membuka halaman **Scanner QR** (untuk berkas) atau **Scan QR Surat** (untuk surat) guna memindai dokumen fisik yang tiba di meja Anda.
 
 ---
 
@@ -207,20 +211,34 @@ Apabila Anda ingin menyerahkan banyak berkas sekaligus ke satu petugas tujuan ya
 
 ## 4. Entri Berkas Permohonan Baru & Cetak QR Code (`/entry`)
 
-Petugas Loket Pendaftaran atau Administrator dapat mendaftarkan berkas permohonan baru dengan mengeklik tombol khusus **Entri Berkas Baru** di kanan atas halaman Monitoring Berkas (identik dengan tombol *Entry Surat Baru* pada Monitoring Surat).
+Petugas Loket Pendaftaran (**Petugas Entry Berkas**, **Petugas Entry Berkas PHP**) maupun **Administrator** dapat mendaftarkan berkas permohonan baru dengan mengeklik tombol **`+ Entri Berkas Baru`** di pojok kanan atas halaman **Monitoring Berkas (`/berkas`)**.
 
 ![Form Entri Berkas Baru](docs/screenshots/04_entry_berkas.png)
 
 ### Cara Mendaftarkan Berkas Baru:
-1. **Nomor Berkas & Tahun Berkas**: Masukkan nomor berkas permohonan (contoh: `67255`) dan tahun berkas (`2026`). Sistem secara otomatis menerapkan **Kunci Anti-Duplikasi** agar kombinasi Nomor + Tahun yang sama tidak dapat diinput ganda.
-2. **Nama Pemohon**: Isi nama lengkap pemohon atau badan hukum.
-3. **Jenis Kegiatan**: Pilih salah satu dari **17 jenis layanan Survei & Pemetaan** (seperti *Pemecahan Bidang*, *Pengukuran Dan Pemetaan Kadastral*, *Pengembalian Batas*, *Permohonan SK Konfirmasi*, dll.). Sistem otomatis menetapkan target hari kerja SLA/SOP sesuai kegiatan yang dipilih.
-4. **Jenis Hak & Nomor Hak**: Pilih jenis hak (*Hak Milik*, *HGB*, *Hak Pakai*, *Hak Pengelolaan*, *Wakaf*, atau *Belum Terdaftar*) dan masukkan nomor haknya.
-5. **Kecamatan & Kelurahan**: Pilih Kecamatan di wilayah Kota Tangerang Selatan; daftar Kelurahan akan menyesuaikan secara otomatis.
-6. **Catatan Awal (Opsional)**: Tambahkan informasi tambahan bila diperlukan.
-7. Klik **Simpan & Buat QR Code**:
-   - Panel di sebelah kanan akan langsung menampilkan **Slip QR Code Berkas** berlogo ATR/BPN.
-   - Klik tombol **Cetak QR Code** untuk mencetak slip tempel berkas fisik.
+1. **Nomor Berkas (Maks. 6 digit angka)**:
+   - Masukkan nomor berkas permohonan berupa angka 1 hingga 6 digit (contoh: `67255`). Kolom ini hanya menerima karakter angka.
+   - Sistem secara otomatis menerapkan **Kunci Anti-Duplikasi** sehingga kombinasi *Nomor Berkas + Tahun* yang sama tidak dapat didaftarkan dua kali.
+2. **Tahun**:
+   - Terisi otomatis dan dikunci (*read-only*) ke tahun berjalan (misalnya `2026`).
+3. **Nama Kegiatan**:
+   - Pilih jenis layanan pada menu *dropdown* **Pilih Jenis Kegiatan**. Daftar pilihan menyesuaikan hak akses peran Anda:
+     - **Petugas Entry Berkas (Alur K1 — 5 Layanan)**: *Pengukuran dan Pemetaan Kadastral*, *Pemecahan Bidang*, *Penggabungan Bidang*, *Pemisahan Bidang*, dan *Penataan Batas*.
+     - **Petugas Entry Berkas PHP (Alur K2 — 9 Layanan)**: *Pelepasan Sebagian Hak*, *Wakaf dari Tanah Yang Sudah Bersertipikat*, *Pendaftaran Tanah Pertama Kali Pemberian Hak*, *Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak*, *Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)*, *Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf*, *Sertipikat Pengganti Karena Hilang/Lelang Eksekusi*, *Sertipikat Pengganti Karena Rusak/Lama*, dan *Permohonan SK*.
+     - **Administrator**: Dapat memilih seluruh **14 jenis layanan** (K1 maupun K2). Target hari kerja SOP ditetapkan otomatis oleh sistem sesuai kegiatan yang dipilih.
+4. **Nama Pemohon**:
+   - Masukkan nama lengkap pemohon atau instansi/badan hukum (teks otomatis dikonversi menjadi huruf kapital).
+5. **Tahap Konfirmasi Pendaftaran**:
+   - Klik tombol **`Daftarkan & Generate QR Code`**.
+   - Layar akan menampilkan panel **Konfirmasi Pendaftaran** berisi ringkasan *Nomor Berkas / Tahun*, *Nama Kegiatan*, dan *Nama Pemohon* untuk diperiksa kembali.
+   - Klik **`Setuju`** untuk menyimpan data ke sistem (atau klik **`Tidak, Kembali`** bila masih ada isian yang ingin diubah).
+
+![Hasil QR Code Setelah Konfirmasi Pendaftaran Berkas](docs/screenshots/04a_hasil_qr_entry_berkas.png)
+
+6. **Cetak Slip QR Code**:
+   - Setelah dikonfirmasi, panel sebelah kanan (**`Berhasil Didaftarkan!`**) langsung menampilkan **QR Code Berkas berlogo ATR/BPN** lengkap dengan Nomor/Tahun Berkas, Nama Kegiatan, Nama Pemohon, serta alamat IP perangkat.
+   - Posisi awal berkas otomatis tercatat pada **`Loket Pendaftaran (Entry)`** (atau **`Petugas Entry Berkas PHP`** bila didaftarkan oleh petugas entry PHP).
+   - Klik tombol **`Cetak QR Code`** untuk mencetak slip QR guna ditempel pada map fisik berkas permohonan.
 
 ---
 
@@ -232,15 +250,15 @@ Mengklik salah satu baris berkas pada tabel Monitoring akan membuka halaman **De
 
 ### Fitur-fitur pada Halaman Detail Berkas:
 1. **Informasi Lengkap & Indikator SLA/SOP**:
-   - Menampilkan Nomor Berkas, Pemohon, Jenis Kegiatan, Lokasi Kecamatan/Kelurahan, Posisi Tahapan Saat Ini, serta jumlah **Hari Kerja Berjalan** dibandingkan batas target SOP (hijau = aman, kuning = mendekati batas, merah = melewati SOP).
+   - Menampilkan Nomor Berkas / Tahun, Nama Kegiatan, Nama Pemohon, Estimasi **Target Selesai (SOP)**, Posisi Berkas Saat Ini, serta jumlah **Hari Kerja Berjalan** dibandingkan batas target SOP (hijau = aman, kuning = mendekati batas, merah = melewati SOP).
 2. **Kirim Berkas (Transit Antar Petugas)**:
    - Klik tombol **Kirim Berkas (Transit)**, pilih nama petugas tujuan melalui kolom pencarian, lalu konfirmasi.
-   - Petugas tujuan akan langsung menerima **Notifikasi Telegram Otomatis** di ponselnya bahwa berkas sedang dikirim menuju mejanya.
-3. **Hentikan Sementara / Lanjutkan SOP (Khusus Koordinator, Kasi SP, & Admin)**:
-   - Jika berkas terkendala kelengkapan dokumen dari pemohon atau kendala eksternal lapangan, klik tombol **Hentikan SOP (Pause)**. Selama berkas dijeda, arloji perhitungan hari kerja SLA akan berhenti dan baru dihitung kembali saat tombol **Lanjutkan SOP (Resume)** ditekan.
-4. **Catatan Berkas & Lembar Disposisi Digital**:
-   - **Catatan Berkas**: Petugas dapat memperbarui catatan teknis berkas; sistem otomatis membubuhkan jejak nama petugas, jabatan, dan waktu perubahan.
-   - **Disposisi**: Pejabat/Koordinator/Petugas dapat menambahkan instruksi disposisi beruntun yang tersimpan rapi lengkap dengan stempel waktu.
+   - Petugas tujuan akan langsung menerima **Notifikasi Lonceng Suara** dan **Notifikasi Telegram Otomatis** di ponselnya bahwa berkas sedang dikirim menuju mejanya.
+3. **Berhentikan Sementara / Lanjutkan SOP (Khusus Administrator)**:
+   - Jika berkas terkendala kelengkapan dokumen dari pemohon atau kendala eksternal lapangan, klik tombol **Berhentikan (Pause) SOP**. Selama berkas dijeda, argometer perhitungan hari kerja SLA akan berhenti dan baru dihitung kembali saat tombol **Lanjutkan (Resume) SOP** ditekan.
+4. **Catatan Petugas & Lembar Disposisi Pimpinan**:
+   - **Catatan Petugas**: Petugas dapat memperbarui catatan teknis berkas melalui tombol **`Tambah Catatan`**; sistem otomatis membubuhkan jejak nama petugas, jabatan, dan waktu perubahan.
+   - **Disposisi Pimpinan**: Pimpinan/Koordinator dapat menambahkan instruksi disposisi beruntun lengkap dengan stempel waktu, dan petugas pelaksana dapat mengklik tombol **`Tandai Sudah Dilaksanakan`** setelah instruksi diselesaikan.
 5. **Riwayat Perjalanan Berkas (Timeline)**:
    - Menampilkan urutan kronologis perpindahan berkas dari meja ke meja, lengkap dengan nama petugas pemindai dan durasi waktu di setiap tahapan.
 6. **Slip QR Code & Cetak Ulang**:
@@ -357,18 +375,20 @@ Saat fisik surat tiba di meja Anda (atau saat Anda mengklik tombol **`Scan Terim
 
 ## 8. Entri Surat Masuk & Unggah Lampiran PDF (`/surat/entry`)
 
-Petugas Entry Surat dan Administrator dapat meregistrasi surat masuk baru melalui halaman **Entri Surat Masuk**.
+Petugas Entry Surat dan Administrator dapat meregistrasi surat masuk baru melalui tombol **`Entry Surat Baru`** pada halaman Monitoring Persuratan (`/surat`). **Nomor Agenda (5 digit angka)** akan dibuatkan otomatis oleh sistem saat surat disimpan.
 
 ![Form Entri Surat Masuk](docs/screenshots/08_entry_surat.png)
 
 ### Langkah-langkah Entri Surat Masuk:
-1. **Nomor Agenda & Nomor Surat**: Masukkan nomor agenda internal dan nomor surat resmi yang tertera pada naskah surat.
-2. **Tanggal Surat & Tanggal Terima**: Pilih tanggal surat diterbitkan dan tanggal surat diterima di Kantor Pertanahan.
-3. **Asal Surat & Perihal**: Ketik instansi/pihak pengirim surat beserta ringkasan perihal surat.
-4. **Unggah File PDF Surat (Opsional, Maks. 10 MB)**:
-   - Pilih file hasil pemindaian surat berformat `.pdf`.
-   - Sistem akan menampilkan **Pratinjau Halaman Pertama PDF** secara otomatis di layar sebelum Anda menyimpan data.
-5. Klik **Simpan & Buat QR Surat** untuk menyimpan data sekaligus menampilkan label QR Code Agenda Surat yang siap dicetak.
+1. **Asal Surat \***: Ketik nama instansi atau pihak pengirim surat (contoh: *Polres Tangerang Selatan* atau *Kementerian ATR/BPN Pusat*).
+2. **Nomor Surat \***: Masukkan nomor surat resmi yang tertera pada naskah surat (contoh: `B/412/XI/2026/Polres-Tangsel`).
+3. **Tanggal Diterima \***: Pilih tanggal surat diterima di Kantor Pertanahan.
+4. **Perihal \***: Tuliskan ringkasan isi/perihal surat masuk.
+5. **Upload File PDF Surat (Opsional, Maks. 10 MB)**:
+   - Pilih file hasil pemindaian surat berformat **`.pdf`**.
+6. Klik **`Simpan Surat`**:
+   - Sistem akan menampilkan notifikasi berisi **Nomor Agenda otomatis (5 digit)** lalu mengarahkan Anda ke halaman **Monitoring Surat (`/surat`)**.
+   - Pada tabel surat tersebut, klik ikon **QR Code (`🏁`)** atau buka **Detail Surat** untuk mencetak slip QR Agenda Surat ke lembar disposisi fisik.
 
 ---
 
