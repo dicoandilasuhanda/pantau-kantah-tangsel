@@ -88,12 +88,16 @@ async function start() {
   // Bypass rate-limiting on localhost because sequential specs re-authenticate cleanly
   const permissiveLimiter = (_req, _res, next) => next();
 
+  const backupsDir = path.join(tmpDir, 'backups');
+  fs.mkdirSync(backupsDir, { recursive: true });
+
   const app = createApp({
     db,
     jwtSecret,
     uploadDir,
     avatarDir,
     dwgDir,
+    backupsDir,
     telegramService: mockTelegramService,
     loginLimiter: permissiveLimiter,
     serveFrontend: true,

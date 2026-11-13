@@ -32,6 +32,7 @@ const { createNotificationsRouter } = require('./src/routes/notifications');
 const { createFilesRouter, createDisposisiRouter } = require('./src/routes/files');
 const { createReportsRouter } = require('./src/routes/reports');
 const { createHealthRouter } = require('./src/routes/health');
+const { createBackupsRouter } = require('./src/routes/backups');
 
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-file-tracker';
@@ -54,6 +55,7 @@ function createApp({
   uploadDir = path.join(__dirname, 'uploads', 'surat'),
   avatarDir = path.join(__dirname, 'uploads', 'avatars'),
   dwgDir = path.join(__dirname, 'uploads', 'dwg'),
+  backupsDir = path.join(__dirname, '../backups'),
   telegramService,
   loginLimiter,
   serveFrontend = true,
@@ -204,6 +206,18 @@ function createApp({
       validateBody,
       schemas,
       sendTelegramMessage,
+    })
+  );
+
+  app.use(
+    '/api/admin/backups',
+    createBackupsRouter({
+      db,
+      backupsDir,
+      authenticateJWT,
+      requireAdmin,
+      validateBody,
+      schemas,
     })
   );
 

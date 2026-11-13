@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import api from '../../utils/api';
-import { Download, FolderKanban, Mail } from 'lucide-react';
+import { Download, FolderKanban, Mail, Database } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { parseSQLiteDate } from '../../utils/dateUtils';
@@ -11,11 +11,12 @@ import {
 } from '../../utils/adminExcelExport';
 import AdminBerkasTab from '../../components/admin/AdminBerkasTab';
 import AdminSuratTab from '../../components/admin/AdminSuratTab';
+import AdminBackupTab from '../../components/admin/AdminBackupTab';
 import CloseReasonModal from '../../components/admin/CloseReasonModal';
 
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('berkas'); // 'berkas' | 'surat'
+  const [activeTab, setActiveTab] = useState('berkas'); // 'berkas' | 'surat' | 'backup'
 
   // State Berkas Permohonan
   const [files, setFiles] = useState([]);
@@ -485,14 +486,15 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap' }}>
-          {activeTab === 'berkas' ? (
+          {activeTab === 'berkas' && (
             <button
               onClick={handleExport}
               style={{ width: 'auto', background: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             >
               <Download size={18} /> Unduh Laporan Berkas ({filteredFiles.length})
             </button>
-          ) : (
+          )}
+          {activeTab === 'surat' && (
             <button
               onClick={handleExportSurat}
               style={{ width: 'auto', background: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
@@ -545,6 +547,27 @@ export default function AdminDashboard() {
           }}
         >
           <Mail size={17} /> Kelola Persuratan ({suratList.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('backup')}
+          style={{
+            width: 'auto',
+            padding: '0.6rem 1.25rem',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            background: activeTab === 'backup' ? 'var(--primary-color)' : 'rgba(255, 255, 255, 0.05)',
+            color: activeTab === 'backup' ? '#fff' : 'var(--text-muted)',
+            border: activeTab === 'backup' ? 'none' : '1px solid var(--border-color)',
+            borderRadius: '8px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            cursor: 'pointer'
+          }}
+        >
+          <Database size={17} /> Backup & Pemulihan
         </button>
       </div>
 
@@ -613,6 +636,8 @@ export default function AdminDashboard() {
           onDeleteSurat={handleDeleteSurat}
         />
       )}
+
+      {activeTab === 'backup' && <AdminBackupTab />}
 
       <CloseReasonModal
         isOpen={closeModalOpen}

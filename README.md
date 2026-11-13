@@ -175,7 +175,7 @@ Sistem mendukung 14 peran spesifik yang dapat dikombinasikan pada satu akun:
 - **Containerization:** Docker (`node:20-alpine` multi-step build) & Docker Compose
 - **Cloudflare Tunnel:** Integrasi `cloudflared` untuk publikasi aman ke domain resmi `https://pantaukantahtangsel.web.id` tanpa membuka port router kantor.
 - **Persistent Storage:** *Volume mounting* untuk menjaga keutuhan `database.sqlite` dan arsip berkas fisik `backend/uploads/` saat *container* diperbarui di server/NAS (QNAP).
-- **Zero-Downtime Backup:** Script `auto_backup.sh` untuk pencadangan *online* berkala berbasis SQLite backup API (tanpa mematikan container) dan rotasi otomatis cadangan > 30 hari.
+- **Zero-Downtime Backup & Uji Restore:** `auto_backup.sh` dan `backend/scripts/backup-db.js` memanfaatkan `SQLite VACUUM INTO` (tanpa bergantung pada binary CLI `sqlite3` eksternal) disertai simulasi restore terisolasi (`PRAGMA integrity_check` + audit 9 tabel + SHA-256), rotasi retensi 30 hari (minimal 3 arsip terbaru tetap dijaga), serta manajemen via tab Admin **Backup & Pemulihan**.
 
 ---
 
@@ -184,6 +184,8 @@ Sistem mendukung 14 peran spesifik yang dapat dikombinasikan pada satu akun:
 ```text
 pantau-kantah-tangsel/
 ├── backend/                        # Server API Node.js & Express
+│   ├── scripts/
+│   │   └── backup-db.js            # CLI backup SQLite VACUUM INTO & --verify-only restore audit
 │   ├── uploads/
 │   │   ├── avatars/                # Direktori penyimpanan foto profil pengguna
 │   │   ├── dwg/                    # Direktori penyimpanan arsip berkas gambar AutoCAD (.dwg)
@@ -197,6 +199,7 @@ pantau-kantah-tangsel/
 │   │   │   └── uploads.js          # Factory upload Multer (PDF 15MB, Avatar 5MB, DWG 100MB)
 │   │   ├── routes/
 │   │   │   ├── auth.js             # Router /api/my-ip, /api/login (rate-limit), & /api/logout
+│   │   │   ├── backups.js          # Router /api/admin/backups/* (snapshot VACUUM INTO, uji restore, unduh)
 │   │   │   ├── dwg.js              # Router /api/user/dwg/* (repositori & transfer DWG)
 │   │   │   ├── files.js            # Router /api/files/* & /api/disposisi/*
 │   │   │   ├── health.js           # Endpoint /api/health (liveness & cek koneksi SQLite)
@@ -209,6 +212,8 @@ pantau-kantah-tangsel/
 │   │   │   ├── surat.js            # Router /api/surat/* & /api/surat-disposisi/*
 │   │   │   └── users.js            # Router /api/users/* & /api/user/profile*
 │   │   ├── services/
+│   │   │   ├── backupService.js        # Mesin snapshot VACUUM INTO, simulasi restore terisolasi, & retensi
+│   │   │   ├── backupService.test.js   # Unit test validasi nama file, VACUUM INTO, deteksi korupsi, & retensi
 │   │   │   ├── fileFlowService.js      # Aturan bisnis K1/K2, hak entri, smart role, & transisi scan
 │   │   │   ├── fileFlowService.test.js # Unit test aturan alur & penyelesaian berkas
 │   │   │   ├── kpiService.js           # Mesin kalkulasi rata-rata jam kerja efektif KPI
@@ -233,7 +238,7 @@ pantau-kantah-tangsel/
 │   │   └── sw.js                   # Service Worker network-first aman (hanya cache ikon statis)
 │   ├── src/
 │   │   ├── components/             # Komponen modular:
-│   │   │   ├── admin/              # Subkomponen Admin (AdminBerkasTab, AdminSuratTab, CloseReasonModal, RecordRowActions)
+│   │   │   ├── admin/              # Subkomponen Admin (AdminBerkasTab, AdminSuratTab, AdminBackupTab, CloseReasonModal, RecordRowActions)
 │   │   │   ├── pdf/                # Subkomponen PDF Tools (MergePdfTab, SplitPdfTab, CompressPdfTab, ImageToPdfTab, RotatePdfTab, PdfZoomModal)
 │   │   │   ├── AdminRoute.jsx      # Guard rute khusus Administrator
 │   │   │   ├── BatchTransitModal.jsx # Modal kirim berkas secara batch pada Dasbor Monitoring
@@ -290,6 +295,7 @@ pantau-kantah-tangsel/
 │   ├── server-runner.cjs           # Runner Express terisolasi dengan SQLite sementara di os.tmpdir()
 │   ├── helpers.js                  # Utilitas login & pembacaan sesi token E2E
 │   ├── auth-and-theme.spec.js      # Uji autentikasi, HomeHub, dark/light theme, & navbar mobile 390px
+│   ├── backup-and-restore.spec.js  # Uji backup online Admin VACUUM INTO, simulasi restore, & unduh .sqlite
 │   ├── berkas-and-print.spec.js    # Uji entri berkas, QR slip, isolasi CSS @media print, & transit berkas
 │   ├── pwa.spec.js                 # Uji webmanifest, ikon PNG, Service Worker no-store, Web Install API & fallback
 │   ├── surat-flow.spec.js          # Uji entri surat masuk, format DD/MM/YYYY, pencarian, & detail surat
@@ -353,12 +359,15 @@ docker compose up -d --build
 - Aplikasi dapat diakses melalui domain publik [https://pantaukantahtangsel.web.id](https://pantaukantahtangsel.web.id) atau port lokal `3001` (HTTP) / `3002` (HTTPS).
 - File `backend/database.sqlite` dan folder `backend/uploads` terhubung melalui *volume* Docker sehingga seluruh database berkas, histori, pengguna, dan dokumen surat tetap aman meskipun kontainer di-*restart* atau di-*rebuild*.
 
-#### Menjalankan Backup Database Otomatis (Zero-Downtime)
+#### Menjalankan Backup Database Otomatis (Zero-Downtime) & Uji Restore
 ```bash
 chmod +x auto_backup.sh
 ./auto_backup.sh
+
+# Audit integritas & simulasi restore arsip backup terbaru di direktori sementara terisolasi
+node backend/scripts/backup-db.js --verify-only
 ```
-Script memanfaatkan mekanisme *online backup* bawaan SQLite (`.backup`) sehingga proses pencadangan berjalan secara instan di latar belakang **tanpa perlu mematikan container aplikasi**. File cadangan diberi *timestamp*, disimpan di direktori `backups/`, dan secara otomatis merotasi cadangan yang berusia lebih dari 30 hari.
+Script memanfaatkan mekanisme *online snapshot* bawaan **`SQLite VACUUM INTO`** via container Node.js (`backend/scripts/backup-db.js`) sehingga aman dijalankan secara *online* **tanpa mematikan container** maupun memerlukan binary `sqlite3` eksternal di host QNAP/Alpine. Setiap selesai mencadangkan ke `backups/`, skrip otomatis menyalin arsip ke direktori sementara terisolasi untuk memverifikasi `PRAGMA integrity_check = ok` dan kelengkapan 9 tabel utama, serta membersihkan cadangan > 30 hari sambil selalu menyisakan minimal 3 arsip terbaru. Administrator juga dapat membuat snapshot, menguji restore, dan mengunduh file `.sqlite` langsung melalui tab **Admin Dashboard → Backup & Pemulihan**.
 
 ---
 
@@ -455,6 +464,10 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Web App Manifest & Ikon PNG Resolusi Tinggi (`manifest.webmanifest`, `frontend/public/icons/`, & `index.html`):** Menambahkan metadata PWA standar (`id: "/"`, `start_url: "/"`, `display: "standalone"`, `theme_color: "#1D4ED8"`), tag `<link rel="manifest">` / `apple-touch-icon` / `theme-color` adaptif terang-gelap, serta menghasilkan ikon PNG persegi berkualitas tinggi (`icon-192x192.png`, `icon-512x512.png`, `icon-maskable-512x512.png`, dan `apple-touch-icon.png` `180x180`). Header HTTP `Cache-Control: no-store` ditegakkan di `backend/server.js` untuk `sw.js` maupun `manifest.webmanifest`.
   - **Service Worker Aman Anti-Stale-Chunk (`frontend/public/sw.js` & `recovery.js`):** Hanya men-cache ikon statis PWA (`pantau-kantah-static-v1`) dan membiarkan seluruh endpoint `/api/*`, `index.html`, `/recovery.js`, serta bundel `/assets/*` tetap *network-first*, ditambah pencabutan Service Worker otomatis di dalam `__appSelfRepair()`.
   - **Tombol Instalasi Adaptif & Pengujian Penuh (`HomeHub.jsx`, `pwa.js`, `pwa.test.js`, `e2e/pwa.spec.js`):** Menambahkan tombol instalasi `#pwa-install-btn` tersembunyi-sampai-siap di `HomeHub.jsx` yang mendukung *Web Install API* (`navigator.install()`) maupun *fallback* `beforeinstallprompt` & pelacakan `appinstalled`. Diverifikasi lulus **34/34 tes backend**, **0 peringatan Oxlint (57 berkas)**, **36/36 tes Vitest**, dan **13/13 skenario Browser E2E Playwright**.
+- **Tahap 24 — Otomasi Backup SQLite Zero-Downtime (`VACUUM INTO`), Audit Integritas Terisolasi, & Panel Backup Admin:**
+  - **Perbaikan Celah Cron QNAP (`auto_backup.sh`, `backup-db.js`, & `docker-compose.yml`):** Memperbaiki kondisi saat binary CLI `sqlite3` tidak tersedia di image `node:20-alpine`/QNAP sehingga skrip kini mengeksekusi snapshot transaksional **`SQLite VACUUM INTO`** via `backend/scripts/backup-db.js` pada volume baru `./backups:/app/backups` dan `./backend/scripts:/app/backend/scripts`, lengkap dengan penghapusan snapshot otomatis bila gagal lolos verifikasi serta menjaga minimal 3 cadangan terbaru saat rotasi 30 hari.
+  - **Engine Audit Restore & API Admin (`backupService.js` & `routes/backups.js`):** Setiap backup baru (maupun `--verify-only` / `POST /api/admin/backups/verify`) disalin ke direktori sementara terisolasi untuk diuji `PRAGMA integrity_check = ok`, kelengkapan 9 tabel skema (`disposisi`, `file_history`, `files`, `suggestions`, `surat`, `surat_disposisi`, `surat_history`, `user_dwg_files`, `users`), serta checksum SHA-256 tanpa menyentuh `database.sqlite` aktif.
+  - **Tab Admin `Backup & Pemulihan` & Pengujian (`AdminBackupTab.jsx`, `AdminDashboard.jsx`, `backupService.test.js`, `e2e/backup-and-restore.spec.js`):** Menyediakan antarmuka responsif (*container-query responsive table*) untuk menjalankan backup instan, meninjau hasil simulasi restore, melihat log cron `backup.log`, dan mengunduh file `.sqlite` via *authenticated blob*. Diverifikasi lulus **38/38 tes backend**, **0 peringatan Oxlint (58 berkas)**, **36/36 tes Vitest**, dan **14/14 skenario Browser E2E Playwright**.
 
 ---
 

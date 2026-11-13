@@ -37,12 +37,16 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
     sendTelegramMessage: async () => ({ ok: true }),
   };
 
+  const backupsDir = path.join(tmpDir, 'backups');
+  fs.mkdirSync(backupsDir, { recursive: true });
+
   const app = createApp({
     db,
     jwtSecret,
     uploadDir: path.join(tmpDir, 'surat'),
     avatarDir: path.join(tmpDir, 'avatars'),
     dwgDir: path.join(tmpDir, 'dwg'),
+    backupsDir,
     telegramService: mockTelegramService,
     serveFrontend: false,
   });
@@ -100,6 +104,7 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
     '/api/user/dwg',
     '/api/suggestions',
     '/api/admin/stats',
+    '/api/admin/backups',
     '/api/notifications/transit',
     '/api/notifications/telegram-status',
     '/api/files',
@@ -151,6 +156,47 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   assert.equal(detailRes.status, 200);
   const detailJson = await detailRes.json();
   assert.equal(detailJson.nomor_berkas, '12345');
+
+  // 4b. Backup & Restore verification endpoints enforce Admin access and integrity
+  const forbiddenBackupRes = await fetch(`${baseUrl}/api/admin/backups`, {
+    headers: { Authorization: `Bearer ${entrySession.token}` },
+  });
+  assert.equal(forbiddenBackupRes.status, 403);
+
+  const runBackupRes = await fetch(`${baseUrl}/api/admin/backups/run`, {
+    method: 'POST',
+    headers: authHeaders,
+  });
+  assert.equal(runBackupRes.status, 201);
+  const runBackupJson = await runBackupRes.json();
+  assert.ok(runBackupJson.backup?.filename);
+  assert.equal(runBackupJson.verification?.ok, true);
+  assert.equal(runBackupJson.verification?.integrityCheck, 'ok');
+  assert.equal(runBackupJson.verification?.tableCounts?.files, 1);
+
+  const verifyBackupRes = await fetch(`${baseUrl}/api/admin/backups/verify`, {
+    method: 'POST',
+    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: runBackupJson.backup.filename }),
+  });
+  assert.equal(verifyBackupRes.status, 200);
+  const verifyBackupJson = await verifyBackupRes.json();
+  assert.equal(verifyBackupJson.ok, true);
+
+  const badVerifyRes = await fetch(`${baseUrl}/api/admin/backups/verify`, {
+    method: 'POST',
+    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: '../evil.sqlite' }),
+  });
+  assert.equal(badVerifyRes.status, 400);
+
+  const downloadBackupRes = await fetch(
+    `${baseUrl}/api/admin/backups/${encodeURIComponent(runBackupJson.backup.filename)}/download`,
+    { headers: authHeaders }
+  );
+  assert.equal(downloadBackupRes.status, 200);
+  const sqliteHeader = Buffer.from(await downloadBackupRes.arrayBuffer()).subarray(0, 15).toString('utf8');
+  assert.equal(sqliteHeader, 'SQLite format 3');
 
   // 5. Logout invalidates active session token
   const logoutRes = await fetch(`${baseUrl}/api/logout`, {
