@@ -250,8 +250,9 @@ function createApp({
   app.use('/api/reports', createReportsRouter({ db, authenticateJWT, requireAdminOrKasi }));
 
   if (serveFrontend) {
+    const frontendDistDir = path.join(__dirname, '../frontend/dist');
     app.use(
-      express.static(path.join(__dirname, '../frontend/dist'), {
+      express.static(frontendDistDir, {
         setHeaders: (res, filePath) => {
           res.setHeader('Access-Control-Allow-Origin', '*');
           if (filePath.endsWith('index.html') || filePath.endsWith('recovery.js')) {
@@ -272,7 +273,7 @@ function createApp({
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
-      res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+      res.sendFile('index.html', { root: frontendDistDir });
     });
   }
 

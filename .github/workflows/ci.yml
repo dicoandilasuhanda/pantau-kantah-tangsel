@@ -63,3 +63,55 @@ jobs:
 
       - name: Build production Vite bundle
         run: npm run build
+
+      - name: Upload built frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 1
+
+  e2e-check:
+    name: End-to-End Browser Tests (Playwright Chromium)
+    needs: [backend-check, frontend-check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download built frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Install backend dependencies
+        run: npm ci --prefix backend
+
+      - name: Install Playwright test dependencies
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: '1'
+        run: npm ci
+
+      - name: Install Playwright Chromium browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E suite
+        run: npm run test:e2e
+
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+

@@ -1,5 +1,14 @@
 {
+  "name": "pantau-sp-tangsel",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
+  },
   "dependencies": {
     "puppeteer": "^25.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
   }
 }

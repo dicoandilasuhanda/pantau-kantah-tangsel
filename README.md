@@ -278,7 +278,16 @@ pantau-kantah-tangsel/
 │   └── package.json                # Dependensi frontend
 │
 ├── .github/workflows/
-│   └── ci.yml                      # CI GitHub Actions (syntax check, test backend/frontend, oxlint, & Vite build)
+│   └── ci.yml                      # CI GitHub Actions (backend/frontend tests, oxlint, Vite build, & Playwright E2E)
+├── e2e/                            # Suite End-to-End Browser Testing (Playwright Chromium Desktop & Mobile)
+│   ├── server-runner.cjs           # Runner Express terisolasi dengan SQLite sementara di os.tmpdir()
+│   ├── helpers.js                  # Utilitas login & pembacaan sesi token E2E
+│   ├── auth-and-theme.spec.js      # Uji autentikasi, HomeHub, dark/light theme, & navbar mobile 390px
+│   ├── berkas-and-print.spec.js    # Uji entri berkas, QR slip, isolasi CSS @media print, & transit berkas
+│   ├── surat-flow.spec.js          # Uji entri surat masuk, format DD/MM/YYYY, pencarian, & detail surat
+│   └── admin-and-pdftools.spec.js  # Uji 5 tab PDF Tools, Admin Panel, modal Tutup Berkas, & ekspor Excel .xlsx
+├── playwright.config.mjs           # Konfigurasi Playwright Desktop Chrome & Mobile Pixel 5
+├── package.json                    # Skrip & devDependencies Playwright E2E di root workspace
 ├── AGENTS.md                       # Aturan otomatisasi kerja lintas perangkat (PC & Mac) & Tim Subagent
 ├── HANDOVER_PANTAU_KANTAH.md       # Cetak biru arsitektur lengkap, alur 14 kegiatan, SLA, & kamus API (SSOT)
 ├── Dockerfile                      # Konfigurasi image Docker (Build Frontend + Run Backend)
@@ -314,6 +323,12 @@ npm install
 npm run dev
 # Menjalankan unit test SLA & utilitas tanggal (Vitest)
 npm test
+# Build produksi & jalankan pengujian browser E2E terisolasi (Playwright) dari root repositori
+npm run build
+cd ..
+npm install
+npx playwright install chromium
+npm run test:e2e
 ```
 > Akses aplikasi melalui browser di `http://localhost:5173`.
 
@@ -425,6 +440,9 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Ekstraksi CSS Terpisah (`Login.css` & `Dashboard.css`):** Memindahkan lebih dari 1.375 baris `<style>` inline dari bundel JavaScript ke berkas CSS eksternal yang diminifikasi Vite (`dist/assets/*.css`) dan tetap kompatibel penuh dengan mekanisme classic `<script defer>` iOS WebKit.
   - **Modularisasi 4 Halaman Monolitik & Deduplikasi Komponen:** Memecah `Login.jsx` (1.626 -> **287 baris**), `PdfTools.jsx` (1.669 -> **90 baris** ke 5 sub-tab `components/pdf/` + `PdfZoomModal.jsx` + `pdfOperations.js` + `pdfUtils.js`), `AdminDashboard.jsx` (1.420 -> **659 baris** ke `AdminBerkasTab.jsx`, `AdminSuratTab.jsx`, `CloseReasonModal.jsx`, `RecordRowActions.jsx`, & `adminExcelExport.js`), serta `Dashboard.jsx` (1.163 -> **706 baris** ke `DashboardFileCard.jsx`, `BatchTransitModal.jsx`, & `Dashboard.css`).
   - **Perluasan Suite Test Frontend (`Vitest`):** Menambahkan pengujian unit untuk utilitas autentikasi (`authSession.test.js`, 6 tes — sekaligus memperbaiki kasus kedaluwarsa cookie `-1`), pengurai rentang PDF (`pdfUtils.test.js`, 4 tes), dan pembangun workbook Excel admin (`adminExcelExport.test.js`, 3 tes) sehingga total mencapai **31/31 tes Vitest lulus** dengan **0 peringatan Oxlint** pada 54 berkas frontend.
+- **Tahap 22 — Otomasi Pengujian Browser E2E (`10 Kasus Playwright`) & Perbaikan SPA Fallback `sendFile`:**
+  - **Suite Playwright Terisolasi (`e2e/` & `playwright.config.mjs`):** Menguji alur kritis langsung pada bundle produksi Vite (`frontend/dist`) yang disajikan oleh Express dengan SQLite sementara di `os.tmpdir()` via `e2e/server-runner.cjs` (`127.0.0.1:3109`, tanpa menyentuh `database.sqlite` produksi): autentikasi gagal/berhasil, persistensi tema gelap/terang, responsivitas navbar mobile `390x844`, registrasi berkas + isolasi cetak `@media print` + transit, entri & format tanggal `DD/MM/YYYY` surat masuk, pergantian 5 tab PDF Tools, penutupan berkas modal Admin, serta verifikasi unduhan `.xlsx`. Total **10/10 tes Playwright lulus** (desktop & mobile Chromium) dan terintegrasi dalam job `e2e-check` pada `.github/workflows/ci.yml`.
+  - **Perbaikan SPA Fallback Dot-Directory (`backend/server.js`):** Mengubah `res.sendFile(path.join(..., 'index.html'))` menjadi `res.sendFile('index.html', { root: frontendDistDir })` sehingga aplikasi tetap dapat menyajikan rute SPA (`/login`, `/berkas`, `/surat`, `/admin`, `/pdf-tools`) dengan status `200` meski berada di bawah direktori parent berawalan titik seperti `.gemini/`.
 
 ---
 
