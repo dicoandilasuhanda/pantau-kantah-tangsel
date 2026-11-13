@@ -188,6 +188,8 @@ pantau-kantah-tangsel/
 │   │   ├── dwg/                    # Direktori penyimpanan arsip berkas gambar AutoCAD (.dwg)
 │   │   └── surat/                  # Direktori penyimpanan PDF surat masuk
 │   ├── server.js                   # Entry point utama backend, skema DB, & seluruh endpoint API
+│   ├── validation.js               # Middleware & skema validasi input REST API berbasis Zod
+│   ├── validation.test.js          # Unit test skema validasi Zod backend (node --test)
 │   ├── database.sqlite             # File database utama SQLite (diabaikan oleh Git demi keamanan)
 │   └── package.json                # Dependensi backend
 │
@@ -250,6 +252,8 @@ Aplikasi dapat dijalankan secara terpisah antara *Backend* dan *Frontend* untuk 
 cd backend
 npm install
 node server.js
+# Menjalankan unit test validasi input backend (Zod)
+npm test
 ```
 > Server HTTP berjalan di `http://localhost:3001` (dan HTTPS di `https://localhost:3002` bila `key.pem` & `cert.pem` tersedia).
 > Saat pertama kali dijalankan dengan database kosong, sistem otomatis membuat akun bawaan (seperti `admin` / `admin123`).

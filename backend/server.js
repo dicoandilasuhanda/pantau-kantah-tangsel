@@ -9,6 +9,7 @@ const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
 const multer = require('multer');
 const fs = require('fs');
+const { validateBody, schemas } = require('./validation');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -446,7 +447,7 @@ app.get('/api/my-ip', (req, res) => {
 });
 
 // Login API
-app.post('/api/login', loginLimiter, (req, res) => {
+app.post('/api/login', loginLimiter, validateBody(schemas.loginSchema), (req, res) => {
   const { username, password } = req.body;
 
   db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
@@ -581,7 +582,7 @@ const handlePdfUpload = (req, res, next) => {
 };
 
 // Create new surat
-app.post('/api/surat', authenticateJWT, handlePdfUpload, (req, res) => {
+app.post('/api/surat', authenticateJWT, handlePdfUpload, validateBody(schemas.createSuratSchema), (req, res) => {
   const { asal_surat, nomor_surat, tanggal_diterima, perihal } = req.body;
   const filePath = req.file ? `/uploads/surat/${req.file.filename}` : null;
   const initialLocation = 'Petugas Entry Surat';
@@ -638,7 +639,7 @@ app.get('/api/surat', authenticateJWT, (req, res) => {
 });
 
 // Scan / Terima / Selesaikan Surat
-app.post('/api/surat/scan', authenticateJWT, (req, res) => {
+app.post('/api/surat/scan', authenticateJWT, validateBody(schemas.scanSuratSchema), (req, res) => {
   const { id, nomor_agenda, qr_code, isFinishing, selected_role, catatan } = req.body;
   const fullName = req.user.full_name || req.user.username;
   const userRoles = (req.user.role || '').split(',').map(r => r.trim()).filter(Boolean);
@@ -845,7 +846,7 @@ app.get('/api/surat/:id', authenticateJWT, (req, res) => {
 });
 
 // Update catatan surat
-app.put('/api/surat/:id/note', authenticateJWT, (req, res) => {
+app.put('/api/surat/:id/note', authenticateJWT, validateBody(schemas.noteSchema), (req, res) => {
   const suratId = req.params.id;
   const { catatan } = req.body;
 
@@ -869,7 +870,7 @@ app.put('/api/surat/:id/note', authenticateJWT, (req, res) => {
 });
 
 // Kirim Surat (Transit)
-app.post('/api/surat/:id/transit', authenticateJWT, (req, res) => {
+app.post('/api/surat/:id/transit', authenticateJWT, validateBody(schemas.transitTargetSchema), (req, res) => {
   const suratId = req.params.id;
   const { target_username } = req.body;
   if (!target_username) return res.status(400).json({ error: 'Pilih petugas tujuan terlebih dahulu.' });
@@ -975,7 +976,7 @@ app.get('/api/surat/:id/disposisi', authenticateJWT, (req, res) => {
 });
 
 // POST Disposisi Surat
-app.post('/api/surat/:id/disposisi', authenticateJWT, (req, res) => {
+app.post('/api/surat/:id/disposisi', authenticateJWT, validateBody(schemas.disposisiSchema), (req, res) => {
   const isPimpinan = req.user.role.includes('Koordinator') || req.user.role.includes('Kepala Seksi') || req.user.role.includes('Administrator');
   if (!isPimpinan) {
     return res.status(403).json({ error: 'Akses ditolak. Hanya pimpinan yang dapat membuat disposisi.' });
@@ -1054,7 +1055,7 @@ app.get('/api/users/list', authenticateJWT, (req, res) => {
 });
 
 // Create new user
-app.post('/api/users', authenticateJWT, requireAdmin, (req, res) => {
+app.post('/api/users', authenticateJWT, requireAdmin, validateBody(schemas.createUserSchema), (req, res) => {
   const { username, password, role, full_name, telegram_chat_id } = req.body;
   if (!username || !password || !role || !full_name) {
     return res.status(400).json({ error: 'Semua field termasuk Nama Lengkap harus diisi.' });
@@ -1074,7 +1075,7 @@ app.post('/api/users', authenticateJWT, requireAdmin, (req, res) => {
 });
 
 // Change own password
-app.put('/api/users/change-password', authenticateJWT, (req, res) => {
+app.put('/api/users/change-password', authenticateJWT, validateBody(schemas.changePasswordSchema), (req, res) => {
   const userId = req.user.id;
   const { oldPassword, newPassword } = req.body;
 
@@ -1098,7 +1099,7 @@ app.put('/api/users/change-password', authenticateJWT, (req, res) => {
 });
 
 // Update user
-app.put('/api/users/:id', authenticateJWT, requireAdmin, (req, res) => {
+app.put('/api/users/:id', authenticateJWT, requireAdmin, validateBody(schemas.updateUserSchema), (req, res) => {
   const { username, password, role, full_name, telegram_chat_id } = req.body;
   const userId = req.params.id;
   const cleanChatId = telegram_chat_id !== undefined ? (telegram_chat_id ? String(telegram_chat_id).trim() : null) : undefined;
@@ -1158,7 +1159,7 @@ app.get('/api/user/profile', authenticateJWT, (req, res) => {
 });
 
 // Update Profile Info (Full Name)
-app.put('/api/user/profile', authenticateJWT, (req, res) => {
+app.put('/api/user/profile', authenticateJWT, validateBody(schemas.updateProfileSchema), (req, res) => {
   const { full_name } = req.body;
   if (!full_name || !full_name.trim()) {
     return res.status(400).json({ error: 'Nama lengkap wajib diisi.' });
@@ -1553,7 +1554,7 @@ app.delete('/api/user/dwg/:id', authenticateJWT, requireDwgAccess, (req, res) =>
 // ==========================================
 
 // Submit new suggestion
-app.post('/api/suggestions', authenticateJWT, (req, res) => {
+app.post('/api/suggestions', authenticateJWT, validateBody(schemas.createSuggestionSchema), (req, res) => {
   const { title, category, description } = req.body;
   if (!title || !title.trim()) {
     return res.status(400).json({ error: 'Judul saran tidak boleh kosong' });
@@ -1621,7 +1622,7 @@ app.get('/api/suggestions', authenticateJWT, (req, res) => {
 });
 
 // Update suggestion status & admin notes (Admin only)
-app.put('/api/suggestions/:id/status', authenticateJWT, requireAdmin, (req, res) => {
+app.put('/api/suggestions/:id/status', authenticateJWT, requireAdmin, validateBody(schemas.updateSuggestionStatusSchema), (req, res) => {
   const { status, admin_notes } = req.body;
   const suggestionId = req.params.id;
 
@@ -1868,7 +1869,7 @@ app.put('/api/files/:id/close', authenticateJWT, requireAdmin, (req, res) => {
 
 
 // Create a new file entry (Only Petugas Entry Berkas should do this ideally)
-app.post('/api/files', authenticateJWT, (req, res) => {
+app.post('/api/files', authenticateJWT, validateBody(schemas.createFileSchema), (req, res) => {
   const { nomor_berkas, tahun_berkas, nama_kegiatan, nama_pemohon, fullName } = req.body;
   if (!req.user.role.includes('Petugas Entry Berkas') && !req.user.role.includes('Petugas Entry Berkas PHP') && !req.user.role.includes('Administrator')) {
     return res.status(403).json({ error: 'Akses ditolak. Hanya Petugas Entry yang dapat membuat entri.' });
@@ -2055,7 +2056,7 @@ app.get('/api/files/:qr_code', authenticateJWT, (req, res) => {
 });
 
 // Update catatan file (Only for current handler or Administrator)
-app.put('/api/files/:qr_code/note', authenticateJWT, (req, res) => {
+app.put('/api/files/:qr_code/note', authenticateJWT, validateBody(schemas.noteSchema), (req, res) => {
   const qr_code = req.params.qr_code;
   const { catatan } = req.body;
   
@@ -2375,7 +2376,7 @@ app.get('/api/files/my-transits', authenticateJWT, (req, res) => {
 });
 
 // Send a file to transit (Kirim Berkas)
-app.post('/api/files/:qr_code/transit', authenticateJWT, (req, res) => {
+app.post('/api/files/:qr_code/transit', authenticateJWT, validateBody(schemas.transitTargetSchema), (req, res) => {
   const { qr_code } = req.params;
   const { target_username } = req.body;
 
@@ -2546,7 +2547,7 @@ app.post('/api/files/:qr_code/resume', authenticateJWT, (req, res) => {
 });
 
 // Scan & Update file location
-app.post('/api/files/scan', authenticateJWT, (req, res) => {
+app.post('/api/files/scan', authenticateJWT, validateBody(schemas.scanFileSchema), (req, res) => {
   const { qr_code, fullName, isFinishing, selected_role } = req.body;
   
   try {
@@ -3063,7 +3064,7 @@ app.get('/api/files/:qrcode/disposisi', authenticateJWT, (req, res) => {
 });
 
 // POST /api/files/:qrcode/disposisi
-app.post('/api/files/:qrcode/disposisi', authenticateJWT, (req, res) => {
+app.post('/api/files/:qrcode/disposisi', authenticateJWT, validateBody(schemas.disposisiSchema), (req, res) => {
   const isPimpinan = req.user.role.includes('Koordinator') || req.user.role.includes('Kepala Seksi') || req.user.role.includes('Administrator');
   if (!isPimpinan) {
     return res.status(403).json({ error: 'Akses ditolak. Hanya pimpinan yang dapat membuat disposisi.' });
