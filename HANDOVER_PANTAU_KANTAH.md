@@ -53,7 +53,7 @@ Sistem mengelompokkan berkas permohonan ke dalam **14 Jenis Kegiatan** yang terb
 
 ## 3. Alur Tahapan Berkas (`FLOWS`) & Aturan Penyelesaian Khusus
 
-### 3.1. Definisi Alur Standar (`FLOWS` di `backend/server.js`)
+### 3.1. Definisi Alur Standar (`FLOWS` di `backend/src/services/fileFlowService.js`)
 - **Alur `FLOWS.K1` (Kelompok 1):**
   1. `Loket Pendaftaran (Entry)`
   2. `Petugas Ukur`
@@ -158,7 +158,7 @@ Ketika berkas dipindai (*scan*), backend menerapkan aturan bisnis spesifik berda
 - **Web Audio API Chime & Notifikasi Terpadu (Berkas & Surat):**
   - Membunyikan nada *harmonic chime* 2 putaran (~3,2 detik) secara *native* di browser tanpa file MP3/WAV eksternal, dengan *polling* tiap 20 detik ke `GET /api/notifications/transit`.
   - **Dukungan Multi-Dokumen:** Menampilkan dan membedakan secara visual dokumen **Berkas Permohonan** (label biru + tautan ke Detail Berkas & Scan Terima Berkas) dan **Surat Masuk** (label hijau + nomor agenda/asal surat + tautan ke Detail Surat & Scan Terima Surat).
-- **Bot Telegram Terintegrasi (`backend/server.js`):**
+- **Bot Telegram Terintegrasi (`backend/src/services/telegramService.js`):**
   - *Long-polling* setiap 5 detik ke Telegram Bot API (`getUpdates`).
   - Mendukung *deep-linking* `/start link_<username>` dan verifikasi wajib kata sandi `/daftar <username> <password>` (dicocokkan dengan hash `bcrypt` di database).
   - Perintah `/cek` atau `/status` untuk memeriksa rekapitulasi jumlah berkas dan surat transit yang sedang menunggu.
@@ -519,8 +519,8 @@ Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / 
 ## 10. Rencana Arsitektur Masa Depan (Skalabilitas Enterprise PostgreSQL)
 
 Jika proyek ini dikembangkan ulang atau dimigrasikan ke skala **Enterprise Kantah Penuh** pada repositori baru, gunakan rancangan target berikut:
-- **Backend:** Node.js + Express/Fastify dengan **TypeScript** berpola *Modular Clean Architecture* (`/src/modules/{auth,berkas,surat,dwg,kpi,suggestions,stats}`) — *(tahap awal modularisasi JS sudah dimulai di `backend/src/` untuk `routes/{reports,suggestions,stats}`, `services/kpiService`, dan `utils/workingDays`)*.
+- **Backend:** Node.js + Express/Fastify dengan **TypeScript** berpola *Modular Clean Architecture* (`/src/modules/{auth,berkas,surat,dwg,kpi,suggestions,stats}`) — *(modularisasi JS bertahap sudah berjalan di `backend/src/` untuk `routes/{reports,suggestions,stats}`, `services/{fileFlowService,kpiService,telegramService}`, dan `utils/workingDays`)*.
 - **Database Utama:** **PostgreSQL 16+** dengan **Prisma ORM** atau **Drizzle ORM** (menggantikan SQLite untuk mendukung konkurensi tulis tinggi lintas seluruh seksi).
 - **In-Memory Store & Queue:** **Redis** untuk manajemen sesi multi-perangkat, pencatatan *real-time online presence*, *rate-limiting*, dan *message queue* (**BullMQ**) untuk pengiriman notifikasi Telegram asinkron.
 - **Object Storage:** **MinIO** (self-hosted di QNAP) atau **Cloudflare R2 / AWS S3** untuk menyimpan arsip PDF surat, gambar kadastral `.dwg`, dan foto profil secara terpisah dari container aplikasi.
-- **Validasi & Pengujian:** Validasi skema input menggunakan **Zod** (`backend/validation.js`, unit test di `backend/validation.test.js`) serta pengujian unit otomatis untuk utilitas tanggal/libur SLA (`frontend/src/utils/dateUtils.test.js` via **Vitest**, `backend/src/utils/workingDays.test.js` via `node --test`) dan mesin perhitungan jam kerja efektif KPI (`backend/src/services/kpiService.test.js` via `node --test`).
+- **Validasi & Pengujian:** Validasi skema input menggunakan **Zod** (`backend/validation.js`, unit test di `backend/validation.test.js`) serta pengujian unit otomatis untuk utilitas tanggal/libur SLA (`frontend/src/utils/dateUtils.test.js` via **Vitest**, `backend/src/utils/workingDays.test.js` via `node --test`), mesin perhitungan KPI (`backend/src/services/kpiService.test.js`), aturan alur berkas K1/K2 (`backend/src/services/fileFlowService.test.js`), dan bot Telegram (`backend/src/services/telegramService.test.js`).

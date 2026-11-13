@@ -193,8 +193,12 @@ pantau-kantah-tangsel/
 │   │   │   ├── stats.js            # Router /api/admin/* (web-app stats & kick session)
 │   │   │   └── suggestions.js      # Router /api/suggestions/* (kotak saran fitur)
 │   │   ├── services/
-│   │   │   ├── kpiService.js       # Mesin kalkulasi rata-rata jam kerja efektif KPI
-│   │   │   └── kpiService.test.js  # Unit test mesin kalkulasi KPI berkas & persuratan
+│   │   │   ├── fileFlowService.js      # Aturan bisnis K1/K2, hak entri, smart role, & transisi scan
+│   │   │   ├── fileFlowService.test.js # Unit test aturan alur & penyelesaian berkas
+│   │   │   ├── kpiService.js           # Mesin kalkulasi rata-rata jam kerja efektif KPI
+│   │   │   ├── kpiService.test.js      # Unit test mesin kalkulasi KPI berkas & persuratan
+│   │   │   ├── telegramService.js      # Bot Telegram engine (@pantaukantahtangsel_bot)
+│   │   │   └── telegramService.test.js # Unit test perintah bot (/start, /daftar, /cek, /stop)
 │   │   └── utils/
 │   │       ├── workingDays.js      # Single Source of Truth kalender libur, hari kerja, & jam efektif
 │   │       └── workingDays.test.js # Unit test hari kerja & pemotongan libur/akhir pekan

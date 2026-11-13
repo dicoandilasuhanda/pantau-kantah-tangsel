@@ -14,6 +14,13 @@ const { getWorkingDays } = require('./src/utils/workingDays');
 const { createReportsRouter } = require('./src/routes/reports');
 const { createSuggestionsRouter } = require('./src/routes/suggestions');
 const { createStatsRouter } = require('./src/routes/stats');
+const { createTelegramService } = require('./src/services/telegramService');
+const {
+  validateFileEntryAccess,
+  validateScanPreconditions,
+  analyzeMultiRoleSelection,
+  resolveScanTransition,
+} = require('./src/services/fileFlowService');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -425,6 +432,12 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
     });
   }
 });
+
+// Inisialisasi Telegram Bot Notification Engine (@pantaukantahtangsel_bot)
+const telegramService = createTelegramService({ db, bcrypt });
+const TELEGRAM_BOT_USERNAME = telegramService.botUsername;
+const sendTelegramMessage = telegramService.sendTelegramMessage;
+telegramService.startPolling();
 
 // --- Rate Limiter for Login ---
 const loginLimiter = rateLimit({
@@ -1697,28 +1710,9 @@ app.put('/api/files/:id/close', authenticateJWT, requireAdmin, (req, res) => {
 // Create a new file entry (Only Petugas Entry Berkas should do this ideally)
 app.post('/api/files', authenticateJWT, validateBody(schemas.createFileSchema), (req, res) => {
   const { nomor_berkas, tahun_berkas, nama_kegiatan, nama_pemohon, fullName } = req.body;
-  if (!req.user.role.includes('Petugas Entry Berkas') && !req.user.role.includes('Petugas Entry Berkas PHP') && !req.user.role.includes('Administrator')) {
-    return res.status(403).json({ error: 'Akses ditolak. Hanya Petugas Entry yang dapat membuat entri.' });
-  }
-
-  const K2_Kegiatan = [
-    'Pelepasan Sebagian Hak', 
-    'Wakaf dari Tanah Yang Sudah Bersertipikat', 
-    'Pendaftaran Tanah Pertama Kali Pemberian Hak', 
-    'Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak', 
-    'Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)', 
-    'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf',
-    'Sertipikat Pengganti Karena Hilang/Lelang Eksekusi',
-    'Sertipikat Pengganti Karena Rusak/Lama',
-    'Permohonan SK'
-  ];
-  const isK2 = K2_Kegiatan.includes(nama_kegiatan);
-
-  if (isK2 && !req.user.role.includes('Petugas Entry Berkas PHP') && !req.user.role.includes('Administrator')) {
-    return res.status(403).json({ error: 'Permohonan Kelompok 2 hanya dapat dientri oleh Petugas Entry Berkas PHP.' });
-  }
-  if (!isK2 && !req.user.role.includes('Petugas Entry Berkas') && !req.user.role.includes('Administrator')) {
-    return res.status(403).json({ error: 'Permohonan Kelompok 1 hanya dapat dientri oleh Petugas Entry Berkas.' });
+  const entryAccess = validateFileEntryAccess(req.user.role, nama_kegiatan);
+  if (!entryAccess.ok) {
+    return res.status(entryAccess.status).json({ error: entryAccess.error });
   }
 
   db.get('SELECT id FROM files WHERE nomor_berkas = ? AND tahun_berkas = ?', [nomor_berkas, tahun_berkas], (checkErr, row) => {
@@ -1727,7 +1721,7 @@ app.post('/api/files', authenticateJWT, validateBody(schemas.createFileSchema), 
 
     const fileIdentifier = 'FILE-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     const qr_code = jwt.sign({ fileIdentifier }, JWT_SECRET);
-    const initial_location = (req.user.role.includes('Petugas Entry Berkas PHP')) ? 'Petugas Entry Berkas PHP' : 'Loket Pendaftaran (Entry)';
+    const initial_location = entryAccess.initialLocation;
     const effectiveFullName = fullName || req.user.full_name;
     const scannedBy = effectiveFullName ? `${effectiveFullName} (${req.user.role})` : req.user.role;
     const clientIp = getClientIp(req);
@@ -1910,212 +1904,8 @@ app.put('/api/files/:qr_code/note', authenticateJWT, validateBody(schemas.noteSc
   });
 });
 
-const FLOWS = {
-  K1: [
-    'Loket Pendaftaran (Entry)',
-    'Petugas Ukur',
-    'Asisten Surveyor Kadastral',
-    'Petugas Pemetaan',
-    'Petugas Alih Media',
-    'Koordinator Kelompok Substansi Pengukuran dan Pemetaan Kadastral',
-    'Kepala Seksi Survei dan Pemetaan',
-    'Petugas Penyelesaian Berkas',
-    'Selesai'
-  ],
-  K2: [
-    'Petugas Entry Berkas PHP',
-    'Petugas Pemetaan',
-    'Koordinator Kelompok Substansi Pengukuran dan Pemetaan Kadastral',
-    'Kepala Seksi Survei dan Pemetaan',
-    'Petugas Penyelesaian Berkas',
-    'Selesai'
-  ]
-};
-
-const KELOMPOK_MAPPING = {
-  'Pelepasan Sebagian Hak': 'K2',
-  'Wakaf dari Tanah Yang Sudah Bersertipikat': 'K2',
-  'Pendaftaran Tanah Pertama Kali Pemberian Hak': 'K2',
-  'Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak': 'K2',
-  'Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)': 'K2',
-  'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf': 'K2',
-  'Sertipikat Pengganti Karena Hilang/Lelang Eksekusi': 'K2',
-  'Sertipikat Pengganti Karena Rusak/Lama': 'K2',
-  'Permohonan SK': 'K2'
-};
-
-// Kalender libur & kalkulasi hari kerja menggunakan Single Source of Truth dari ./src/utils/workingDays.js
-
-// ==========================================
-// TELEGRAM BOT NOTIFICATION ENGINE (@pantaukantahtangsel_bot)
-// ==========================================
-const TELEGRAM_BOT_USERNAME = 'pantaukantahtangsel_bot';
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || Buffer.from('ODU3MzQyNDM0MjpBQUhoZlkwZnZ5VFc0d2lEenpsQXhOV1VhSkpXU0Q1RjF4OA==', 'base64').toString('utf8');
-
-async function sendTelegramMessage(chatId, text) {
-  if (!TELEGRAM_BOT_TOKEN || !chatId) return { ok: false, description: 'Chat ID kosong' };
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: String(chatId).trim(),
-        text,
-        parse_mode: 'HTML',
-        disable_web_page_preview: true
-      })
-    });
-    const data = await res.json();
-    return { ok: Boolean(data && data.ok), description: data?.description || '' };
-  } catch (err) {
-    console.error('Telegram sendMessage error:', err.message);
-    return { ok: false, description: err.message };
-  }
-}
-
-let lastTelegramUpdateId = 0;
-let isPollingTelegram = false;
-
-async function pollTelegramUpdates() {
-  if (!TELEGRAM_BOT_TOKEN || isPollingTelegram) return;
-  isPollingTelegram = true;
-  try {
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastTelegramUpdateId + 1}&timeout=2`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data && data.ok && Array.isArray(data.result)) {
-      for (const update of data.result) {
-        if (update.update_id > lastTelegramUpdateId) {
-          lastTelegramUpdateId = update.update_id;
-        }
-        const msg = update.message;
-        if (!msg || !msg.text || !msg.chat) continue;
-
-        const chatId = String(msg.chat.id);
-        const text = msg.text.trim();
-        const lower = text.toLowerCase();
-
-        if (lower === '/start' || lower.startsWith('/start ')) {
-          const payload = text.split(/\s+/)[1];
-          if (payload && payload.toLowerCase().startsWith('link_')) {
-            const targetUser = payload.slice(5).trim();
-            await sendTelegramMessage(
-              chatId,
-              `<b>Verifikasi Akun Pantau.Kantah Tangsel</b>\n\n` +
-              `Untuk menghubungkan notifikasi ke akun <b>${targetUser}</b>, silakan balas dengan format:\n\n` +
-              `<code>/daftar ${targetUser} kata_sandi_anda</code>`
-            );
-          } else {
-            await sendTelegramMessage(
-              chatId,
-              `<b>Selamat datang di Bot Resmi Pantau.Kantah Tangsel!</b>\n\n` +
-              `Untuk menghubungkan akun Anda agar otomatis menerima notifikasi kiriman berkas (<b>Transit</b>) di HP, silakan balas dengan mengetik:\n\n` +
-              `<code>/daftar username password_anda</code>\n\n` +
-              `<i>Contoh:</i> <code>/daftar syahrul rahasia123</code>\n\n` +
-              `ID Chat Telegram Anda: <code>${chatId}</code>`
-            );
-          }
-        } else if (lower.startsWith('/daftar') || lower.startsWith('/link')) {
-          const parts = text.split(/\s+/);
-          const inputUsername = parts[1] ? parts[1].trim() : '';
-          const inputPassword = parts.slice(2).join(' ').trim();
-          if (!inputUsername) {
-            await sendTelegramMessage(
-              chatId,
-              `Format belum lengkap. Silakan ketik:\n<code>/daftar username password_anda</code>\n\nContoh: <code>/daftar syahrul rahasia123</code>`
-            );
-          } else {
-            linkTelegramAccount(chatId, inputUsername, inputPassword);
-          }
-        } else if (lower === '/cek' || lower === '/status') {
-          db.get('SELECT username, full_name, role FROM users WHERE telegram_chat_id = ?', [chatId], (err, u) => {
-            if (!u) {
-              sendTelegramMessage(
-                chatId,
-                `Telegram Anda belum terhubung ke akun mana pun.\nKetik <code>/daftar username_anda</code> untuk menghubungkan.`
-              );
-            } else {
-              db.get(
-                `SELECT 
-                   (SELECT COUNT(*) FROM files WHERE is_transit = 1 AND transit_to_username = ? AND current_location NOT IN ('Selesai', 'Ditutup')) as total_files,
-                   (SELECT COUNT(*) FROM surat WHERE is_transit = 1 AND transit_to_username = ? AND current_location NOT IN ('Selesai', 'Ditutup')) as total_surat
-                `,
-                [u.username, u.username],
-                (err2, row) => {
-                  const fileCount = row ? row.total_files : 0;
-                  const suratCount = row ? row.total_surat : 0;
-                  sendTelegramMessage(
-                    chatId,
-                    `<b>Status Akun Terhubung</b>\n\n` +
-                    `Nama: <b>${u.full_name}</b> (<code>${u.username}</code>)\n` +
-                    `Jabatan: ${u.role}\n` +
-                    `Berkas Transit Menunggu: <b>${fileCount} berkas</b>\n` +
-                    `Surat Transit Menunggu: <b>${suratCount} surat</b>`
-                  );
-                }
-              );
-            }
-          });
-        } else if (lower === '/stop' || lower === '/putus') {
-          db.run('UPDATE users SET telegram_chat_id = NULL WHERE telegram_chat_id = ?', [chatId], function () {
-            sendTelegramMessage(chatId, `Notifikasi Telegram untuk akun Anda telah dinonaktifkan. Ketik <code>/daftar username</code> kapan saja untuk mengaktifkan kembali.`);
-          });
-        }
-      }
-    }
-  } catch (e) {
-    // Ignore transient network errors when offline
-  } finally {
-    isPollingTelegram = false;
-  }
-}
-
-function linkTelegramAccount(chatId, inputUsername, inputPassword) {
-  db.get('SELECT id, username, password, full_name, role FROM users WHERE LOWER(username) = LOWER(?)', [inputUsername], (err, user) => {
-    if (err || !user) {
-      sendTelegramMessage(
-        chatId,
-        `Username <code>${inputUsername}</code> tidak ditemukan di sistem Pantau.Kantah Tangsel.\n\nPastikan Anda mengetik username yang sama persis dengan yang digunakan saat login di web.`
-      );
-      return;
-    }
-
-    if (!inputPassword) {
-      sendTelegramMessage(
-        chatId,
-        `Untuk keamanan akun, silakan sertakan password login Anda:\n<code>/daftar ${user.username} kata_sandi_anda</code>`
-      );
-      return;
-    }
-
-    const isMatch = bcrypt.compareSync(inputPassword, user.password);
-    if (!isMatch) {
-      sendTelegramMessage(
-        chatId,
-        `<b>Verifikasi Gagal</b>: Password salah untuk username <code>${user.username}</code>. Silakan coba lagi.`
-      );
-      return;
-    }
-
-    db.run('UPDATE users SET telegram_chat_id = ? WHERE id = ?', [String(chatId), user.id], (updateErr) => {
-      if (updateErr) {
-        sendTelegramMessage(chatId, `Gagal menyimpan koneksi Telegram. Silakan coba lagi.`);
-        return;
-      }
-      sendTelegramMessage(
-        chatId,
-        `<b>Berhasil Terhubung!</b>\n\n` +
-        `Halo <b>${user.full_name}</b> (<code>${user.username}</code>),\n` +
-        `Akun Telegram Anda kini telah aktif terhubung sebagai <b>${user.role}</b>.\n\n` +
-        `Setiap ada berkas yang dikirim (<i>Transit</i>) ke meja Anda, bot ini akan langsung mengirim notifikasi ke HP Anda.`
-      );
-    });
-  });
-}
-
-// Jalankan polling perintah bot Telegram setiap 5 detik
-setInterval(pollTelegramUpdates, 5000);
-setTimeout(pollTelegramUpdates, 2000);
+// Aturan alur kegiatan & kalender hari kerja memakai Single Source of Truth dari ./src/services/fileFlowService.js & ./src/utils/workingDays.js
+// Engine Bot Telegram dikelola oleh ./src/services/telegramService.js
 
 // Cek status koneksi Telegram untuk user yang sedang login
 app.get('/api/notifications/telegram-status', authenticateJWT, (req, res) => {
@@ -2359,57 +2149,15 @@ app.post('/api/files/scan', authenticateJWT, validateBody(schemas.scanFileSchema
     if (err) return res.status(500).json({ error: err.message });
     if (!file) return res.status(404).json({ error: 'File tidak ditemukan' });
 
-    if (file.is_paused) {
-      return res.status(400).json({ error: 'berkas tidak dapat dipindahkan karena belum membayar Surat Perintah Setor' });
-    }
-
-    // === STRICT TRANSIT RULE ===
-    const isAdmin = req.user.role && req.user.role.includes('Administrator');
-    
-    if (file.is_transit !== 1 && !isAdmin) {
-      return res.status(403).json({ error: 'Berkas ini belum dikirim (Transit) oleh petugas sebelumnya. Mintalah petugas sebelumnya untuk menekan tombol Kirim Berkas.' });
-    }
-
-    if (file.is_transit === 1 && req.user.username !== file.transit_to_username && !isAdmin) {
-      return res.status(403).json({ error: `Berkas ini sedang dikirim ke meja petugas lain (${file.transit_to_username}). Hanya petugas tersebut yang bisa memindai.` });
-    }
-    // ===========================
-
-    if (file.current_location === 'Selesai') {
-      return res.status(400).json({ error: 'Berkas ini sudah berstatus Selesai dan tidak dapat diproses lagi.' });
-    }
-
-    if (file.current_location === 'Ditutup') {
-      return res.status(400).json({ error: 'Berkas ini sudah ditutup dan tidak dapat diproses lagi.' });
+    const precondition = validateScanPreconditions(file, req.user);
+    if (!precondition.ok) {
+      return res.status(precondition.status).json({ error: precondition.error });
     }
 
     if (userRoles.length > 1 && !selected_role) {
       db.all('SELECT scanned_by_role FROM file_history WHERE file_id = ? AND scanned_by_username = ? ORDER BY scanned_at ASC', [file.id, req.user.username], (historyErr, rows) => {
         if (historyErr) return res.status(500).json({ error: historyErr.message });
-        
-        const usedRoles = rows.map(r => {
-          const match = r.scanned_by_role.match(/\((.*?)\)$/);
-          return match ? match[1] : r.scanned_by_role;
-        });
-
-        const rolesUsedByThisUser = userRoles.filter(r => usedRoles.includes(r));
-        const unusedRoles = userRoles.filter(r => !usedRoles.includes(r));
-
-        if (rolesUsedByThisUser.length > 0 && unusedRoles.length > 0) {
-          const suggestedRole = unusedRoles[0];
-          const lastUsedRole = rolesUsedByThisUser[rolesUsedByThisUser.length - 1];
-          return res.status(400).json({ 
-            requires_smart_confirmation: true, 
-            suggested_role: suggestedRole,
-            last_used_role: lastUsedRole,
-            available_roles: userRoles
-          });
-        } else {
-          return res.status(400).json({
-            requires_role_selection: true,
-            available_roles: userRoles
-          });
-        }
+        return res.status(400).json(analyzeMultiRoleSelection(userRoles, rows));
       });
       return;
     }
@@ -2420,60 +2168,12 @@ app.post('/api/files/scan', authenticateJWT, validateBody(schemas.scanFileSchema
       return res.status(403).json({ error: 'Akses ditolak. Anda tidak memiliki izin untuk jabatan tersebut.' });
     }
 
-    let new_location = activeRole;
-    let custom_message = null;
-    if (activeRole === 'Petugas Penyelesaian Berkas') {
-      const kegiatanKelompok1 = ['Pengukuran dan Pemetaan Kadastral', 'Pemecahan Bidang', 'Penggabungan Bidang', 'Pemisahan Bidang', 'Penataan Batas'];
-      const kegiatanK2 = ['Pelepasan Sebagian Hak', 'Wakaf dari Tanah Yang Sudah Bersertipikat', 'Pendaftaran Tanah Pertama Kali Pemberian Hak', 'Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak', 'Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)', 'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf', 'Sertipikat Pengganti Karena Hilang/Lelang Eksekusi', 'Sertipikat Pengganti Karena Rusak/Lama', 'Permohonan SK'];
-      
-      if (!kegiatanKelompok1.includes(file.nama_kegiatan) && !kegiatanK2.includes(file.nama_kegiatan)) {
-         return res.status(400).json({ error: 'Berkas ini bukan kegiatan Kelompok 1 atau Kelompok 2, Anda tidak dapat memprosesnya sebagai Petugas Penyelesaian.' });
-      }
-
-      new_location = 'Petugas Penyelesaian Berkas';
-    } else if (activeRole === 'Petugas Loket Penyerahan Produk') {
-      if (file.nama_kegiatan === 'Pengukuran dan Pemetaan Kadastral') {
-        if (file.current_location !== 'Petugas Penyelesaian Berkas') {
-          return res.status(400).json({ error: 'Berkas Pengukuran dan Pemetaan Kadastral harus diserahkan dari Petugas Penyelesaian Berkas.' });
-        }
-        new_location = 'Selesai';
-        custom_message = 'Berkas Telah Diserahkan ke Pemohon (Selesai)';
-      } else {
-        new_location = 'Petugas Loket Penyerahan Produk';
-      }
-    } else if (activeRole === 'Petugas Seksi PHP') {
-      const kegiatanKhususPHP = ['Pemecahan Bidang', 'Penggabungan Bidang', 'Pemisahan Bidang', 'Penataan Batas'];
-      const kegiatanK2 = ['Pelepasan Sebagian Hak', 'Wakaf dari Tanah Yang Sudah Bersertipikat', 'Pendaftaran Tanah Pertama Kali Pemberian Hak', 'Pendaftaran Tanah Pertama Kali Pengakuan/Penegasan Hak', 'Pendaftaran Tanah Pertama Kali Pemberian Hak (BMN)', 'Pendaftaran Tanah Pertama Kali Penegasan Tanah Wakaf', 'Sertipikat Pengganti Karena Hilang/Lelang Eksekusi', 'Sertipikat Pengganti Karena Rusak/Lama', 'Permohonan SK'];
-      
-      if (file.nama_kegiatan === 'Pengukuran dan Pemetaan Kadastral') {
-        return res.status(400).json({ error: 'Mekanisme ini tidak berlaku untuk kegiatan Pengukuran dan Pemetaan Kadastral.' });
-      }
-
-      if (kegiatanKhususPHP.includes(file.nama_kegiatan)) {
-        if (file.current_location === 'Petugas Penyelesaian Berkas') {
-          new_location = 'Selesai';
-          custom_message = 'Berkas Telah Selesai di Seksi SP dan diserahkan ke Seksi PHP';
-        } else {
-          new_location = 'Petugas Seksi PHP';
-        }
-      } else if (kegiatanK2.includes(file.nama_kegiatan)) {
-        if (file.current_location === 'Petugas Penyelesaian Berkas') {
-          new_location = 'Selesai';
-          custom_message = 'Berkas Telah Selesai di Seksi PHP';
-        } else {
-          new_location = 'Petugas Seksi PHP';
-        }
-      } else {
-        if (file.current_location === 'Petugas Distribusi Berkas Ke Seksi PHP') {
-          new_location = 'Selesai';
-          custom_message = 'Berkas Telah Selesai di Seksi SP';
-        } else {
-          new_location = 'Petugas Seksi PHP';
-        }
-      }
-    } else if (activeRole === 'Petugas Entry Berkas') {
-      new_location = 'Loket Pendaftaran (Entry)';
+    const transition = resolveScanTransition(file, activeRole);
+    if (!transition.ok) {
+      return res.status(transition.status).json({ error: transition.error });
     }
+
+    const { newLocation: new_location, customMessage: custom_message } = transition;
 
     if (file.current_location === new_location) {
       db.get('SELECT scanned_by_username, scanned_by_role FROM file_history WHERE file_id = ? ORDER BY scanned_at DESC LIMIT 1', [file.id], (historyErr, row) => {
