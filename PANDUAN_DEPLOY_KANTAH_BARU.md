@@ -34,16 +34,23 @@ rm -f database.sqlite
 # 2. Bersihkan isi folder uploads (PDF surat, file AutoCAD .dwg, dan foto profil) namun pertahankan foldernya
 rm -rf uploads/surat/* uploads/dwg/* uploads/avatars/*
 mkdir -p uploads/surat uploads/dwg uploads/avatars
+mkdir -p ../backups
 ```
 
 > [!NOTE]
-> Saat kontainer backend pertama kali dijalankan tanpa `database.sqlite`, sistem secara otomatis membuat skema tabel lengkap (`users`, `files`, `file_history`, `disposisi`, `surat`, `surat_history`, `surat_disposisi`, `user_dwg_files`, `feature_suggestions`) beserta akun Administrator awal (`admin` / `admin123`).
+> Saat kontainer backend pertama kali dijalankan tanpa `database.sqlite`, sistem secara otomatis membuat 10 tabel lengkap (`users`, `files`, `file_history`, `disposisi`, `surat`, `surat_history`, `surat_disposisi`, `user_dwg_files`, `suggestions`, `audit_logs`) beserta akun awal (termasuk Administrator `admin` / `admin123`).
 
 ---
 
-## Tahap 3: Konfigurasi `docker-compose.yml` (Mencegah Bentrok Port & Container)
+## Tahap 3: Konfigurasi `.env` & `docker-compose.yml` (Mencegah Bentrok Port & Container)
 
-Buka berkas `docker-compose.yml` dan sesuaikan nama *service*, `container_name`, mapping *port*, serta token *Cloudflare Tunnel* (jika menggunakan domain publik sendiri):
+1. Salin template `.env.example` menjadi `.env` di root direktori proyek jika menggunakan **Cloudflare Tunnel**, lalu isi token tunnel resmi:
+   ```bash
+   cp .env.example .env
+   ```
+   Disarankan juga membuat `backend/.env` berisi `JWT_SECRET` acak minimal 32 karakter dan `TELEGRAM_BOT_TOKEN` (jika menggunakan Bot Telegram khusus Kantah baru).
+
+2. Buka berkas `docker-compose.yml` dan sesuaikan nama *service*, `container_name`, serta mapping *port*:
 
 ```yaml
 services:
@@ -55,22 +62,32 @@ services:
       - "3011:3001"   # Port HTTP (Ubah angka KIRI jika berada di server NAS yang sama, misal 3011:3001)
       - "3012:3002"   # Port HTTPS Lokal (Ubah angka KIRI, misal 3012:3002)
     volumes:
-      # PENTING: Mapping data persisten & build statis ke host NAS
+      # PENTING: Mapping data persisten, modul backend, backup, & build statis ke host NAS
       - ./backend/database.sqlite:/app/backend/database.sqlite
       - ./backend/uploads:/app/backend/uploads
       - ./backend/server.js:/app/backend/server.js
+      - ./backend/validation.js:/app/backend/validation.js
+      - ./backend/src:/app/backend/src
+      - ./backend/scripts:/app/backend/scripts
+      - ./backups:/app/backups
       - ./backend/cert.pem:/app/backend/cert.pem
       - ./backend/key.pem:/app/backend/key.pem
       - ./frontend/dist:/app/frontend/dist
     environment:
       - NODE_ENV=production
-      # Opsional: Token Bot Telegram khusus Kantah baru (atau kosongkan jika belum menggunakan bot)
+      # Opsional: Token Bot Telegram & JWT Secret khusus Kantah baru (atau atur di backend/.env)
       - TELEGRAM_BOT_TOKEN=ISI_TOKEN_BOTFATHER_KANTAH_BARU
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3001/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 ```
 
 > [!IMPORTANT]
 > - Jangan mengubah angka port di sebelah **KANAN** titik dua (`:3001` dan `:3002`) karena merupakan port internal di dalam Docker container. Hanya ubah angka di sebelah **KIRI**.
-> - Jika menggunakan **Cloudflare Tunnel (`cloudflared`)**, ganti token pada service `cloudflared` dengan token tunnel domain milik Kantah baru Anda, atau hapus blok service `cloudflared` jika hanya diakses melalui jaringan lokal (LAN).
+> - Jika menggunakan **Cloudflare Tunnel (`cloudflared`)**, isi `CLOUDFLARE_TUNNEL_TOKEN` di file `.env` root dengan token tunnel domain milik Kantah baru Anda (karena `docker-compose.yml` membaca `${CLOUDFLARE_TUNNEL_TOKEN:-}`), atau hapus blok service `cloudflared` jika hanya diakses melalui jaringan lokal (LAN).
 
 ---
 
@@ -78,19 +95,22 @@ services:
 
 Untuk menyesuaikan identitas nama kantor (mengubah *"Kantor Pertanahan Kota Tangerang Selatan"* / *"Pantau.Kantah Tangsel"* menjadi nama Kantah baru), perbarui teks pada berkas berikut:
 
-1. **`frontend/index.html`**
-   - Ubah `<title>Pantau.Kantah Tangsel</title>` dan teks pemuat awal `Memuat Pantau Kantah Tangsel...`.
+1. **`frontend/index.html` & `frontend/public/manifest.webmanifest`**
+   - Ubah `<title>Pantau.Kantah Tangsel</title>`, meta `application-name` / `apple-mobile-web-app-title`, dan teks pemuat awal `Memuat Pantau Kantah Tangsel...` di `frontend/index.html`.
+   - Sesuaikan `name`, `short_name`, dan `description` PWA di `frontend/public/manifest.webmanifest`.
 2. **`frontend/src/components/Navbar.jsx`**
    - Sesuaikan teks merek navigasi (`Kantor Pertanahan Kota Tangerang Selatan`, `Kantah Tangsel`, dan `Pantau.Kantah Tangsel`).
 3. **`frontend/src/pages/HomeHub.jsx`**
-   - Sesuaikan judul utama `Portal Aplikasi Pantau.Kantah Tangsel` dan teks hak cipta di bagian bawah halaman.
-4. **`frontend/src/pages/Login.jsx` & `frontend/src/components/Footer.jsx`**
-   - Sesuaikan subjudul halaman login serta teks hak cipta footer.
-5. **`backend/server.js`**
-   - Sesuaikan daftar `allowedOrigins` (CORS) dengan domain publik Kantah baru Anda.
-   - Jika menggunakan Bot Telegram baru, sesuaikan username bot pada konstanta terkait atau gunakan variabel lingkungan `TELEGRAM_BOT_TOKEN`.
+   - Sesuaikan judul utama `Portal Aplikasi Pantau.Kantah Tangsel`.
+4. **`frontend/src/pages/Login.jsx`, `frontend/src/components/LoginHelpModal.jsx`, & `frontend/src/App.jsx`**
+   - Sesuaikan kop/subjudul dan footer di `Login.jsx`, info kontak admin di `LoginHelpModal.jsx`, serta `document.title` dan `<footer>` hak cipta di `App.jsx`.
+5. **Slip Cetak QR (`EntryForm.jsx`, `FileDetails.jsx`, `SuratDashboard.jsx`, `SuratDetails.jsx`)**
+   - Sesuaikan kop institusi (*Kantor Pertanahan Kota Tangerang Selatan*) dan nama aplikasi pada panel cetak slip QR.
+6. **`backend/server.js` & `backend/src/services/telegramService.js`**
+   - Sesuaikan daftar `allowedOrigins` (CORS) di `backend/server.js` dengan domain publik Kantah baru Anda.
+   - Jika menggunakan Bot Telegram baru, atur `TELEGRAM_BOT_TOKEN` melalui variabel lingkungan (`backend/.env` / Docker `environment`) dan sesuaikan `DEFAULT_TELEGRAM_BOT_USERNAME` di `backend/src/services/telegramService.js`.
 
-Setelah mengubah kode frontend, jalankan kompilasi ulang:
+Setelah mengubah kode frontend, jalankan kompilasi ulang agar folder bind-mount `frontend/dist` ikut terbarui:
 ```bash
 cd frontend
 npm install

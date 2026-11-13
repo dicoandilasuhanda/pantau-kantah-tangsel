@@ -2,7 +2,7 @@
 
 Dokumen ini merupakan **Single Source of Truth (SSOT)**, panduan serah terima (*handover*), sekaligus cetak biru arsitektur (*system blueprint*) dari aplikasi **Pantau.Kantah Tangsel** — Portal Aplikasi Pelacakan Berkas & Persuratan Terpadu di **Kantor Pertanahan (Kantah) ATR/BPN Kota Tangerang Selatan**.
 
-seluruh spesifikasi di dalam dokumen ini telah **diverifikasi 100% sesuai dengan implementasi kode aktual** pada *backend* (`backend/server.js` & `backend/src/`) dan *frontend* (`frontend/src/`). Berikan dokumen ini kepada pengembang atau asisten AI di awal sesi agar konteks sistem dapat dipahami secara utuh dan presisi tanpa perlu menjelaskan dari awal.
+Seluruh spesifikasi di dalam dokumen ini telah **diverifikasi 100% sesuai dengan implementasi kode aktual** pada *backend* (`backend/server.js` & `backend/src/`) dan *frontend* (`frontend/src/`). Berikan dokumen ini kepada pengembang atau asisten AI di awal sesi agar konteks sistem dapat dipahami secara utuh dan presisi tanpa perlu menjelaskan dari awal.
 
 ---
 
@@ -152,7 +152,7 @@ Ketika berkas dipindai (*scan*), backend menerapkan aturan bisnis spesifik berda
   2. **Monitoring Surat (`/surat`):** Daftar agenda surat masuk, pratinjau/unduh PDF aman, cetak slip QR standar, entri surat (`/surat/entry`), detail perjalanan surat (`/surat/detail/:id`), dan pemindai QR agenda surat (`/surat/scan`).
   3. **Dashboard Kinerja (`/kpi`):** Dapat diakses oleh **seluruh pengguna yang login**. Memiliki 3 tab: **KPI Berkas**, **KPI Persuratan**, dan **Top 50 Berkas Aktif Terlama** (`Top50Berkas.jsx`).
   4. **PDF Tools Kantah (`/pdf-tools`):** Utilitas pengolahan dokumen PDF *100% client-side* di browser (tanpa membebani server) menggunakan `pdf-lib` & `pdfjs-dist`, meliputi: **Gabung PDF (Merge)**, **Pisah PDF (Split dengan pratinjau thumbnail halaman visual)**, **Kompresi Ukuran PDF**, **Putar Halaman (Rotate)**, dan **Konversi Gambar (JPG/PNG) ke PDF**.
-  5. **Admin Panel & Pengguna (`/admin`):** Khusus `Administrator`. Mengintegrasikan manajemen berkas & surat, ekspor Excel 2-Sheet, kelola pengguna (`/admin/users`), dan pantauan statistik pengguna online (`/admin/stats`).
+  5. **Admin Panel & Pengguna (`/admin`):** Khusus `Administrator`. Mengintegrasikan 4 tab manajemen (**Kelola Berkas Permohonan**, **Kelola Persuratan**, **Backup & Pemulihan**, dan **Audit Keamanan**), ekspor Excel 2-Sheet, kelola pengguna (`/admin/users`), dan pantauan statistik pengguna online (`/admin/stats`).
 
 ### 5.2. Lonceng Notifikasi Suara (`NotificationBell.jsx`) & Bot Telegram (`@pantaukantahtangsel_bot`)
 - **Web Audio API Chime & Notifikasi Terpadu (Berkas & Surat):**
@@ -236,12 +236,13 @@ Berikut adalah ke-14 nama peran eksak sebagaimana terdaftar pada `AVAILABLE_ROLE
 
 ## 7. Skema Database Aktual (SQLite) & Referensi Migrasi PostgreSQL
 
-Sistem saat ini memiliki **9 Tabel Utama** di SQLite (`backend/database.sqlite`). Berikut adalah struktur kolom aktual beserta diagram relasinya:
+Sistem saat ini memiliki **10 Tabel** di SQLite (`backend/database.sqlite`): **9 tabel inti operasional** (`users`, `user_dwg_files`, `files`, `file_history`, `disposisi`, `surat`, `surat_history`, `surat_disposisi`, `suggestions`) dan **1 tabel permanen jejak audit** (`audit_logs`). Berikut adalah struktur kolom aktual beserta diagram relasinya:
 
 ```mermaid
 erDiagram
     users ||--o{ user_dwg_files : "owns (user_id)"
     users ||--o{ suggestions : "submits (user_id)"
+    users ||--o{ audit_logs : "acts (actor_id, soft ref)"
     files ||--o{ file_history : "has (file_id)"
     files ||--o{ disposisi : "has (file_id)"
     surat ||--o{ surat_history : "has (surat_id)"
@@ -365,6 +366,22 @@ erDiagram
         TEXT admin_notes
         DATETIME created_at
     }
+
+    audit_logs {
+        INTEGER id PK
+        TEXT category
+        TEXT action
+        TEXT severity
+        INTEGER actor_id
+        TEXT actor_username
+        TEXT actor_role
+        TEXT target_type
+        TEXT target_id
+        TEXT summary
+        TEXT metadata
+        TEXT ip_address
+        DATETIME created_at
+    }
 ```
 
 ### Catatan Penting Skema & Integritas Data:
@@ -374,6 +391,7 @@ erDiagram
    - File PDF surat hanya dapat diakses melalui `GET /api/surat/file/:filename` dengan verifikasi token JWT.
    - File AutoCAD DWG hanya dapat diunduh melalui `GET /api/user/dwg/:id/download` dengan verifikasi kepemilikan baris (`user_id = req.user.id`) dan middleware `requireDwgAccess`.
    - Foto avatar diakses melalui `GET /api/user/avatar/:filename` dengan sanitasi `path.basename()` anti-*path traversal*.
+4. **Ketahanan Jejak Audit (`audit_logs`):** Tabel `audit_logs` menyimpan `actor_id` dan `actor_username` tanpa *foreign key cascade* agar catatan audit historis tetap utuh meskipun akun pengguna terkait dihapus, dan diklasifikasikan sebagai `OPTIONAL_TABLES` di `backupService.js` sehingga arsip cadangan lama (9 tabel) tetap lolos audit integritas restore.
 
 ---
 
@@ -478,7 +496,7 @@ Aplikasi dideploy menggunakan **Docker Compose** pada server NAS QNAP (`\\10.2.0
 
 ### 9.2. Pencadangan Database & Berkas Uploads Tanpa Henti + Notifikasi Telegram (`auto_backup.sh`, `backupService.js`, `tarGzArchive.js`, `backup-db.js`)
 - Dijalankan otomatis melalui cron di host QNAP (`auto_backup.sh`) maupun memanggil CLI `node backend/scripts/backup-db.js` (mendukung `--verify-only`, `--skip-uploads`, `--no-notify`, `--file`) atau tab Admin Dashboard **Backup & Pemulihan**.
-- **Snapshot Database SQLite:** Menggunakan perintah transaksional **`SQLite VACUUM INTO`** langsung dari modul `sqlite3@6` (`SQLite 3.52`) di dalam container `pantau-sp` tanpa binary CLI eksternal, kemudian menyalin arsip `database_backup_*.sqlite` ke direktori sementara terisolasi (`os.tmpdir()`) untuk menguji `PRAGMA integrity_check = ok`, kelengkapan **9 tabel utama**, dan SHA-256.
+- **Snapshot Database SQLite:** Menggunakan perintah transaksional **`SQLite VACUUM INTO`** langsung dari modul `sqlite3@6` (`SQLite 3.52`) di dalam container `pantau-sp` tanpa binary CLI eksternal, kemudian menyalin arsip `database_backup_*.sqlite` ke direktori sementara terisolasi (`os.tmpdir()`) untuk menguji `PRAGMA integrity_check = ok`, kelengkapan **9 tabel inti** (`EXPECTED_TABLES`, plus tabel opsional `audit_logs` untuk kompatibilitas arsip historis), dan SHA-256.
 - **Arsip Fisik `uploads/` (`.tar.gz`):** Modul `backend/src/utils/tarGzArchive.js` mengemas seluruh isi `backend/uploads/` (`surat/` PDF, `avatars/`, & `dwg/` AutoCAD) secara *streaming* POSIX USTAR + gzip ke `backups/uploads_backup_*.tar.gz`, diikuti verifikasi checksum header TAR + SHA-256 (`verifyUploadsBackupFile`).
 - **Notifikasi Telegram & Retensi Ganda:** Hasil backup maupun peringatan kegagalan dikirim otomatis ke Telegram seluruh Administrator yang memiliki `telegram_chat_id` aktif via `@pantaukantahtangsel_bot`. Kebijakan rotasi membersihkan cadangan berumur > **30 hari** secara terpisah untuk masing-masing jenis (`.sqlite` dan `.tar.gz`), sambil selalu mempertahankan minimal **3 arsip terbaru** per jenis.
 
@@ -489,7 +507,7 @@ Aplikasi dideploy menggunakan **Docker Compose** pada server NAS QNAP (`\\10.2.0
 > 2. **DILARANG KERAS** menjalankan perintah destruktif seperti `git reset --hard` atau `git clean` di dalam folder network share QNAP.
 > 3. Untuk memperbarui server QNAP dari PC Kantor:
 >    - Jalankan `npm.cmd run build` di folder `frontend` lokal.
->    - Salin file kode yang berubah dan folder `frontend/dist` ke server QNAP.
+>    - Salin file kode yang berubah dan folder `frontend/dist` ke server QNAP (jika membuat ulang seluruh stack atau container `cloudflared`, pastikan `.env` di root berisi `CLOUDFLARE_TUNNEL_TOKEN` sesuai `.env.example`).
 >    - Selaraskan index Git di QNAP hanya dengan `git fetch origin` lalu `git reset --mixed origin/main`.
 
 ### 9.4. Sistem Pemulihan Otomatis Layar Putih & Cache Recovery (Double-Layer Fallback)
@@ -532,12 +550,12 @@ Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / 
 ## 10. Rencana Arsitektur Masa Depan (Skalabilitas Enterprise PostgreSQL)
 
 Jika proyek ini dikembangkan ulang atau dimigrasikan ke skala **Enterprise Kantah Penuh** pada repositori baru, gunakan rancangan target berikut:
-- **Backend:** Node.js + Express/Fastify dengan **TypeScript** berpola *Modular Clean Architecture* (`/src/modules/{auth,berkas,surat,dwg,kpi,suggestions,stats}`) — *(modularisasi JS penuh pada `backend/src/` sudah selesai dilaksanakan melalui `db/initDatabase.js`, `middleware/{auth,uploads}.js`, `utils/{workingDays,networkAndQr}.js`, `services/{fileFlowService,kpiService,telegramService}.js`, dan `routes/{auth,users,dwg,surat,files,notifications,reports,suggestions,stats,health}.js`, memangkas `backend/server.js` menjadi 292 baris bootstrap murni)*.
+- **Backend:** Node.js + Express/Fastify dengan **TypeScript** berpola *Modular Clean Architecture* (`/src/modules/{auth,berkas,surat,dwg,kpi,suggestions,stats}`) — *(modularisasi JS penuh pada `backend/src/` sudah selesai dilaksanakan melalui `db/initDatabase.js`, `middleware/{auth,compression,uploads}.js`, `utils/{workingDays,networkAndQr,tarGzArchive}.js`, `services/{auditService,backupService,fileFlowService,kpiService,telegramService}.js`, dan `routes/{audit,auth,backups,dwg,files,health,notifications,reports,stats,suggestions,surat,users}.js`, menyisakan `backend/server.js` 368 baris bootstrap & perakitan `createApp`)*.
 - **Database Utama:** **PostgreSQL 16+** dengan **Prisma ORM** atau **Drizzle ORM** (menggantikan SQLite untuk mendukung konkurensi tulis tinggi lintas seluruh seksi).
 - **In-Memory Store & Queue:** **Redis** untuk manajemen sesi multi-perangkat, pencatatan *real-time online presence*, *rate-limiting*, dan *message queue* (**BullMQ**) untuk pengiriman notifikasi Telegram asinkron.
 - **Object Storage:** **MinIO** (self-hosted di QNAP) atau **Cloudflare R2 / AWS S3** untuk menyimpan arsip PDF surat, gambar kadastral `.dwg`, dan foto profil secara terpisah dari container aplikasi.
 - **Modularisasi Frontend & Pemisahan CSS Statis (Tahap 21):**
-  - Empat halaman monolitik utama telah dipecah menjadi modul fungsional yang bersih: `Login.jsx` (1.626 -> 287 baris, mengekstrak `Login.css`, `authSession.js`, & `LoginHelpModal.jsx`), `PdfTools.jsx` (1.669 -> 90 baris, mengekstrak `pdfUtils.js`, `pdfOperations.js`, 5 tab di `components/pdf/`, & `PdfZoomModal.jsx`), `AdminDashboard.jsx` (1.420 -> 659 baris, mengekstrak `adminExcelExport.js`, `AdminBerkasTab.jsx`, `AdminSuratTab.jsx`, `CloseReasonModal.jsx`, & `RecordRowActions.jsx`), serta `Dashboard.jsx` (1.163 -> 706 baris, mengekstrak `Dashboard.css`, `BatchTransitModal.jsx`, & `DashboardFileCard.jsx`).
+  - Empat halaman monolitik utama telah dipecah menjadi modul fungsional yang bersih: `Login.jsx` (1.626 -> 287 baris, mengekstrak `Login.css`, `authSession.js`, & `LoginHelpModal.jsx`), `PdfTools.jsx` (1.669 -> 90 baris, mengekstrak `pdfUtils.js`, `pdfOperations.js`, 5 tab di `components/pdf/`, & `PdfZoomModal.jsx`), `AdminDashboard.jsx` (1.420 -> 708 baris, mengekstrak `adminExcelExport.js`, `AdminBerkasTab.jsx`, `AdminSuratTab.jsx`, `AdminBackupTab.{jsx,css}`, `AdminAuditTab.{jsx,css}`, `CloseReasonModal.jsx`, & `RecordRowActions.jsx`), serta `Dashboard.jsx` (1.163 -> 705 baris, mengekstrak `Dashboard.css`, `BatchTransitModal.jsx`, & `DashboardFileCard.jsx`).
   - **Prioritas Aset LCP/CLS:** `frontend/index.html` mem-preload `/logo-atr-bpn.png` dengan `fetchpriority="high"` dan bersama `Navbar.jsx` / `Login.jsx` menyertakan atribut dimensi intrinsik (`width`/`height`) untuk mencegah *Cumulative Layout Shift* sambil mempertahankan injeksi classic `<script defer>` demi kompatibilitas penuh iOS WebKit.
 - **Validasi, CI & Pengujian:** Validasi skema input menggunakan **Zod** (`backend/validation.js`, `validation.test.js`), CI otomatis di `.github/workflows/ci.yml` (*syntax check*, backend `node --test`, Oxlint, Vitest, Vite build, serta job `e2e-check` Playwright Chromium pada artefak `frontend/dist`), total **36 tes Vitest** frontend (`dateUtils.test.js` 18 tes, `authSession.test.js` 6 tes, `pwa.test.js` 5 tes, `pdfUtils.test.js` 4 tes, `adminExcelExport.test.js` 3 tes) dengan **0 warning/error Oxlint (59 berkas)**, total **44 tes backend** via `node --test` (`workingDays.test.js`, `kpiService.test.js`, `fileFlowService.test.js`, `telegramService.test.js`, `backupService.test.js`, `tarGzArchive.test.js`, `auditService.test.js`, `middleware/auth.test.js`, `middleware/compression.test.js`, `routes/health.test.js`, `validation.test.js`, dan smoke test seluruh router `routes.smoke.test.js`), serta **14 tes Browser E2E Playwright** (`e2e/auth-and-theme.spec.js`, `e2e/berkas-and-print.spec.js`, `e2e/surat-flow.spec.js`, `e2e/admin-and-pdftools.spec.js`, `e2e/pwa.spec.js`, `e2e/backup-and-restore.spec.js`) terhadap `frontend/dist` dengan SQLite ephemeral (`os.tmpdir()`) lewat `e2e/server-runner.cjs`.
 - **Ketahanan Penyajian SPA (`backend/server.js`, Tahap 22):** Penyesuaian *catch-all* SPA fallback menjadi `res.sendFile('index.html', { root: frontendDistDir })` agar `send` tidak memblokir `index.html` sebagai `NotFoundError 404` ketika repositori dijalankan di bawah folder induk bertitik (*dot-directory*, mis. `.gemini/`).

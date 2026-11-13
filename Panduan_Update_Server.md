@@ -17,7 +17,7 @@ Dokumen ini adalah panduan operasional langkah demi langkah (*cheatsheet*) untuk
 
 ## Metode 1: Update Cepat (Otomatis dari PC Kantor / Mac)
 
-Karena `docker-compose.yml` pada server QNAP telah menggunakan *bind-mount* langsung untuk `./frontend/dist:/app/frontend/dist` dan `./backend/server.js:/app/backend/server.js`:
+Karena `docker-compose.yml` pada server QNAP telah menggunakan *bind-mount* langsung untuk `./frontend/dist`, `./backend/server.js`, `./backend/validation.js`, `./backend/src`, `./backend/scripts`, dan `./backups`:
 
 ### A. Jika Perubahan Hanya pada Tampilan / Frontend (`frontend/src/...`)
 1. Di komputer kerja, bangun bundel produksi di folder `frontend`:
@@ -26,9 +26,9 @@ Karena `docker-compose.yml` pada server QNAP telah menggunakan *bind-mount* lang
 2. Salin isi folder `frontend/dist/*` (dan file sumber yang berubah) ke `\\10.2.0.122\Pantau SP Tangsel\file-tracker\frontend\dist\`.
 3. **Selesai!** Perubahan tampilan langsung aktif seketika di browser (karena bundel dilengkapi *cache-buster* `?v=<timestamp>` otomatis pada setiap *build*) tanpa perlu me-*restart* Docker container.
 
-### B. Jika Perubahan Mencakup Backend (`backend/server.js`)
-1. Salin berkas `backend/server.js` yang baru ke `\\10.2.0.122\Pantau SP Tangsel\file-tracker\backend\server.js`.
-2. Masuk ke server QNAP melalui SSH atau buka **Container Station** di QNAP, lalu *restart* container `pantau-sp-app` agar proses Node.js memuat ulang `server.js` terbaru ke memori:
+### B. Jika Perubahan Mencakup Backend (`backend/server.js`, `backend/validation.js`, `backend/src/`, atau `backend/scripts/`)
+1. Salin berkas backend yang berubah (`backend/server.js`, `backend/validation.js`, `backend/src/...`, `backend/scripts/...`) ke direktori tujuan yang sama di `\\10.2.0.122\Pantau SP Tangsel\file-tracker\backend\`.
+2. Masuk ke server QNAP melalui SSH atau buka **Container Station** di QNAP, lalu *restart* container `pantau-sp-app` agar proses Node.js memuat ulang modul backend terbaru ke memori:
    ```bash
    ssh admin@10.2.0.122
    docker restart pantau-sp-app
@@ -38,7 +38,7 @@ Karena `docker-compose.yml` pada server QNAP telah menggunakan *bind-mount* lang
 
 ## Metode 2: Rebuild Penuh Container Docker (Jika Ada Penambahan Package `npm` Baru)
 
-Apabila terdapat penambahan pustaka baru pada `package.json` (baik di `frontend` maupun `backend`), lakukan *rebuild* image Docker melalui SSH:
+Apabila terdapat penambahan pustaka baru pada `package.json` (baik di `frontend` maupun `backend`, misalnya `zod`), lakukan *rebuild* image Docker melalui SSH:
 
 ### Tahap 1: Masuk ke Server QNAP via SSH
 Buka **Windows PowerShell** atau **Terminal**, lalu jalankan:
@@ -47,10 +47,12 @@ ssh admin@10.2.0.122
 ```
 Masukkan kata sandi administrator QNAP Anda.
 
-### Tahap 2: Masuk ke Direktori Proyek
+### Tahap 2: Masuk ke Direktori Proyek & Pastikan `.env` Tersedia
 ```bash
 cd "/share/Pantau SP Tangsel/file-tracker"
 ```
+> [!IMPORTANT]
+> Token Cloudflare Tunnel tidak lagi disimpan *hardcoded* di `docker-compose.yml`. Jika Anda menjalankan ulang seluruh *stack* (`docker compose up -d --build` tanpa menyebut `pantau-sp`), pastikan berkas `.env` di root direktori QNAP sudah dibuat dari `.env.example` dan berisi `CLOUDFLARE_TUNNEL_TOKEN` yang valid agar container `cloudflared` tetap terhubung. Untuk aplikasi backend, disarankan juga mengisi `JWT_SECRET` acak minimal 32 karakter pada `backend/.env`.
 
 ### Tahap 3: Build Ulang dan Jalankan Container Aplikasi
 ```bash
@@ -63,6 +65,8 @@ docker compose up -d --build pantau-sp
 
 ## Tahap Verifikasi Pasca-Update
 
-1. Buka alamat lokal `https://10.2.0.122:3002` atau domain publik `https://pantaukantahtangsel.web.id` di peramban Desktop maupun Mobile (iPhone Safari/Chrome & Android).
-2. Setiap kali `npm run build` dijalankan, plugin `iosWebKitCompatibilityPlugin` di `vite.config.js` secara otomatis menyematkan parameter versi `?v=<timestamp>` baru pada `/recovery.js`, bundel JS, dan CSS sehingga peramban pengguna otomatis mendapatkan versi terbaru tanpa terkendala cache lama.
-3. Jika pengguna ingin menyegarkan sesi/cache secara manual, fitur **Bersihkan Cache & Segarkan** juga tersedia langsung di halaman **Profil Saya (`/profile`)**.
+1. Pastikan container dalam kondisi sehat lewat SSH (`docker compose ps` menunjukkan status `healthy` atau cek `GET /api/health` mengembalikan `{"status":"ok","db":"connected"}`).
+2. Buka alamat lokal `https://10.2.0.122:3002` atau domain publik `https://pantaukantahtangsel.web.id` di peramban Desktop maupun Mobile (iPhone Safari/Chrome & Android).
+3. Setiap kali `npm run build` dijalankan, plugin `iosWebKitCompatibilityPlugin` di `vite.config.js` secara otomatis menyematkan parameter versi `?v=<timestamp>` baru pada `/recovery.js`, bundel JS, dan CSS sehingga peramban pengguna otomatis mendapatkan versi terbaru tanpa terkendala cache lama.
+4. Jika pengguna ingin menyegarkan sesi/cache secara manual, fitur **Bersihkan Cache & Segarkan** juga tersedia langsung di halaman **Profil Saya (`/profile`)**.
+5. Jika pembaruan disalin secara manual ke share QNAP, selaraskan index Git di QNAP hanya dengan `git fetch origin` lalu `git reset --mixed origin/main` (**jangan pernah** `git reset --hard`).

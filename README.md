@@ -261,8 +261,9 @@ pantau-kantah-tangsel/
 │   │   │   └── Top50Berkas.jsx     # Tabel 50 berkas aktif terlama
 │   │   ├── pages/                  # Halaman aplikasi:
 │   │   │   ├── admin/
-│   │   │   │   ├── AdminDashboard.jsx  # Dasbor eksekutif terpadu (kelola berkas, surat, & ekspor Excel 2-Sheet)
-│   │   │   │   └── UserManagement.jsx  # CRUD pengguna, paginasi per 10 baris, & pengaturan multi-role
+│   │   │   │   ├── AdminDashboard.jsx  # Dasbor eksekutif terpadu (berkas, surat, backup & pemulihan, audit keamanan, & ekspor Excel 2-Sheet)
+│   │   │   │   ├── UserManagement.jsx  # CRUD pengguna, paginasi per 10 baris, & pengaturan multi-role
+│   │   │   │   └── WebAppStats.jsx     # Pemantauan pengguna online, sesi aktif, & kick session Admin
 │   │   │   ├── Dashboard.css       # Stylesheet terpisah untuk tata letak responsif Dasbor Monitoring
 │   │   │   ├── Dashboard.jsx       # Monitoring berkas utama, kartu metrik, & filter
 │   │   │   ├── EntryForm.jsx       # Formulir registrasi berkas & cetak QR Code
@@ -360,6 +361,9 @@ npm run test:e2e
 Proyek ini telah dikonfigurasi agar *Backend* sekaligus menyajikan hasil *build* statis *Frontend* dalam satu kontainer yang ringan.
 
 ```bash
+# Salin template .env dan isi CLOUDFLARE_TUNNEL_TOKEN bila menjalankan service cloudflared
+cp .env.example .env
+
 # Build dan jalankan container di background
 docker compose up -d --build
 ```
@@ -374,7 +378,7 @@ chmod +x auto_backup.sh
 # Audit integritas & simulasi restore arsip backup terbaru di direktori sementara terisolasi
 node backend/scripts/backup-db.js --verify-only
 ```
-Script memanfaatkan mekanisme *online snapshot* bawaan **`SQLite VACUUM INTO`** serta pengarsipan *streaming* **POSIX USTAR `.tar.gz`** (`backend/scripts/backup-db.js`) sehingga aman dijalankan secara *online* **tanpa mematikan container** maupun memerlukan binary `sqlite3`/`tar` eksternal di host QNAP/Alpine. Setiap selesai mencadangkan database dan direktori `backend/uploads/` ke `backups/`, skrip otomatis memverifikasi `PRAGMA integrity_check = ok`, kelengkapan 9 tabel utama, checksum header TAR/GZIP & SHA-256, mengirim laporan ke akun Telegram **Administrator** tertaut via `@pantaukantahtangsel_bot`, serta membersihkan arsip > 30 hari sambil menyisakan minimal 3 arsip terbaru per jenis. Administrator juga dapat membuat backup, memfilter & menguji integritas `.sqlite` maupun `.tar.gz`, serta mengunduh arsip langsung melalui tab **Admin Dashboard → Backup & Pemulihan**.
+Script memanfaatkan mekanisme *online snapshot* bawaan **`SQLite VACUUM INTO`** serta pengarsipan *streaming* **POSIX USTAR `.tar.gz`** (`backend/scripts/backup-db.js`) sehingga aman dijalankan secara *online* **tanpa mematikan container** maupun memerlukan binary `sqlite3`/`tar` eksternal di host QNAP/Alpine. Setiap selesai mencadangkan database dan direktori `backend/uploads/` ke `backups/`, skrip otomatis memverifikasi `PRAGMA integrity_check = ok`, kelengkapan 9 tabel inti (plus tabel opsional `audit_logs` untuk kompatibilitas arsip historis), checksum header TAR/GZIP & SHA-256, mengirim laporan ke akun Telegram **Administrator** tertaut via `@pantaukantahtangsel_bot`, serta membersihkan arsip > 30 hari sambil menyisakan minimal 3 arsip terbaru per jenis. Administrator juga dapat membuat backup, memfilter & menguji integritas `.sqlite` maupun `.tar.gz`, serta mengunduh arsip langsung melalui tab **Admin Dashboard → Backup & Pemulihan**.
 
 ---
 
