@@ -60,7 +60,13 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   const { port } = server.address();
   const baseUrl = `http://127.0.0.1:${port}`;
 
-  // 1. Public IP endpoint
+  // 1. Health & Public IP endpoints
+  const healthRes = await fetch(`${baseUrl}/api/health`);
+  assert.equal(healthRes.status, 200);
+  const healthJson = await healthRes.json();
+  assert.equal(healthJson.status, 'ok');
+  assert.equal(healthJson.database, 'connected');
+
   const ipRes = await fetch(`${baseUrl}/api/my-ip`);
   assert.equal(ipRes.status, 200);
   const ipJson = await ipRes.json();

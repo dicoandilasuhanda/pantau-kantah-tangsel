@@ -198,6 +198,8 @@ pantau-kantah-tangsel/
 │   │   │   ├── auth.js             # Router /api/my-ip, /api/login (rate-limit), & /api/logout
 │   │   │   ├── dwg.js              # Router /api/user/dwg/* (repositori & transfer DWG)
 │   │   │   ├── files.js            # Router /api/files/* & /api/disposisi/*
+│   │   │   ├── health.js           # Endpoint /api/health (liveness & cek koneksi SQLite)
+│   │   │   ├── health.test.js      # Unit test /api/health (status 200 ok & 503 unhealthy)
 │   │   │   ├── notifications.js    # Router /api/notifications/* (transit & bot Telegram)
 │   │   │   ├── reports.js          # Router /api/reports/* (dashboard, files, kpi, kpi-surat)
 │   │   │   ├── routes.smoke.test.js# Smoke/integration test E2E Express + SQLite seluruh router
@@ -260,6 +262,8 @@ pantau-kantah-tangsel/
 │   │   └── index.css               # Sistem desain global (Dark Glassmorphism)
 │   └── package.json                # Dependensi frontend
 │
+├── .github/workflows/
+│   └── ci.yml                      # CI GitHub Actions (syntax check, test backend/frontend, oxlint, & Vite build)
 ├── AGENTS.md                       # Aturan otomatisasi kerja lintas perangkat (PC & Mac) & Tim Subagent
 ├── HANDOVER_PANTAU_KANTAH.md       # Cetak biru arsitektur lengkap, alur 14 kegiatan, SLA, & kamus API (SSOT)
 ├── Dockerfile                      # Konfigurasi image Docker (Build Frontend + Run Backend)
@@ -397,7 +401,10 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
 - **Tahap 19 — Suite Pengujian Otomatis, Validasi Zod, & Modularisasi Penuh Backend (`backend/src/`):**
   - **Unit Test Frontend (`Vitest`):** Penambahan suite `frontend/src/utils/dateUtils.test.js` (18 kasus uji) yang mengawal akurasi kalkulator hari kerja, hari libur nasional, dan logika *pause/resume* SLA.
   - **Schema Validation REST API (`Zod`):** Penambahan `backend/validation.js` dan middleware `validateBody` untuk mengamankan endpoint otentikasi, entri berkas/surat, transit, disposisi, user, hingga kotak saran dari muatan invalid sebelum menyentuh SQLite.
-  - **Modularisasi Penuh Backend (`backend/src/`):** Memecah file monolit `backend/server.js` (dari ~2.327 baris menjadi **290 baris** bootstrap murni `createApp`) ke dalam modul terstruktur: `db/initDatabase.js`, `middleware/{auth,uploads}.js`, `utils/{workingDays,networkAndQr}.js`, `services/{fileFlowService,kpiService,telegramService}.js`, dan seluruh 9 file router di `routes/{auth,users,dwg,surat,files,notifications,reports,suggestions,stats}.js` — disertai **32 automated tests** (`node --test`) termasuk E2E Express + SQLite smoke test (`routes.smoke.test.js`) dan mount Docker volume `./backend/src:/app/backend/src`.
+  - **Modularisasi Penuh Backend (`backend/src/`):** Memecah file monolit `backend/server.js` (dari ~2.327 baris menjadi **292 baris** bootstrap murni `createApp`) ke dalam modul terstruktur: `db/initDatabase.js`, `middleware/{auth,uploads}.js`, `utils/{workingDays,networkAndQr}.js`, `services/{fileFlowService,kpiService,telegramService}.js`, dan seluruh 10 file router di `routes/{auth,users,dwg,surat,files,notifications,reports,suggestions,stats,health}.js` — disertai **34 automated tests** (`node --test`) termasuk E2E Express + SQLite smoke test (`routes.smoke.test.js`) dan mount Docker volume `./backend/src:/app/backend/src`.
+- **Tahap 20 — CI Otomatis GitHub Actions, Endpoint `/api/health`, & Docker `HEALTHCHECK`:**
+  - **GitHub Actions Workflow (`.github/workflows/ci.yml`):** Menjalankan pengecekan sintaks backend, suite test backend (Node 20), Oxlint frontend, Vitest, serta build produksi Vite secara otomatis di setiap `push` maupun `pull_request` ke `main`.
+  - **Endpoint Kesehatan Sistem (`GET /api/health`):** Memeriksa kesiapan aplikasi dan kueri `SELECT 1` ke SQLite (`200 ok` / `503 unhealthy`), terhubung langsung dengan konfigurasi `healthcheck` container `pantau-sp` di `docker-compose.yml`.
 
 ---
 

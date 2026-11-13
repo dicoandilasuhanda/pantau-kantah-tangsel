@@ -381,6 +381,7 @@ erDiagram
 
 | Grup Modul | Method & Path | Middleware / Akses | Deskripsi Fungsi |
 | :--- | :--- | :--- | :--- |
+| **Sistem & Health** | `GET /api/health` | Publik | Pemeriksaan kesehatan container & konektivitas SQLite (`200 ok` / `503 unhealthy`). |
 | **Auth & Sesi** | `GET /api/my-ip` | Publik | Mengambil alamat IP klien (`cf-connecting-ip` / `x-forwarded-for`). |
 | | `POST /api/login` | `loginLimiter` | Otentikasi user, rotasi maks 2 sesi (`session_id`), terbitkan JWT (2 jam). |
 | | `POST /api/logout` | `authenticateJWT` | Menghapus sesi aktif dan langsung mengubah status user menjadi offline. |
@@ -455,7 +456,7 @@ erDiagram
 Aplikasi dideploy menggunakan **Docker Compose** pada server NAS QNAP (`\\10.2.0.122\Pantau SP Tangsel\file-tracker`) dengan 2 layanan utama:
 1. **`pantau-sp` (`pantau-sp-app`):**
    - Dibangun dari `node:20-alpine` (mem-build `frontend/dist` dan menjalankan `node backend/server.js`).
-   - Mengekspos Port `3001` (HTTP) dan Port `3002` (HTTPS lokal jika `cert.pem` & `key.pem` tersedia).
+   - Mengekspos Port `3001` (HTTP) dan Port `3002` (HTTPS lokal jika `cert.pem` & `key.pem` tersedia), serta dilengkapi Docker `healthcheck` berkala setiap 30 detik yang memanggil `GET /api/health` via Node HTTP.
    - **Persistent Volume Mounts (Kritis):**
      - `./backend/database.sqlite:/app/backend/database.sqlite`
      - `./backend/uploads:/app/backend/uploads`
@@ -519,8 +520,8 @@ Untuk mencegah pengguna mengalami kendala layar putih (*White Screen of Death / 
 ## 10. Rencana Arsitektur Masa Depan (Skalabilitas Enterprise PostgreSQL)
 
 Jika proyek ini dikembangkan ulang atau dimigrasikan ke skala **Enterprise Kantah Penuh** pada repositori baru, gunakan rancangan target berikut:
-- **Backend:** Node.js + Express/Fastify dengan **TypeScript** berpola *Modular Clean Architecture* (`/src/modules/{auth,berkas,surat,dwg,kpi,suggestions,stats}`) — *(modularisasi JS penuh pada `backend/src/` sudah selesai dilaksanakan melalui `db/initDatabase.js`, `middleware/{auth,uploads}.js`, `utils/{workingDays,networkAndQr}.js`, `services/{fileFlowService,kpiService,telegramService}.js`, dan `routes/{auth,users,dwg,surat,files,notifications,reports,suggestions,stats}.js`, memangkas `backend/server.js` menjadi 290 baris bootstrap murni)*.
+- **Backend:** Node.js + Express/Fastify dengan **TypeScript** berpola *Modular Clean Architecture* (`/src/modules/{auth,berkas,surat,dwg,kpi,suggestions,stats}`) — *(modularisasi JS penuh pada `backend/src/` sudah selesai dilaksanakan melalui `db/initDatabase.js`, `middleware/{auth,uploads}.js`, `utils/{workingDays,networkAndQr}.js`, `services/{fileFlowService,kpiService,telegramService}.js`, dan `routes/{auth,users,dwg,surat,files,notifications,reports,suggestions,stats,health}.js`, memangkas `backend/server.js` menjadi 292 baris bootstrap murni)*.
 - **Database Utama:** **PostgreSQL 16+** dengan **Prisma ORM** atau **Drizzle ORM** (menggantikan SQLite untuk mendukung konkurensi tulis tinggi lintas seluruh seksi).
 - **In-Memory Store & Queue:** **Redis** untuk manajemen sesi multi-perangkat, pencatatan *real-time online presence*, *rate-limiting*, dan *message queue* (**BullMQ**) untuk pengiriman notifikasi Telegram asinkron.
 - **Object Storage:** **MinIO** (self-hosted di QNAP) atau **Cloudflare R2 / AWS S3** untuk menyimpan arsip PDF surat, gambar kadastral `.dwg`, dan foto profil secara terpisah dari container aplikasi.
-- **Validasi & Pengujian:** Validasi skema input menggunakan **Zod** (`backend/validation.js`, unit test di `backend/validation.test.js`) serta pengujian otomatis untuk utilitas tanggal/libur SLA (`frontend/src/utils/dateUtils.test.js` 18 tes via **Vitest**; serta total 32 tes backend via `node --test` yang mencakup `workingDays.test.js`, `kpiService.test.js`, `fileFlowService.test.js`, `telegramService.test.js`, `middleware/auth.test.js`, `validation.test.js`, dan E2E smoke test seluruh router `routes.smoke.test.js`).
+- **Validasi, CI & Pengujian:** Validasi skema input menggunakan **Zod** (`backend/validation.js`, `validation.test.js`), CI otomatis di `.github/workflows/ci.yml` (*syntax check*, Oxlint, Vitest, Vite build, dan test backend), serta pengujian otomatis untuk utilitas tanggal/libur SLA (`frontend/src/utils/dateUtils.test.js` 18 tes via **Vitest**; serta total 34 tes backend via `node --test` yang mencakup `workingDays.test.js`, `kpiService.test.js`, `fileFlowService.test.js`, `telegramService.test.js`, `middleware/auth.test.js`, `routes/health.test.js`, `validation.test.js`, dan E2E smoke test seluruh router `routes.smoke.test.js`).

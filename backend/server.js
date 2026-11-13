@@ -31,6 +31,7 @@ const { createStatsRouter } = require('./src/routes/stats');
 const { createNotificationsRouter } = require('./src/routes/notifications');
 const { createFilesRouter, createDisposisiRouter } = require('./src/routes/files');
 const { createReportsRouter } = require('./src/routes/reports');
+const { createHealthRouter } = require('./src/routes/health');
 
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-file-tracker';
@@ -123,6 +124,8 @@ function createApp({
   const sendTelegramMessage = (...args) => telegramService.sendTelegramMessage(...args);
 
   // --- API Routes ---
+  app.use('/api/health', createHealthRouter({ db }));
+
   app.use(
     '/api',
     createAuthRouter({
