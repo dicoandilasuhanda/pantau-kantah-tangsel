@@ -223,7 +223,8 @@ pantau-kantah-tangsel/
 │   │   ├── utils/
 │   │   │   ├── api.js              # Konfigurasi instance Axios & interceptor JWT
 │   │   │   ├── audioUtils.js       # Synthesizer Web Audio API nada sukses scan QR, beep, & error
-│   │   │   └── dateUtils.js        # Kalkulator hari kerja, kalender libur, target SOP, & formatter tanggal (DD/MM/YYYY)
+│   │   │   ├── dateUtils.js        # Kalkulator hari kerja, kalender libur, target SOP, & formatter tanggal (DD/MM/YYYY)
+│   │   │   └── dateUtils.test.js   # Unit test Vitest untuk kalkulator hari kerja, libur nasional, pause SLA, & format tanggal
 │   │   ├── App.jsx                 # Konfigurasi routing utama & Role-based Route Guards
 │   │   └── index.css               # Sistem desain global (Dark Glassmorphism)
 │   └── package.json                # Dependensi frontend
@@ -259,6 +260,8 @@ Buka terminal baru:
 cd frontend
 npm install
 npm run dev
+# Menjalankan unit test SLA & utilitas tanggal (Vitest)
+npm test
 ```
 > Akses aplikasi melalui browser di `http://localhost:5173`.
 
