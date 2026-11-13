@@ -90,6 +90,20 @@ test.describe('PDF Tools Tabs & Admin Dashboard Workflows', () => {
     const suratSavedPath = testInfo.outputPath(suratDownload.suggestedFilename());
     await suratDownload.saveAs(suratSavedPath);
     expect(fs.statSync(suratSavedPath).size).toBeGreaterThan(0);
+
+    // Verifikasi Audit Keamanan merekam penutupan berkas & mendukung form filter
+    await page.getByRole('button', { name: /Audit Keamanan/i }).click();
+    await expect(
+      page.getByRole('heading', { name: /Jejak Audit Keamanan & Aktivitas Admin/i })
+    ).toBeVisible();
+
+    await page.getByLabel(/Cari Pelaku, Target, IP, atau Ringkasan/i).fill(`${nomorBerkas}/${currentYear}`);
+    await page.getByRole('button', { name: /^Terapkan$/i }).click();
+
+    const auditRegion = page.getByRole('region', { name: /Jejak Audit Keamanan/i }).last();
+    const auditRow = auditRegion.locator('tbody tr').filter({ hasText: 'FILE_CLOSED' }).first();
+    await expect(auditRow).toBeVisible();
+    await expect(auditRow).toContainText(/Berkas ditutup otomatis dalam uji Playwright/i);
   });
 });
 

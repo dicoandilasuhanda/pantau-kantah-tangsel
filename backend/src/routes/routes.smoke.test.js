@@ -252,6 +252,30 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   assert.equal(gzipMagic[0], 0x1f);
   assert.equal(gzipMagic[1], 0x8b);
 
+  // 4c. Audit trail records failed login & sensitive admin actions, and enforces Admin access
+  const auditBadLoginRes = await fetch(`${baseUrl}/api/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'admin', password: 'wrong-password-123' }),
+  });
+  assert.equal(auditBadLoginRes.status, 401);
+
+  const forbiddenAuditRes = await fetch(`${baseUrl}/api/admin/audit-logs`, {
+    headers: { Authorization: `Bearer ${entrySession.token}` },
+  });
+  assert.equal(forbiddenAuditRes.status, 403);
+
+  const auditRes = await fetch(`${baseUrl}/api/admin/audit-logs`, { headers: authHeaders });
+  assert.equal(auditRes.status, 200);
+  const auditJson = await auditRes.json();
+  assert.ok(auditJson.total >= 5);
+  assert.ok(auditJson.summary?.failedLogins24h >= 1);
+  const recordedActions = new Set((auditJson.logs || []).map((row) => row.action));
+  assert.equal(recordedActions.has('LOGIN_FAILED'), true);
+  assert.equal(recordedActions.has('BACKUP_RUN'), true);
+  assert.equal(recordedActions.has('BACKUP_VERIFY'), true);
+  assert.equal(recordedActions.has('BACKUP_DOWNLOAD'), true);
+
   // 5. Logout invalidates active session token
   const logoutRes = await fetch(`${baseUrl}/api/logout`, {
     method: 'POST',

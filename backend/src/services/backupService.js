@@ -17,6 +17,9 @@ const EXPECTED_TABLES = Object.freeze([
   'users',
 ]);
 
+// Tabel opsional (ditambahkan pada Opsi 2) agar snapshot lama 9 tabel tetap valid saat uji restore
+const OPTIONAL_TABLES = Object.freeze(['audit_logs']);
+
 const DEFAULT_RETENTION_DAYS = 30;
 const DEFAULT_MIN_RETAINED_BACKUPS = 3;
 
@@ -219,6 +222,14 @@ async function verifyBackupFile(backupFilePath, { workDir } = {}) {
       const row = await dbGet(tempDb, `SELECT COUNT(*) AS count FROM "${tableName}"`);
       const count = Number(row?.count ?? 0);
       tableCounts[tableName] = count;
+      totalRows += count;
+    }
+
+    for (const optTable of OPTIONAL_TABLES) {
+      if (!existingSet.has(optTable)) continue;
+      const row = await dbGet(tempDb, `SELECT COUNT(*) AS count FROM "${optTable}"`);
+      const count = Number(row?.count ?? 0);
+      tableCounts[optTable] = count;
       totalRows += count;
     }
 

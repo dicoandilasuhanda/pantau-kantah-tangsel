@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { getClientIp, verifyQRCodeToken } = require('../utils/networkAndQr');
+const { recordAuditLog, buildActorFromRequest } = require('../services/auditService');
 
 /**
  * Router untuk pelacakan Surat Masuk (/api/surat/*).
@@ -277,6 +278,15 @@ function createSuratRouter({
             `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
             [suratId, scannedBy, req.user.username, 'Selesai (Oleh Admin)', clientIp],
             () => {
+              recordAuditLog(db, {
+                category: 'SURAT',
+                action: 'SURAT_COMPLETED',
+                severity: 'info',
+                ...buildActorFromRequest(req),
+                targetType: 'surat',
+                targetId: `#${surat.nomor_agenda}`,
+                summary: `Menyelesaikan Surat Agenda #${surat.nomor_agenda} (${surat.asal_surat || '-'}) secara manual`,
+              });
               res.json({
                 message: `Surat Agenda ${surat.nomor_agenda} berhasil diselesaikan.`,
               });
@@ -316,6 +326,15 @@ function createSuratRouter({
             `INSERT INTO surat_history (surat_id, scanned_by_role, scanned_by_username, location, scanned_ip) VALUES (?, ?, ?, ?, ?)`,
             [suratId, scannedBy, req.user.username, 'Ditutup (Oleh Admin)', clientIp],
             () => {
+              recordAuditLog(db, {
+                category: 'SURAT',
+                action: 'SURAT_CLOSED',
+                severity: 'warning',
+                ...buildActorFromRequest(req),
+                targetType: 'surat',
+                targetId: `#${surat.nomor_agenda}`,
+                summary: `Menutup/mengarsipkan Surat Agenda #${surat.nomor_agenda} (Alasan: ${alasan.trim()})`,
+              });
               res.json({
                 message: `Surat Agenda ${surat.nomor_agenda} berhasil ditutup/diarsipkan.`,
                 catatan: finalCatatan,
@@ -339,6 +358,15 @@ function createSuratRouter({
           if (hErr) return res.status(500).json({ error: hErr.message });
           db.run('DELETE FROM surat WHERE id = ?', [suratId], (dErr) => {
             if (dErr) return res.status(500).json({ error: dErr.message });
+            recordAuditLog(db, {
+              category: 'SURAT',
+              action: 'SURAT_DELETED',
+              severity: 'critical',
+              ...buildActorFromRequest(req),
+              targetType: 'surat',
+              targetId: `#${surat.nomor_agenda}`,
+              summary: `Menghapus permanen Surat Agenda #${surat.nomor_agenda} (${surat.nomor_surat || '-'})`,
+            });
             res.json({ message: `Surat Agenda ${surat.nomor_agenda} berhasil dihapus.` });
           });
         });
@@ -589,3 +617,4 @@ module.exports = {
   createSuratRouter,
   createSuratDisposisiRouter,
 };
+

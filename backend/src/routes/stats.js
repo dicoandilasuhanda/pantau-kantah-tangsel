@@ -1,4 +1,5 @@
 const express = require('express');
+const { recordAuditLog, buildActorFromRequest } = require('../services/auditService');
 
 /**
  * Router untuk Web-App Stats & Kick Session Admin (/api/admin/*).
@@ -71,18 +72,30 @@ function createStatsRouter({ db, authenticateJWT, requireAdmin, userLastActiveMa
     const targetId = req.params.id;
     userLastActiveMap.delete(parseInt(targetId, 10));
 
-    db.run(
-      "UPDATE users SET session_id = NULL, last_active_at = datetime('now', '-10 minutes') WHERE id = ?",
-      [targetId],
-      function (err) {
-        if (err) return res.status(500).json({ error: 'Gagal memutuskan sesi: ' + err.message });
-        if (this.changes === 0) return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
-        res.json({ message: 'Sesi pengguna berhasil diputuskan. Pengguna akan diminta login kembali.' });
-      }
-    );
+    db.get('SELECT username FROM users WHERE id = ?', [targetId], (_qErr, targetUser) => {
+      db.run(
+        "UPDATE users SET session_id = NULL, last_active_at = datetime('now', '-10 minutes') WHERE id = ?",
+        [targetId],
+        function (err) {
+          if (err) return res.status(500).json({ error: 'Gagal memutuskan sesi: ' + err.message });
+          if (this.changes === 0) return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
+          recordAuditLog(db, {
+            category: 'SESSION',
+            action: 'SESSION_KICKED',
+            severity: 'warning',
+            ...buildActorFromRequest(req),
+            targetType: 'user',
+            targetId: targetUser?.username || targetId,
+            summary: `Memutus paksa sesi aktif pengguna @${targetUser?.username || targetId}`,
+          });
+          res.json({ message: 'Sesi pengguna berhasil diputuskan. Pengguna akan diminta login kembali.' });
+        }
+      );
+    });
   });
 
   return router;
 }
 
 module.exports = { createStatsRouter };
+

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import api from '../../utils/api';
-import { Download, FolderKanban, Mail, Database } from 'lucide-react';
+import { Download, FolderKanban, Mail, Database, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { parseSQLiteDate } from '../../utils/dateUtils';
@@ -12,6 +12,7 @@ import {
 import AdminBerkasTab from '../../components/admin/AdminBerkasTab';
 import AdminSuratTab from '../../components/admin/AdminSuratTab';
 import AdminBackupTab from '../../components/admin/AdminBackupTab';
+import AdminAuditTab from '../../components/admin/AdminAuditTab';
 import CloseReasonModal from '../../components/admin/CloseReasonModal';
 
 
@@ -569,6 +570,27 @@ export default function AdminDashboard() {
         >
           <Database size={17} /> Backup & Pemulihan
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('audit')}
+          style={{
+            width: 'auto',
+            padding: '0.6rem 1.25rem',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            background: activeTab === 'audit' ? 'var(--primary-color)' : 'rgba(255, 255, 255, 0.05)',
+            color: activeTab === 'audit' ? '#fff' : 'var(--text-muted)',
+            border: activeTab === 'audit' ? 'none' : '1px solid var(--border-color)',
+            borderRadius: '8px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            cursor: 'pointer'
+          }}
+        >
+          <ShieldAlert size={17} /> Audit Keamanan
+        </button>
       </div>
 
       {activeTab === 'berkas' && (
@@ -638,6 +660,8 @@ export default function AdminDashboard() {
       )}
 
       {activeTab === 'backup' && <AdminBackupTab />}
+
+      {activeTab === 'audit' && <AdminAuditTab />}
 
       <CloseReasonModal
         isOpen={closeModalOpen}

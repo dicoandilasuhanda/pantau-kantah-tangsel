@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { getClientIp } = require('../utils/networkAndQr');
+const { recordAuditLog } = require('../services/auditService');
 
 /**
  * Router untuk otentikasi, IP client, dan manajemen sesi login (/api/my-ip, /api/login, /api/logout).
@@ -46,11 +47,35 @@ function createAuthRouter({
         return res.status(500).json({ error: 'Database error' });
       }
       if (!user) {
+        recordAuditLog(db, {
+          category: 'AUTH',
+          action: 'LOGIN_FAILED',
+          severity: 'warning',
+          actorUsername: username,
+          targetType: 'auth',
+          targetId: username,
+          summary: `Login gagal: akun "${username}" tidak ditemukan`,
+          metadata: { reason: 'user_not_found' },
+          ipAddress: getClientIp(req),
+        });
         return res.status(401).json({ error: 'Username atau password salah' });
       }
 
       const isValid = bcrypt.compareSync(password, user.password);
       if (!isValid) {
+        recordAuditLog(db, {
+          category: 'AUTH',
+          action: 'LOGIN_FAILED',
+          severity: 'warning',
+          actorId: user.id,
+          actorUsername: user.username,
+          actorRole: user.role,
+          targetType: 'auth',
+          targetId: user.username,
+          summary: `Login gagal: kata sandi salah untuk akun @${user.username}`,
+          metadata: { reason: 'invalid_password' },
+          ipAddress: getClientIp(req),
+        });
         return res.status(401).json({ error: 'Username atau password salah' });
       }
 
@@ -123,3 +148,4 @@ function createAuthRouter({
 module.exports = {
   createAuthRouter,
 };
+

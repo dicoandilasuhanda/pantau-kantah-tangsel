@@ -13,6 +13,7 @@ const { validateBody, schemas } = require('./validation');
 const { getWorkingDays } = require('./src/utils/workingDays');
 const { initDatabase } = require('./src/db/initDatabase');
 const { createAuthMiddleware } = require('./src/middleware/auth');
+const { createCompressionMiddleware } = require('./src/middleware/compression');
 const { createUploadMiddlewares } = require('./src/middleware/uploads');
 const { createTelegramService } = require('./src/services/telegramService');
 const {
@@ -33,6 +34,7 @@ const { createFilesRouter, createDisposisiRouter } = require('./src/routes/files
 const { createReportsRouter } = require('./src/routes/reports');
 const { createHealthRouter } = require('./src/routes/health');
 const { createBackupsRouter } = require('./src/routes/backups');
+const { createAuditRouter } = require('./src/routes/audit');
 
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-file-tracker';
@@ -106,6 +108,7 @@ function createApp({
     })
   );
   app.use(express.json());
+  app.use(createCompressionMiddleware({ threshold: 1024 }));
 
   // Proteksi folder uploads: Tidak lagi disajikan secara publik via express.static
   // Dokumen hanya dapat diunduh lewat endpoint terotentikasi (mis. /api/surat/file/:filename)
@@ -225,6 +228,15 @@ function createApp({
   );
 
   app.use(
+    '/api/admin/audit-logs',
+    createAuditRouter({
+      db,
+      authenticateJWT,
+      requireAdmin,
+    })
+  );
+
+  app.use(
     '/api/admin',
     createStatsRouter({
       db,
@@ -303,6 +315,15 @@ function createApp({
 }
 
 if (require.main === module) {
+  if (
+    JWT_SECRET === 'super-secret-key-for-file-tracker' ||
+    String(JWT_SECRET).length < 32
+  ) {
+    console.warn(
+      '[SECURITY WARNING] JWT_SECRET masih menggunakan nilai default atau < 32 karakter. Atur JWT_SECRET acak yang kuat pada backend/.env.'
+    );
+  }
+
   const db = initDatabase({
     dbPath: path.join(__dirname, 'database.sqlite'),
     jwt,

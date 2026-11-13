@@ -9,6 +9,7 @@ try {
 }
 
 const { createTelegramService } = require('../src/services/telegramService');
+const { recordAuditLog } = require('../src/services/auditService');
 const {
   DEFAULT_RETENTION_DAYS,
   DEFAULT_MIN_RETAINED_BACKUPS,
@@ -191,7 +192,29 @@ async function run() {
         `[Telegram] Laporan backup dikirim ke ${notifySummary.sentCount}/${notifySummary.targetAdmins} admin terhubung.`
       );
     }
+
+    await recordAuditLog(liveDb, {
+      category: 'BACKUP',
+      action: 'BACKUP_RUN_CLI',
+      severity: 'info',
+      actorUsername: 'system-cron',
+      actorRole: 'Automation',
+      targetType: 'backup',
+      targetId: dbResult.backup.filename,
+      summary: `Backup otomatis (${args.triggerLabel}) sukses: ${dbResult.backup.filename}${uploadsResult ? ` + ${uploadsResult.backup.filename}` : ''}`,
+    });
   } catch (err) {
+    if (liveDb) {
+      await recordAuditLog(liveDb, {
+        category: 'BACKUP',
+        action: 'BACKUP_RUN_CLI_FAILED',
+        severity: 'critical',
+        actorUsername: 'system-cron',
+        actorRole: 'Automation',
+        targetType: 'backup',
+        summary: `Backup otomatis (${args.triggerLabel}) GAGAL: ${err?.message || 'Error'}`,
+      });
+    }
     if (liveDb && !args.noNotify && telegramService) {
       await notifyAdminsBackupStatus(liveDb, telegramService.sendTelegramMessage, {
         ok: false,

@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const { recordAuditLog, buildActorFromRequest } = require('../services/auditService');
 
 function removeOldAvatar(avatarDir, avatarUrl) {
   if (!avatarUrl) return;
@@ -67,6 +68,16 @@ function createUsersRouter({
             }
             return res.status(500).json({ error: err.message });
           }
+          recordAuditLog(db, {
+            category: 'USER',
+            action: 'USER_CREATED',
+            severity: 'info',
+            ...buildActorFromRequest(req),
+            targetType: 'user',
+            targetId: username,
+            summary: `Menambahkan akun baru @${username} (${role})`,
+            metadata: { role },
+          });
           res.json({
             id: this.lastID,
             username,
@@ -106,6 +117,15 @@ function createUsersRouter({
           [hashedNewPassword, userId],
           function (err2) {
             if (err2) return res.status(500).json({ error: 'Gagal memperbarui kata sandi' });
+            recordAuditLog(db, {
+              category: 'USER',
+              action: 'PASSWORD_CHANGED',
+              severity: 'info',
+              ...buildActorFromRequest(req),
+              targetType: 'user',
+              targetId: req.user.username,
+              summary: `Pengguna @${req.user.username} memperbarui kata sandinya sendiri`,
+            });
             res.json({ message: 'Kata sandi berhasil diubah' });
           }
         );
@@ -137,6 +157,17 @@ function createUsersRouter({
 
         const updateCallback = (updateErr) => {
           if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+          recordAuditLog(db, {
+            category: 'USER',
+            action: 'USER_UPDATED',
+            severity: password ? 'warning' : 'info',
+            ...buildActorFromRequest(req),
+            targetType: 'user',
+            targetId: username,
+            summary: `Memperbarui profil/peran akun @${username}${password ? ' (termasuk reset sandi)' : ''}`,
+            metadata: { previousUsername: oldUser.username, role, passwordReset: Boolean(password) },
+          });
 
           if (oldUser.username !== username) {
             db.run(
@@ -173,9 +204,22 @@ function createUsersRouter({
   // Delete user
   router.delete('/:id', authenticateJWT, requireAdmin, (req, res) => {
     const userId = req.params.id;
-    db.run('DELETE FROM users WHERE id = ?', [userId], function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: 'User berhasil dihapus.' });
+    db.get('SELECT username, role FROM users WHERE id = ?', [userId], (_qErr, targetUser) => {
+      db.run('DELETE FROM users WHERE id = ?', [userId], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes > 0) {
+          recordAuditLog(db, {
+            category: 'USER',
+            action: 'USER_DELETED',
+            severity: 'critical',
+            ...buildActorFromRequest(req),
+            targetType: 'user',
+            targetId: targetUser?.username || userId,
+            summary: `Menghapus akun @${targetUser?.username || userId} (${targetUser?.role || '-'}) secara permanen`,
+          });
+        }
+        res.json({ message: 'User berhasil dihapus.' });
+      });
     });
   });
 
@@ -285,3 +329,4 @@ module.exports = {
   createUsersRouter,
   createUserProfileRouter,
 };
+

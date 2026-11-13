@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('node:fs');
 const path = require('node:path');
+const { recordAuditLog, buildActorFromRequest } = require('../services/auditService');
 const {
   DEFAULT_RETENTION_DAYS,
   DEFAULT_MIN_RETAINED_BACKUPS,
@@ -88,6 +89,16 @@ function createBackupsRouter({
           uploadsResult,
         });
 
+        await recordAuditLog(db, {
+          category: 'BACKUP',
+          action: 'BACKUP_RUN',
+          severity: 'info',
+          ...buildActorFromRequest(req),
+          targetType: 'backup',
+          targetId: dbResult.backup.filename,
+          summary: `Membuat backup ${dbResult.backup.filename}${uploadsResult ? ` + ${uploadsResult.backup.filename}` : ''} (status: terverifikasi)`,
+        });
+
         res.status(201).json({
           message: uploadsResult
             ? 'Backup database SQLite & arsip uploads berhasil dibuat dan lolos uji integritas.'
@@ -107,6 +118,14 @@ function createBackupsRouter({
           uploadsResult,
           errorMessage: err?.message,
         }).catch(() => {});
+        await recordAuditLog(db, {
+          category: 'BACKUP',
+          action: 'BACKUP_RUN_FAILED',
+          severity: 'critical',
+          ...buildActorFromRequest(req),
+          targetType: 'backup',
+          summary: `Gagal membuat backup dari Panel Admin: ${err?.message || 'Error'}`,
+        });
         res.status(500).json({ error: 'Gagal membuat backup sistem: ' + err.message });
       } finally {
         backupInProgress = false;
@@ -137,12 +156,30 @@ function createBackupsRouter({
             ? await verifyUploadsBackupFile(targetPath)
             : await verifyBackupFile(targetPath);
         if (!verification.ok) {
+          recordAuditLog(db, {
+            category: 'BACKUP',
+            action: 'BACKUP_VERIFY',
+            severity: 'warning',
+            ...buildActorFromRequest(req),
+            targetType: 'backup',
+            targetId: filename,
+            summary: `Uji integritas arsip ${filename} GAGAL (${verification.error || 'corrupt'})`,
+          });
           return res.status(422).json({
             ok: false,
             error: verification.error || 'Uji integritas arsip gagal.',
             verification,
           });
         }
+        recordAuditLog(db, {
+          category: 'BACKUP',
+          action: 'BACKUP_VERIFY',
+          severity: 'info',
+          ...buildActorFromRequest(req),
+          targetType: 'backup',
+          targetId: filename,
+          summary: `Memverifikasi integritas arsip ${filename} (${verification.integrityCheck})`,
+        });
         res.json({
           ok: true,
           message:
@@ -167,6 +204,16 @@ function createBackupsRouter({
     if (!fs.existsSync(targetPath)) {
       return res.status(404).json({ error: 'Berkas backup tidak ditemukan.' });
     }
+
+    recordAuditLog(db, {
+      category: 'BACKUP',
+      action: 'BACKUP_DOWNLOAD',
+      severity: 'warning',
+      ...buildActorFromRequest(req),
+      targetType: 'backup',
+      targetId: filename,
+      summary: `Mengunduh arsip backup sensitif ${filename}`,
+    });
 
     return res.download(targetPath, filename);
   });

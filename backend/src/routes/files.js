@@ -1,5 +1,6 @@
 const express = require('express');
 const { getClientIp, verifyQRCodeToken } = require('../utils/networkAndQr');
+const { recordAuditLog, buildActorFromRequest } = require('../services/auditService');
 
 /**
  * Router untuk Pelacakan Berkas Pertanahan (/api/files/*).
@@ -220,12 +221,29 @@ function createFilesRouter({
   // Delete a file entry (Admin only)
   router.delete('/:id', authenticateJWT, requireAdmin, (req, res) => {
     const fileId = req.params.id;
-    db.run('DELETE FROM file_history WHERE file_id = ?', [fileId], function (err) {
-      if (err) return res.status(500).json({ error: err.message });
+    db.get('SELECT nomor_berkas, tahun_berkas, nama_kegiatan FROM files WHERE id = ?', [fileId], (_qErr, targetFile) => {
+      db.run('DELETE FROM file_history WHERE file_id = ?', [fileId], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
 
-      db.run('DELETE FROM files WHERE id = ?', [fileId], function (err2) {
-        if (err2) return res.status(500).json({ error: err2.message });
-        res.json({ message: 'Berkas dan histori berhasil dihapus.' });
+        db.run('DELETE FROM files WHERE id = ?', [fileId], function (err2) {
+          if (err2) return res.status(500).json({ error: err2.message });
+          if (this.changes > 0) {
+            const label = targetFile
+              ? `${targetFile.nomor_berkas}/${targetFile.tahun_berkas}`
+              : fileId;
+            recordAuditLog(db, {
+              category: 'BERKAS',
+              action: 'FILE_DELETED',
+              severity: 'critical',
+              ...buildActorFromRequest(req),
+              targetType: 'file',
+              targetId: label,
+              summary: `Menghapus permanen berkas ${label} beserta seluruh histori posisinya`,
+              metadata: targetFile ? { kegiatan: targetFile.nama_kegiatan } : null,
+            });
+          }
+          res.json({ message: 'Berkas dan histori berhasil dihapus.' });
+        });
       });
     });
   });
@@ -273,6 +291,15 @@ function createFilesRouter({
             ],
             function (historyErr) {
               if (historyErr) return res.status(500).json({ error: historyErr.message });
+              recordAuditLog(db, {
+                category: 'BERKAS',
+                action: 'FILE_COMPLETED',
+                severity: 'info',
+                ...buildActorFromRequest(req),
+                targetType: 'file',
+                targetId: `${file.nomor_berkas}/${file.tahun_berkas}`,
+                summary: `Menyelesaikan berkas ${file.nomor_berkas}/${file.tahun_berkas} secara manual`,
+              });
               res.json({ message: 'Berkas berhasil diselesaikan secara manual.' });
             }
           );
@@ -326,6 +353,15 @@ function createFilesRouter({
             [fileId, scannedBy, req.user.username, 'Ditutup (Oleh Admin)', clientIp],
             (historyErr) => {
               if (historyErr) return res.status(500).json({ error: historyErr.message });
+              recordAuditLog(db, {
+                category: 'BERKAS',
+                action: 'FILE_CLOSED',
+                severity: 'warning',
+                ...buildActorFromRequest(req),
+                targetType: 'file',
+                targetId: `${file.nomor_berkas}/${file.tahun_berkas}`,
+                summary: `Menutup berkas ${file.nomor_berkas}/${file.tahun_berkas} (Alasan: ${alasan.trim()})`,
+              });
               res.json({ message: 'Berkas berhasil ditutup.' });
             }
           );
@@ -585,6 +621,15 @@ function createFilesRouter({
         [qr_code],
         function (err2) {
           if (err2) return res.status(500).json({ error: err2.message });
+          recordAuditLog(db, {
+            category: 'BERKAS',
+            action: 'FILE_PAUSED',
+            severity: 'info',
+            ...buildActorFromRequest(req),
+            targetType: 'file',
+            targetId: `${file.nomor_berkas}/${file.tahun_berkas}`,
+            summary: `Menghentikan sementara (pause) SLA berkas ${file.nomor_berkas}/${file.tahun_berkas}`,
+          });
           res.json({ message: 'SOP Berkas berhasil di-pause.' });
         }
       );
@@ -616,6 +661,15 @@ function createFilesRouter({
         [newTotal, qr_code],
         function (err2) {
           if (err2) return res.status(500).json({ error: err2.message });
+          recordAuditLog(db, {
+            category: 'BERKAS',
+            action: 'FILE_RESUMED',
+            severity: 'info',
+            ...buildActorFromRequest(req),
+            targetType: 'file',
+            targetId: `${file.nomor_berkas}/${file.tahun_berkas}`,
+            summary: `Melanjutkan kembali (resume) SLA berkas ${file.nomor_berkas}/${file.tahun_berkas} (+${pausedDays} hari jeda)`,
+          });
           res.json({ message: 'SOP Berkas berhasil dilanjutkan kembali.' });
         }
       );
@@ -705,3 +759,4 @@ module.exports = {
   createFilesRouter,
   createDisposisiRouter,
 };
+

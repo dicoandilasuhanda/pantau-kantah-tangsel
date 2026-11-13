@@ -203,6 +203,26 @@ function initDatabase({ dbPath, jwt, jwtSecret, bcrypt }) {
       db.run(`CREATE INDEX IF NOT EXISTS idx_suggestions_user_id ON suggestions(user_id)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_suggestions_created_at ON suggestions(created_at)`);
 
+      // Tabel Audit Log Keamanan & Aktivitas Admin
+      db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        action TEXT NOT NULL,
+        severity TEXT DEFAULT 'info',
+        actor_id INTEGER,
+        actor_username TEXT,
+        actor_role TEXT,
+        target_type TEXT,
+        target_id TEXT,
+        summary TEXT NOT NULL,
+        metadata TEXT,
+        ip_address TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON audit_logs(category)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_audit_logs_severity ON audit_logs(severity)`);
+
       db.run(`PRAGMA foreign_keys = ON`);
 
       // One-time patch for Syahrul's orphaned history (flexible matching)
@@ -275,3 +295,4 @@ function initDatabase({ dbPath, jwt, jwtSecret, bcrypt }) {
 module.exports = {
   initDatabase,
 };
+

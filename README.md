@@ -196,8 +196,11 @@ pantau-kantah-tangsel/
 │   │   ├── middleware/
 │   │   │   ├── auth.js             # Guard JWT, batas maks 2 sesi aktif, & pengecekan role
 │   │   │   ├── auth.test.js        # Unit test middleware auth, role guard, IP & verifikasi QR
+│   │   │   ├── compression.js      # Kompresi HTTP native Node zlib (br/gzip) stream-aware untuk JS/CSS/JSON
+│   │   │   ├── compression.test.js # Unit test kompresi br/gzip, bypass unduhan biner/range & stream static
 │   │   │   └── uploads.js          # Factory upload Multer (PDF 15MB, Avatar 5MB, DWG 100MB)
 │   │   ├── routes/
+│   │   │   ├── audit.js            # Router /api/admin/audit-logs (paginasi, filter aksi/aktor, ringkasan 24 jam)
 │   │   │   ├── auth.js             # Router /api/my-ip, /api/login (rate-limit), & /api/logout
 │   │   │   ├── backups.js          # Router /api/admin/backups/* (snapshot VACUUM INTO, uji restore, unduh)
 │   │   │   ├── dwg.js              # Router /api/user/dwg/* (repositori & transfer DWG)
@@ -212,6 +215,8 @@ pantau-kantah-tangsel/
 │   │   │   ├── surat.js            # Router /api/surat/* & /api/surat-disposisi/*
 │   │   │   └── users.js            # Router /api/users/* & /api/user/profile*
 │   │   ├── services/
+│   │   │   ├── auditService.js         # Pencatatan & query audit_logs terstruktur dengan redaksi field sensitif
+│   │   │   ├── auditService.test.js    # Unit test pencatatan audit, sanitasi password/token, & ringkasan 24 jam
 │   │   │   ├── backupService.js        # Mesin snapshot VACUUM INTO, simulasi restore terisolasi, & retensi
 │   │   │   ├── backupService.test.js   # Unit test validasi nama file, VACUUM INTO, deteksi korupsi, & retensi
 │   │   │   ├── fileFlowService.js      # Aturan bisnis K1/K2, hak entri, smart role, & transisi scan
@@ -240,7 +245,7 @@ pantau-kantah-tangsel/
 │   │   └── sw.js                   # Service Worker network-first aman (hanya cache ikon statis)
 │   ├── src/
 │   │   ├── components/             # Komponen modular:
-│   │   │   ├── admin/              # Subkomponen Admin (AdminBerkasTab, AdminSuratTab, AdminBackupTab, CloseReasonModal, RecordRowActions)
+│   │   │   ├── admin/              # Subkomponen Admin (AdminBerkasTab, AdminSuratTab, AdminBackupTab, AdminAuditTab, CloseReasonModal, RecordRowActions)
 │   │   │   ├── pdf/                # Subkomponen PDF Tools (MergePdfTab, SplitPdfTab, CompressPdfTab, ImageToPdfTab, RotatePdfTab, PdfZoomModal)
 │   │   │   ├── AdminRoute.jsx      # Guard rute khusus Administrator
 │   │   │   ├── BatchTransitModal.jsx # Modal kirim berkas secara batch pada Dasbor Monitoring
@@ -474,6 +479,10 @@ Berikut adalah perjalanan pengembangan aplikasi dari awal inisiasi hingga versi 
   - **Engine Tar-Gzip Murni Node.js (`backend/src/utils/tarGzArchive.js` & `backupService.js`):** Mengarsipkan seluruh berkas fisik `backend/uploads/` (`surat/` PDF, `avatars/` foto profil, dan `dwg/` gambar kadastral AutoCAD) menggunakan format streaming POSIX USTAR + gzip bawaan Node (`uploads_backup_<timestamp>.tar.gz`) tanpa ketergantungan flag OS tertentu, lengkap dengan verifikasi checksum header TAR & SHA-256 (`verifyUploadsBackupFile`) serta kebijakan retensi terpisah (30 hari / min. 3 arsip terbaru).
   - **Notifikasi & Peringatan Darurat Telegram Admin (`backupService.js`, `routes/backups.js`, & `backup-db.js`):** Setiap proses backup & audit integritas — baik dari cron QNAP (`./auto_backup.sh` / `backup-db.js`) maupun eksekusi manual pada Panel Admin (`/api/admin/backups/run`) — otomatis mengirim ringkasan status sukses (nama arsip DB, baris terverifikasi, arsip `uploads`, durasi) atau peringatan kegagalan langsung ke Telegram seluruh Administrator yang telah menautkan `@pantaukantahtangsel_bot` (dilengkapi flag `--no-notify` & `--skip-uploads` untuk kebutuhan pengujian CLI terisolasi).
   - **UI Panel Backup Multi-Jenis & Pengujian Penuh (`AdminBackupTab.jsx`, `routes.smoke.test.js`, `tarGzArchive.test.js`, & `e2e/backup-and-restore.spec.js`):** Menambahkan opsi *Sertakan arsip uploads*, pil filter jenis arsip (`Semua / Database SQLite / Uploads .tar.gz`), lencana jenis arsip (`SQLITE` / `UPLOADS`), info jadwal cron `02:30 WIB` & Telegram alert, serta tombol `Cek Arsip` & unduhan `.tar.gz`. Diverifikasi lulus **42/42 tes backend**, audit CLI `--verify-only`, **0 peringatan Oxlint (58 berkas)**, **36/36 tes Vitest**, dan **14/14 skenario Browser E2E Playwright**.
+- **Tahap 26 — Hardening Keamanan, Kompresi HTTP Brotli/Gzip (`compression.js`), & Jejak Audit Admin (`audit_logs`):**
+  - **Pembersihan Rahasia Repo & Peringatan `JWT_SECRET` (`docker-compose.yml`, `.env.example`, & `backend/server.js`):** Menghapus token *fallback hardcoded* Cloudflare Tunnel dari `docker-compose.yml` menjadi `${CLOUDFLARE_TUNNEL_TOKEN:-}` dengan dokumentasi template `.env.example` di akar repositori (aman bagi eksekusi `docker compose exec` tanpa `.env`), serta menambahkan peringatan startup di `backend/server.js` jika `JWT_SECRET` masih memakai nilai default atau panjangnya `< 32` karakter.
+  - **Middleware Kompresi Native Node (`backend/src/middleware/compression.js`):** Mengimplementasikan kompresi `br` / `gzip` berbasis `node:zlib` tanpa dependensi eksternal tambahan (`mount` di atas rute `/api` & berkas statis `frontend/dist`) dengan penanganan *backpressure* (`drain`) stream penuh, batas ambang `1024` byte, pemeliharaan `ETag` lemah (`W/...`), dan bypass otomatis untuk lampiran biner (`Content-Disposition: attachment`), permintaan `Range`, respons kecil/non-2xx, serta `text/event-stream`.
+  - **Jejak Audit Aksi Sensitif (`initDatabase.js`, `auditService.js`, `routes/audit.js`, & `AdminAuditTab.jsx`):** Menambahkan tabel permanen `audit_logs` (beserta 3 indeks & kompatibilitas mundur verifikasi backup lama 9 tabel via `OPTIONAL_TABLES`), meredaksi field sensitif (`password`, `token`, dll.), merekam peristiwa penting pada `auth.js` (`LOGIN_FAILED`), `users.js` (`USER_CREATED`, `PASSWORD_CHANGED`, `USER_UPDATED`, `USER_DELETED`), `stats.js` (`SESSION_KICKED`), `files.js` (`FILE_DELETED`, `FILE_COMPLETED`, `FILE_CLOSED`, `FILE_PAUSED`, `FILE_RESUMED`), `surat.js` (`SURAT_COMPLETED`, `SURAT_CLOSED`, `SURAT_DELETED`), `backups.js` (`BACKUP_RUN`, `BACKUP_RUN_FAILED`, `BACKUP_VERIFY`, `BACKUP_DOWNLOAD`), serta skrip CLI `backup-db.js` (`BACKUP_RUN_CLI`, `BACKUP_RUN_CLI_FAILED`), lalu menyajikannya di tab **Audit Keamanan** (`AdminAuditTab.jsx`) lengkap dengan pencarian filter, kartu ringkasan 24 jam, paginasi, dan tampilan kartu responsif (`@container`). Diverifikasi lulus **44/44 tes backend**, **0 peringatan Oxlint (59 berkas)**, **36/36 tes Vitest**, dan **14/14 skenario Browser E2E Playwright**.
 
 ---
 
