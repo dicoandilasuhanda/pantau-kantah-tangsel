@@ -46,36 +46,53 @@ const INDONESIAN_HOLIDAYS = [
   '2026-12-25', // Kelahiran Yesus Kristus (Natal)
 ];
 
+const HOLIDAY_SET = new Set(INDONESIAN_HOLIDAYS);
+const HOLIDAY_DAY_INFOS = INDONESIAN_HOLIDAYS.map((str) => {
+  const [y, m, d] = str.split('-').map(Number);
+  const dow = new Date(y, m - 1, d).getDay();
+  return {
+    utcMs: Date.UTC(y, m - 1, d),
+    isWeekday: dow !== 0 && dow !== 6,
+  };
+});
+
 function isHoliday(dateObj) {
   const dateStr = dateObj.getFullYear() + '-' + 
                   String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + 
                   String(dateObj.getDate()).padStart(2, '0');
-  return INDONESIAN_HOLIDAYS.includes(dateStr);
+  return HOLIDAY_SET.has(dateStr);
 }
 
-// Menghitung jumlah hari kerja antara startDate dan endDate (mengabaikan sabtu, minggu, & tanggal merah)
+// Menghitung jumlah hari kerja antara startDate dan endDate dalam O(1) (mengabaikan sabtu, minggu, & tanggal merah)
 export function getWorkingDays(startDateStr, endDateStr) {
   const start = parseSQLiteDate(startDateStr);
   const end = endDateStr ? parseSQLiteDate(endDateStr) : new Date();
-  
-  // Set to midnight to just compare days
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
 
-  if (start > end) return 0;
+  const startUtcMs = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+  const endUtcMs = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+  if (Number.isNaN(startUtcMs) || Number.isNaN(endUtcMs) || startUtcMs >= endUtcMs) return 0;
 
-  let days = 0;
-  let current = new Date(start);
+  const totalDays = (endUtcMs - startUtcMs) / 86400000;
+  const fullWeeks = Math.floor(totalDays / 7);
+  const remainder = totalDays % 7;
+  let days = fullWeeks * 5;
 
-  while (current < end) {
-    current.setDate(current.getDate() + 1);
-    const dayOfWeek = current.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday(current)) { // 0 = Sunday, 6 = Saturday
+  const startDow = start.getDay();
+  for (let i = 1; i <= remainder; i++) {
+    const dow = (startDow + i) % 7;
+    if (dow !== 0 && dow !== 6) {
       days++;
     }
   }
 
-  return days;
+  for (let i = 0; i < HOLIDAY_DAY_INFOS.length; i++) {
+    const h = HOLIDAY_DAY_INFOS[i];
+    if (h.isWeekday && h.utcMs > startUtcMs && h.utcMs <= endUtcMs) {
+      days--;
+    }
+  }
+
+  return days < 0 ? 0 : days;
 }
 
 // Menghitung umur SOP dengan mengurangi durasi pause

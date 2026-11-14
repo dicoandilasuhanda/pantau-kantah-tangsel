@@ -86,8 +86,15 @@ function createFilesRouter({
     );
   });
 
-  // Get all files (Dashboard)
+  // Get files (Dashboard): dukung ?scope=active / ?scope=done agar muat awal ringan
   router.get('/', authenticateJWT, (req, res) => {
+    const scope = String(req.query?.scope || '').trim().toLowerCase();
+    const whereClause =
+      scope === 'active'
+        ? "WHERE f.current_location NOT IN ('Selesai', 'Ditutup')"
+        : scope === 'done'
+          ? "WHERE f.current_location IN ('Selesai', 'Ditutup')"
+          : '';
     const query = `
       SELECT f.*, 
              u_to.full_name as transit_to_fullname,
@@ -99,6 +106,7 @@ function createFilesRouter({
       FROM files f 
       LEFT JOIN users u_to ON f.transit_to_username = u_to.username
       LEFT JOIN users u_by ON f.transit_by_username = u_by.username
+      ${whereClause}
       ORDER BY f.created_at DESC
     `;
     db.all(query, [], (err, rows) => {

@@ -1,16 +1,14 @@
+import { memo } from 'react';
 import { FileText, Clock, Calendar, MapPin, CheckSquare, Square } from 'lucide-react';
 import { getWorkingDays, calculateTotalElapsedDays, getStatusColor, SOP_DAYS } from '../utils/dateUtils';
 
-export default function DashboardFileCard({
+function DashboardFileCard({
   file,
-  isHovered,
   isSelected,
   selectable,
   enteredDateText,
   onOpen,
   onToggleSelect,
-  onHoverEnter,
-  onHoverLeave,
 }) {
   const isDone = file.current_location === 'Selesai' || file.current_location === 'Ditutup';
   const isTransit = !isDone && file.is_transit === 1;
@@ -42,36 +40,13 @@ export default function DashboardFileCard({
 
   return (
     <div
-      onClick={onOpen}
-      onMouseEnter={onHoverEnter}
-      onMouseLeave={onHoverLeave}
-      className="dash-file-card"
-      style={{
-        cursor: 'pointer',
-        background: isSelected
-          ? 'rgba(29, 78, 216, 0.08)'
-          : isHovered
-            ? 'var(--surface-hover)'
-            : 'var(--surface-card)',
-        backdropFilter: 'blur(16px)',
-        border: isSelected
-          ? '1.5px solid #1D4ED8'
-          : isHovered
-            ? '1px solid #1D4ED8'
-            : '1px solid var(--border-color)',
-        borderRadius: '12px',
-        padding: '0.85rem 1.15rem',
-        transition: 'all 0.18s ease',
-        transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
-        boxShadow: isHovered
-          ? '0 8px 20px -4px var(--card-shadow)'
-          : '0 2px 6px -2px var(--card-shadow)',
-      }}
+      onClick={() => onOpen(file.qr_code)}
+      className={`dash-file-card dash-file-card-interactive${isSelected ? ' dash-file-card-interactive--selected' : ''}`}
     >
       <div className="dash-col-info" style={{ minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
         {selectable && (
           <div
-            onClick={onToggleSelect}
+            onClick={(e) => onToggleSelect(e, file.qr_code)}
             title={isSelected ? 'Batalkan pilihan berkas ini' : 'Pilih berkas ini untuk aksi batch'}
             style={{
               paddingTop: '0.15rem',
@@ -144,3 +119,5 @@ export default function DashboardFileCard({
     </div>
   );
 }
+
+export default memo(DashboardFileCard);

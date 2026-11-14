@@ -176,6 +176,14 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   const detailJson = await detailRes.json();
   assert.equal(detailJson.nomor_berkas, '12345');
 
+  const activeScopeRes = await fetch(`${baseUrl}/api/files?scope=active`, { headers: authHeaders });
+  assert.equal(activeScopeRes.status, 200);
+  assert.equal((await activeScopeRes.json()).length, 1);
+
+  const doneScopeBeforeRes = await fetch(`${baseUrl}/api/files?scope=done`, { headers: authHeaders });
+  assert.equal(doneScopeBeforeRes.status, 200);
+  assert.equal((await doneScopeBeforeRes.json()).length, 0);
+
   // 4b. Backup & Restore verification endpoints enforce Admin access, archive uploads, and notify Telegram
   await new Promise((resolve, reject) => {
     db.run(
@@ -280,6 +288,21 @@ test('Express app mounts all modular routers cleanly without route shadowing', a
   assert.equal(recordedActions.has('BACKUP_RUN'), true);
   assert.equal(recordedActions.has('BACKUP_VERIFY'), true);
   assert.equal(recordedActions.has('BACKUP_DOWNLOAD'), true);
+
+  // 4d. Selesaikan berkas lalu pastikan ?scope=active vs ?scope=done memisahkan berkas aktif & selesai
+  const completeFileRes = await fetch(`${baseUrl}/api/files/${detailJson.id}/complete`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
+    body: JSON.stringify({ catatan: 'Uji scope filter' }),
+  });
+  assert.equal(completeFileRes.status, 200);
+
+  const activeAfterComplete = await fetch(`${baseUrl}/api/files?scope=active`, { headers: authHeaders });
+  assert.equal((await activeAfterComplete.json()).length, 0);
+  const doneAfterComplete = await fetch(`${baseUrl}/api/files?scope=done`, { headers: authHeaders });
+  assert.equal((await doneAfterComplete.json()).length, 1);
+  const allAfterComplete = await fetch(`${baseUrl}/api/files`, { headers: authHeaders });
+  assert.equal((await allAfterComplete.json()).length, 1);
 
   // 5. Logout invalidates active session token
   const logoutRes = await fetch(`${baseUrl}/api/logout`, {

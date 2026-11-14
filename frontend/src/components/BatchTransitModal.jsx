@@ -4,6 +4,7 @@ export default function BatchTransitModal({
   isOpen,
   sendableSelected,
   usersList,
+  usersLoading = false,
   batchTransitTarget,
   onSelectTarget,
   batchTransitSearch,
@@ -155,7 +156,7 @@ export default function BatchTransitModal({
           })}
           {filteredUsers.length === 0 && (
             <div style={{ padding: '1rem', fontSize: '0.84rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-              Petugas tidak ditemukan
+              {usersLoading ? 'Memuat daftar petugas...' : 'Petugas tidak ditemukan'}
             </div>
           )}
         </div>

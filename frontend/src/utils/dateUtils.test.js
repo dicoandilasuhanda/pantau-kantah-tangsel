@@ -84,6 +84,35 @@ describe('getWorkingDays', () => {
     expect(getWorkingDays('2026-11-10T00:00:00', '2026-11-10T00:00:00')).toBe(0);
     expect(getWorkingDays('2026-11-12T00:00:00', '2026-11-10T00:00:00')).toBe(0);
   });
+
+  it('menghitung lintas beberapa bulan dan libur sama persis dengan iterasi harian O(N)', () => {
+    // 1 Jan 2026 -> 1 Sep 2026: cocokkan rumus O(1) terhadap hitungan harian kalender 2026
+    const holidays = new Set([
+      '2026-01-01', '2026-01-16', '2026-02-17', '2026-03-19', '2026-03-20',
+      '2026-03-23', '2026-03-24', '2026-04-03', '2026-05-01', '2026-05-14',
+      '2026-05-27', '2026-06-01', '2026-06-16', '2026-08-17', '2026-08-25',
+      '2026-12-25',
+    ]);
+    const refPairs = [
+      ['2026-01-01T02:00:00', '2026-09-01T02:00:00'],
+      ['2026-03-18T10:00:00', '2026-06-17T10:00:00'],
+      ['2026-12-24T00:00:00', '2027-01-04T00:00:00'],
+    ];
+    for (const [startStr, endStr] of refPairs) {
+      const cur = new Date(startStr);
+      const end = new Date(endStr);
+      cur.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      let expected = 0;
+      while (cur < end) {
+        cur.setDate(cur.getDate() + 1);
+        const ymd = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+        const dow = cur.getDay();
+        if (dow !== 0 && dow !== 6 && !holidays.has(ymd)) expected++;
+      }
+      expect(getWorkingDays(startStr, endStr)).toBe(expected);
+    }
+  });
 });
 
 describe('calculateTotalElapsedDays', () => {

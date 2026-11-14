@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { Search, FileText, AlertTriangle, BarChart2, CheckCircle2, RotateCcw, Send, CheckSquare, Square, X, QrCode, PlusSquare } from 'lucide-react';
@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import BatchTransitModal from '../components/BatchTransitModal';
 import DashboardFileCard from '../components/DashboardFileCard';
 import './Dashboard.css';
+
+const VISIBLE_STEP = 50;
 
 function formatShortDate(dateStr) {
   if (!dateStr) return '-';
@@ -19,15 +21,20 @@ function formatShortDate(dateStr) {
 }
 
 export default function Dashboard() {
-  const [files, setFiles] = useState([]);
+  const [activeFiles, setActiveFiles] = useState([]);
+  const [doneFiles, setDoneFiles] = useState([]);
+  const [doneLoaded, setDoneLoaded] = useState(false);
+  const [loadingDone, setLoadingDone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('Tugas Saya');
+  const [visibleCount, setVisibleCount] = useState(VISIBLE_STEP);
   const [userRole, setUserRole] = useState(() => localStorage.getItem('role') || '');
-  const [hoveredFileId, setHoveredFileId] = useState(null);
   const navigate = useNavigate();
-  const [transitFiles, setTransitFiles] = useState([]);
   const [usersList, setUsersList] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const doneInFlightRef = useRef(false);
+  const doneLoadedRef = useRef(false);
 
   // Batch Handover State
   const [selectedQrCodes, setSelectedQrCodes] = useState([]);
@@ -38,11 +45,17 @@ export default function Dashboard() {
 
   const fetchAllData = useCallback(async () => {
     try {
-      const response = await api.get('/files');
-      setFiles(response.data);
-      
-      const transitRes = await api.get('/files/my-transits');
-      setTransitFiles(transitRes.data);
+      if (doneLoadedRef.current) {
+        const [activeRes, doneRes] = await Promise.all([
+          api.get('/files?scope=active'),
+          api.get('/files?scope=done'),
+        ]);
+        setActiveFiles(Array.isArray(activeRes.data) ? activeRes.data : []);
+        setDoneFiles(Array.isArray(doneRes.data) ? doneRes.data : []);
+      } else {
+        const activeRes = await api.get('/files?scope=active');
+        setActiveFiles(Array.isArray(activeRes.data) ? activeRes.data : []);
+      }
     } catch (err) {
       console.error("Failed to load files", err);
     } finally {
@@ -50,17 +63,61 @@ export default function Dashboard() {
     }
   }, []);
 
+  const ensureDoneFilesLoaded = useCallback(async () => {
+    if (doneLoadedRef.current || doneInFlightRef.current) return;
+    doneInFlightRef.current = true;
+    setLoadingDone(true);
+    try {
+      const doneRes = await api.get('/files?scope=done');
+      setDoneFiles(Array.isArray(doneRes.data) ? doneRes.data : []);
+      doneLoadedRef.current = true;
+      setDoneLoaded(true);
+    } catch (err) {
+      console.error("Failed to load completed files", err);
+      toast.error('Gagal memuat daftar berkas selesai');
+    } finally {
+      doneInFlightRef.current = false;
+      setLoadingDone(false);
+    }
+  }, []);
+
   useEffect(() => {
     const role = localStorage.getItem('role') || '';
     setUserRole(role);
     fetchAllData();
-    api.get('/users/list').then(res => setUsersList(res.data || [])).catch(() => {});
   }, [fetchAllData]);
+
+  useEffect(() => {
+    if (filterType === 'Semua' || filterType === 'Selesai') {
+      ensureDoneFilesLoaded();
+    }
+  }, [filterType, ensureDoneFilesLoaded]);
+
+  useEffect(() => {
+    setVisibleCount(VISIBLE_STEP);
+  }, [filterType, searchQuery]);
 
   const roleStr = userRole;
   const username = localStorage.getItem('username') || '';
   const userRoles = useMemo(() => roleStr.split(',').map(r => r.trim()).filter(Boolean), [roleStr]);
   const isAdmin = userRoles.includes('Administrator');
+
+  const files = useMemo(() => {
+    if (!doneLoaded) return activeFiles;
+    const byId = new Map();
+    activeFiles.forEach((f) => byId.set(f.id, f));
+    doneFiles.forEach((f) => {
+      if (!byId.has(f.id)) byId.set(f.id, f);
+    });
+    return Array.from(byId.values()).sort((a, b) => {
+      const cmp = String(b.created_at || '').localeCompare(String(a.created_at || ''));
+      return cmp !== 0 ? cmp : b.id - a.id;
+    });
+  }, [activeFiles, doneFiles, doneLoaded]);
+
+  const transitFiles = useMemo(() => {
+    return activeFiles.filter((f) => f.is_transit === 1 && f.transit_to_username === username);
+  }, [activeFiles, username]);
 
   const isMyLocation = useCallback((file) => {
     return (file.latest_scanned_by_username === username && file.is_transit !== 1) || (file.is_transit == 1 && file.transit_to_username === username);
@@ -87,7 +144,7 @@ export default function Dashboard() {
   }, [canSendFile, canCancelTransitFile]);
 
   const dashboardData = useMemo(() => {
-    const active = files.filter(f => f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
+    const active = activeFiles.filter(f => f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
     
     let overdueCount = 0;
     active.forEach(f => {
@@ -107,12 +164,12 @@ export default function Dashboard() {
       overdueFiles: overdueCount,
       myFiles: myFiles.length,
     };
-  }, [files, isMyLocation]);
+  }, [activeFiles, isMyLocation]);
 
   const stalledFiles = useMemo(() => {
     if (!roleStr || roleStr.includes('Administrator')) return [];
     
-    const active = files.filter(f => f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
+    const active = activeFiles.filter(f => f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
     const myFiles = active.filter(f => isMyLocation(f));
     
     return myFiles.filter(f => {
@@ -124,15 +181,15 @@ export default function Dashboard() {
       const days = getWorkingDays(updatedAt);
       return days >= 3;
     });
-  }, [files, roleStr, isMyLocation]);
+  }, [activeFiles, roleStr, isMyLocation]);
 
   const filteredFiles = useMemo(() => {
     let result = files;
 
     if (filterType === 'Tugas Saya') {
-      result = result.filter(f => (isMyLocation(f) || (f.is_transit == 1 && f.transit_to_username === username)) && f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
+      result = activeFiles.filter(f => (isMyLocation(f) || (f.is_transit == 1 && f.transit_to_username === username)) && f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
     } else if (filterType === 'Terlambat') {
-      result = result.filter(f => {
+      result = activeFiles.filter(f => {
         const isFinished = f.current_location === 'Selesai' || f.current_location === 'Ditutup';
         if (!isFinished) {
           const sopDaysTarget = SOP_DAYS[f.nama_kegiatan] || 0;
@@ -144,7 +201,7 @@ export default function Dashboard() {
         return false;
       });
     } else if (filterType === 'Transit') {
-      result = result.filter(f => f.is_transit === 1 && f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
+      result = activeFiles.filter(f => f.is_transit === 1 && f.current_location !== 'Selesai' && f.current_location !== 'Ditutup');
     } else if (filterType === 'Selesai') {
       result = result.filter(f => f.current_location === 'Selesai' || f.current_location === 'Ditutup');
     }
@@ -160,24 +217,51 @@ export default function Dashboard() {
     }
 
     return result;
-  }, [files, searchQuery, filterType, isMyLocation, username]);
+  }, [files, activeFiles, searchQuery, filterType, isMyLocation, username]);
+
+  const visibleFiles = useMemo(
+    () => filteredFiles.slice(0, visibleCount),
+    [filteredFiles, visibleCount]
+  );
+
+  const selectedSet = useMemo(() => new Set(selectedQrCodes), [selectedQrCodes]);
 
   const selectableFilteredFiles = useMemo(() => {
     return filteredFiles.filter(f => isFileSelectable(f));
   }, [filteredFiles, isFileSelectable]);
 
   const selectedFilesObjects = useMemo(() => {
-    const set = new Set(selectedQrCodes);
-    return files.filter(f => set.has(f.qr_code));
-  }, [files, selectedQrCodes]);
+    return files.filter(f => selectedSet.has(f.qr_code));
+  }, [files, selectedSet]);
 
   const sendableSelected = useMemo(() => selectedFilesObjects.filter(f => canSendFile(f)), [selectedFilesObjects, canSendFile]);
   const cancelableSelected = useMemo(() => selectedFilesObjects.filter(f => canCancelTransitFile(f)), [selectedFilesObjects, canCancelTransitFile]);
 
-  const toggleSelectFile = (e, qrCode) => {
+  const handleOpenFile = useCallback((qrCode) => {
+    navigate(`/file/${qrCode}`);
+  }, [navigate]);
+
+  const toggleSelectFile = useCallback((e, qrCode) => {
     e.stopPropagation();
     setSelectedQrCodes(prev => prev.includes(qrCode) ? prev.filter(q => q !== qrCode) : [...prev, qrCode]);
-  };
+  }, []);
+
+  const handleOpenBatchTransitModal = useCallback(async () => {
+    setBatchTransitSearch('');
+    setBatchTransitTarget('');
+    setShowBatchTransitModal(true);
+    if (usersList.length === 0 && !usersLoading) {
+      setUsersLoading(true);
+      try {
+        const res = await api.get('/users/list');
+        setUsersList(res.data || []);
+      } catch {
+        // ignore
+      } finally {
+        setUsersLoading(false);
+      }
+    }
+  }, [usersList.length, usersLoading]);
 
   const toggleSelectAllFiltered = () => {
     const allSelectableQrs = selectableFilteredFiles.map(f => f.qr_code);
@@ -509,7 +593,7 @@ export default function Dashboard() {
                 {sendableSelected.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => { setBatchTransitSearch(''); setBatchTransitTarget(''); setShowBatchTransitModal(true); }}
+                    onClick={handleOpenBatchTransitModal}
                     disabled={batchProcessing}
                     style={{
                       width: 'auto',
@@ -604,7 +688,7 @@ export default function Dashboard() {
         )}
 
         {/* File List */}
-        {loading ? (
+        {loading || ((filterType === 'Semua' || filterType === 'Selesai') && !doneLoaded && loadingDone) ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
             {[1, 2, 3, 4].map(n => (
               <div 
@@ -634,57 +718,74 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-        ) : files.length === 0 ? (
-          <div className="empty-state-card">
-            <FileText size={48} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
-            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>Belum ada berkas yang terdaftar</h3>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Berkas baru akan muncul di sini setelah dientri oleh Petugas Entry.</p>
-          </div>
         ) : filteredFiles.length === 0 ? (
-          <div className="empty-state-card">
-            {filterType === 'Tugas Saya' && !searchQuery ? (
-              <>
-                <CheckCircle2 size={48} color="#10b981" style={{ marginBottom: '1rem' }} />
-                <h3 style={{ margin: '0 0 0.4rem 0', color: 'var(--text-main)' }}>Semua Berkas Beres! 🎉</h3>
-                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-                  Tidak ada berkas yang sedang menunggu tindakan di meja Anda saat ini.
-                </p>
-              </>
-            ) : (
-              <>
-                <Search size={48} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
-                <h3 style={{ margin: '0 0 0.4rem 0', color: 'var(--text-main)' }}>Berkas tidak ditemukan</h3>
-                <p style={{ margin: '0 0 1rem 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                  {searchQuery ? `Tidak ada berkas yang cocok dengan pencarian "${searchQuery}".` : `Tidak ada berkas pada kategori "${filterType}".`}
-                </p>
-                {(searchQuery || filterType !== 'Semua') && (
+          filterType === 'Tugas Saya' && !searchQuery ? (
+            <div className="empty-state-card">
+              <CheckCircle2 size={48} color="#10b981" style={{ marginBottom: '1rem' }} />
+              <h3 style={{ margin: '0 0 0.4rem 0', color: 'var(--text-main)' }}>Semua Berkas Beres! 🎉</h3>
+              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.92rem' }}>
+                Tidak ada berkas yang sedang menunggu tindakan di meja Anda saat ini.
+              </p>
+            </div>
+          ) : files.length === 0 && doneLoaded ? (
+            <div className="empty-state-card">
+              <FileText size={48} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
+              <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-main)' }}>Belum ada berkas yang terdaftar</h3>
+              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Berkas baru akan muncul di sini setelah dientri oleh Petugas Entry.</p>
+            </div>
+          ) : (
+            <div className="empty-state-card">
+              <Search size={48} color="var(--primary-color)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
+              <h3 style={{ margin: '0 0 0.4rem 0', color: 'var(--text-main)' }}>Berkas tidak ditemukan</h3>
+              <p style={{ margin: '0 0 1rem 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                {searchQuery ? `Tidak ada berkas yang cocok dengan pencarian "${searchQuery}".` : `Tidak ada berkas pada kategori "${filterType}".`}
+              </p>
+              {(searchQuery || filterType !== 'Semua') && (
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {searchQuery && filterType !== 'Semua' && filterType !== 'Selesai' && (
+                    <button
+                      onClick={() => setFilterType('Semua')}
+                      style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.85rem', gap: '0.4rem', margin: 0 }}
+                    >
+                      <Search size={14} /> Cari di Semua Status
+                    </button>
+                  )}
                   <button 
                     onClick={() => { setSearchQuery(''); setFilterType('Semua'); }}
                     className="secondary"
-                    style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.85rem', gap: '0.4rem' }}
+                    style={{ width: 'auto', padding: '0.5rem 1rem', fontSize: '0.85rem', gap: '0.4rem', margin: 0 }}
                   >
                     <RotateCcw size={14} /> Reset Filter & Pencarian
                   </button>
-                )}
-              </>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          )
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            {filteredFiles.map((file) => (
+            {visibleFiles.map((file) => (
               <DashboardFileCard
                 key={file.id}
                 file={file}
-                isHovered={hoveredFileId === file.id}
-                isSelected={selectedQrCodes.includes(file.qr_code)}
+                isSelected={selectedSet.has(file.qr_code)}
                 selectable={isFileSelectable(file)}
                 enteredDateText={formatShortDate(file.created_at)}
-                onOpen={() => navigate(`/file/${file.qr_code}`)}
-                onToggleSelect={(e) => toggleSelectFile(e, file.qr_code)}
-                onHoverEnter={() => setHoveredFileId(file.id)}
-                onHoverLeave={() => setHoveredFileId(null)}
+                onOpen={handleOpenFile}
+                onToggleSelect={toggleSelectFile}
               />
             ))}
+            {filteredFiles.length > visibleFiles.length && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setVisibleCount((c) => c + VISIBLE_STEP)}
+                  style={{ width: 'auto', padding: '0.55rem 1.25rem', fontSize: '0.84rem', margin: 0 }}
+                >
+                  Tampilkan {Math.min(VISIBLE_STEP, filteredFiles.length - visibleFiles.length)} lagi ({visibleFiles.length} dari {filteredFiles.length} berkas)
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -693,6 +794,7 @@ export default function Dashboard() {
         isOpen={showBatchTransitModal}
         sendableSelected={sendableSelected}
         usersList={usersList}
+        usersLoading={usersLoading}
         batchTransitTarget={batchTransitTarget}
         onSelectTarget={setBatchTransitTarget}
         batchTransitSearch={batchTransitSearch}
